@@ -19,7 +19,7 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.2-stable-test"
+VERSION = "V1.3-multilingual-test"
 MAX_TITLE_LEN = 75
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
@@ -27,15 +27,16 @@ TITLE_SIMILARITY_LIMIT = 0.94
 MAX_MODELS_IN_TITLE = 4
 
 
-COUNTRIES = {
-    "美国": {"language": "English (US)", "compat": "Compatible with"},
-    "英国": {"language": "English (UK)", "compat": "Compatible with"},
-    "加拿大": {"language": "English (Canada)", "compat": "Compatible with"},
-    "德国": {"language": "German", "compat": "Kompatibel mit"},
-    "法国": {"language": "French", "compat": "Compatible avec"},
-    "西班牙": {"language": "Spanish (Spain)", "compat": "Compatible con"},
-    "意大利": {"language": "Italian", "compat": "Compatibile con"},
-    "墨西哥": {"language": "Spanish (Mexico)", "compat": "Compatible con"},
+LANGUAGES = {
+    "英语": {"language": "English", "compat": "Compatible with"},
+    "西班牙语": {"language": "Spanish", "compat": "Compatible con"},
+    "意大利语": {"language": "Italian", "compat": "Compatibile con"},
+    "荷兰语": {"language": "Dutch", "compat": "Compatibel met"},
+    "日语": {"language": "Japanese", "compat": "に対応"},
+    "德语": {"language": "German", "compat": "Kompatibel mit"},
+    "法语": {"language": "French", "compat": "Compatible avec"},
+    "葡萄牙语": {"language": "Portuguese", "compat": "Compatível com"},
+    "瑞典语": {"language": "Swedish", "compat": "Kompatibel med"},
 }
 
 FORBIDDEN_TERMS = [
@@ -131,7 +132,7 @@ def title_similarity(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None,a,b).ratio()
 
 
-def seo_score(data: dict[str,str], country: str) -> int:
+def seo_score(data: dict[str,str], language: str) -> int:
     score=100
     title=clean_text(data.get("title",""))
     bullets=[clean_text(data.get(f"bullet{i}","")) for i in range(1,6)]
@@ -148,15 +149,15 @@ def seo_score(data: dict[str,str], country: str) -> int:
     return max(0,min(100,score))
 
 
-def stable_cache_key(source: dict[str,Any], country: str) -> str:
-    payload=json.dumps({"country":country,"source":source},ensure_ascii=False,sort_keys=True)
+def stable_cache_key(source: dict[str,Any], language: str) -> str:
+    payload=json.dumps({"language":language,"source":source},ensure_ascii=False,sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
-def build_prompt(source: dict[str, Any], country: str, retry_reason: str = "") -> str:
-    cfg = COUNTRIES[country]
+def build_prompt(source: dict[str, Any], language: str, retry_reason: str = "") -> str:
+    cfg = LANGUAGES[language]
     extra = f"\nPrevious output failed QA because: {retry_reason}\n" if retry_reason else ""
     return f"""
-You are an Amazon listing SEO and compliance writer for {country}.
+You are an Amazon listing SEO and compliance writer. Target output language: {language}.
 Write in {cfg['language']}.
 Return JSON only with keys: title, bullet1, bullet2, bullet3, bullet4, bullet5, description.
 
@@ -178,15 +179,15 @@ SOURCE DATA:
 """.strip()
 
 
-def call_ai(client: OpenAI, source: dict[str, Any], country: str, retry_reason: str = "") -> dict[str, str]:
+def call_ai(client: OpenAI, source: dict[str, Any], language: str, retry_reason: str = "") -> dict[str, str]:
     response = client.responses.create(
         model="gpt-4.1-mini",
-        input=build_prompt(source, country, retry_reason),
+        input=build_prompt(source, language, retry_reason),
     )
     return parse_json(response.output_text)
 
 
-def normalize_compatibility_text(text: str, country: str) -> str:
+def normalize_compatibility_text(text: str, language: str) -> str:
     """Normalize common AI compatibility variants before QA.
 
     This avoids false failures such as `Compatible Withr LG` while still
@@ -194,7 +195,7 @@ def normalize_compatibility_text(text: str, country: str) -> str:
     """
     if not text:
         return ""
-    compat = COUNTRIES[country]["compat"]
+    compat = LANGUAGES[language]["compat"]
     value = clean_text(text)
     # Fix misspellings/case variants beginning with Compatible With...
     value = re.sub(r"\bcompatible\s+with[a-z]*\b", compat, value, flags=re.I)
@@ -212,10 +213,10 @@ def normalize_compatibility_text(text: str, country: str) -> str:
     return value
 
 
-def normalize_ai_output(data: dict[str, Any], country: str) -> dict[str, str]:
+def normalize_ai_output(data: dict[str, Any], language: str) -> dict[str, str]:
     normalized: dict[str, str] = {}
     for key in ["title", "bullet1", "bullet2", "bullet3", "bullet4", "bullet5", "description"]:
-        normalized[key] = normalize_compatibility_text(str(data.get(key, "") or ""), country)
+        normalized[key] = normalize_compatibility_text(str(data.get(key, "") or ""), language)
     return normalized
 
 
@@ -229,8 +230,8 @@ def shorten_title_at_word_boundary(title: str, max_len: int = MAX_TITLE_LEN) -> 
     return cut.rstrip(" ,;-–—")
 
 
-def qa_text(data: dict[str, str], original_title: str, country: str) -> tuple[bool, str]:
-    cfg = COUNTRIES[country]
+def qa_text(data: dict[str, str], original_title: str, language: str) -> tuple[bool, str]:
+    cfg = LANGUAGES[language]
     title = clean_text(data.get("title", ""))
     bullets = [clean_text(data.get(f"bullet{i}", "")) for i in range(1, 6)]
     desc = clean_text(data.get("description", ""))
@@ -464,8 +465,9 @@ def upload_main_image_to_cloudinary(data: bytes, sku: str, source_url: str) -> s
 
 def output_excel(df: pd.DataFrame) -> bytes:
     out = io.BytesIO()
+    export_df = df.drop(columns=[c for c in df.columns if str(c).startswith("__")], errors="ignore")
     with pd.ExcelWriter(out, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False)
+        export_df.to_excel(writer, index=False)
     return out.getvalue()
 
 
@@ -481,24 +483,24 @@ def optimize_row_text(
     client: OpenAI,
     result: pd.DataFrame,
     idx: Any,
+    source_row: pd.Series,
     title_col: str,
     bullet_cols: list[str],
     desc_col: str,
-    country: str,
+    language: str,
     max_attempts: int = 4,
 ) -> tuple[bool, str]:
-    row = result.loc[idx]
     source = {
-        "title": clean_text(row.get(title_col, "")),
-        "bullet_points": [clean_text(row.get(c, "")) for c in bullet_cols],
-        "description": clean_text(row.get(desc_col, "")),
-        "color_or_variant": clean_text(row.get("颜色", "")),
+        "title": clean_text(source_row.get(title_col, "")),
+        "bullet_points": [clean_text(source_row.get(c, "")) for c in bullet_cols],
+        "description": clean_text(source_row.get(desc_col, "")),
+        "color_or_variant": clean_text(source_row.get("颜色", "")),
     }
-    cache_key = stable_cache_key(source, country)
+    cache_key = stable_cache_key(source, language)
     cached = st.session_state.text_cache.get(cache_key)
     if cached:
         data = cached.copy()
-        success, reason = qa_text(data, source["title"], country)
+        success, reason = qa_text(data, source["title"], language)
         if success:
             result.at[idx, title_col] = clean_text(data["title"])
             for i, c in enumerate(bullet_cols, start=1):
@@ -506,7 +508,7 @@ def optimize_row_text(
             result.at[idx, desc_col] = clean_text(data["description"])
             result.at[idx, "优化状态"] = "成功"
             result.at[idx, "失败原因"] = ""
-            result.at[idx, "SEO评分"] = seo_score(data, country)
+            result.at[idx, "SEO评分"] = seo_score(data, language)
             result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
             result.at[idx, "缓存命中"] = "是"
             return True, ""
@@ -515,12 +517,11 @@ def optimize_row_text(
     success = False
     for attempt in range(max_attempts):
         try:
-            raw_data = call_ai(client, source, country, reason)
-            data = normalize_ai_output(raw_data, country)
-            # Last-attempt deterministic safety for an otherwise valid but slightly long title.
+            raw_data = call_ai(client, source, language, reason)
+            data = normalize_ai_output(raw_data, language)
             if attempt == max_attempts - 1 and len(data.get("title", "")) > MAX_TITLE_LEN:
                 data["title"] = shorten_title_at_word_boundary(data["title"])
-            success, reason = qa_text(data, source["title"], country)
+            success, reason = qa_text(data, source["title"], language)
             if success:
                 break
         except Exception as exc:
@@ -534,7 +535,7 @@ def optimize_row_text(
         result.at[idx, desc_col] = clean_text(data["description"])
         result.at[idx, "优化状态"] = "成功"
         result.at[idx, "失败原因"] = ""
-        result.at[idx, "SEO评分"] = seo_score(data, country)
+        result.at[idx, "SEO评分"] = seo_score(data, language)
         result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
         result.at[idx, "缓存命中"] = "否"
         st.session_state.text_cache[cache_key] = data.copy()
@@ -542,7 +543,7 @@ def optimize_row_text(
 
     result.at[idx, "优化状态"] = "需重新优化"
     result.at[idx, "失败原因"] = reason or "未知质检失败"
-    result.at[idx, "SEO评分"] = seo_score(data or {}, country)
+    result.at[idx, "SEO评分"] = seo_score(data or {}, language)
     result.at[idx, "标题相似度"] = round(title_similarity((data or {}).get("title", ""), source["title"]), 4) if data else ""
     result.at[idx, "缓存命中"] = "否"
     return False, reason or "未知质检失败"
@@ -551,90 +552,100 @@ def optimize_row_text(
 def refresh_fail_indices(result: pd.DataFrame) -> list[Any]:
     if "优化状态" not in result.columns:
         return []
-    return result.index[result["优化状态"].astype(str) != "成功"].tolist()
+    mask = result["__生成行"].astype(str).eq("是") if "__生成行" in result.columns else pd.Series(True, index=result.index)
+    return result.index[mask & result["优化状态"].astype(str).ne("成功")].tolist()
 
 
-def retry_indices(
-    indices: list[Any],
-    country: str,
-    title_col: str,
-    bullet_cols: list[str],
-    desc_col: str,
-) -> None:
+def retry_indices(indices: list[Any]) -> None:
     if not indices:
         st.info("当前没有需要重新优化的记录。")
         return
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     result = st.session_state.result_df.copy()
+    source_df = st.session_state.source_df
+    title_col = st.session_state.title_col
+    bullet_cols = st.session_state.bullet_cols
+    desc_col = st.session_state.desc_col
     progress = st.progress(0)
     status = st.empty()
+    sku_col = find_col(result, SKU_NAMES)
     for pos, idx in enumerate(indices, start=1):
         status.write(f"重新优化 {pos}/{len(indices)}")
-        success, reason = optimize_row_text(client, result, idx, title_col, bullet_cols, desc_col, country)
-        sku_col = find_col(result, SKU_NAMES)
+        source_idx = int(result.at[idx, "__源行索引"])
+        language = str(result.at[idx, "__目标语言"])
+        source_row = source_df.loc[source_idx]
+        success, reason = optimize_row_text(client, result, idx, source_row, title_col, bullet_cols, desc_col, language)
         sku = clean_text(result.at[idx, sku_col]) if sku_col else str(idx)
-        st.session_state.logs.append(f"重试 {sku} - {'成功' if success else '失败'} - {reason}")
+        st.session_state.logs.append(f"重试 {sku}/{language} - {'成功' if success else '失败'} - {reason}")
         progress.progress(pos / len(indices))
     st.session_state.result_df = result
     st.session_state.fail_indices = refresh_fail_indices(result)
     st.success(f"重试完成：剩余失败 {len(st.session_state.fail_indices)} 条")
 
 
-def retry_image_indices(indices: list[Any]) -> None:
-    if not indices:
+def retry_image_sources(source_indices: list[int]) -> None:
+    if not source_indices:
         st.info("当前没有需要重新处理的图片。")
         return
-    result=st.session_state.result_df.copy()
-    image_col=find_col(result,IMAGE_NAMES)
-    sku_col=find_col(result,SKU_NAMES)
+    result = st.session_state.result_df.copy()
+    source_df = st.session_state.source_df
+    image_col = st.session_state.image_col
+    sku_col = find_col(source_df, SKU_NAMES)
     if not image_col:
         st.error("没有识别到产品图列。")
         return
-    progress=st.progress(0)
-    remaining=[]
-    for pos,idx in enumerate(indices,start=1):
+    progress = st.progress(0)
+    remaining = []
+    for pos, source_idx in enumerate(source_indices, start=1):
         try:
-            images=split_images(result.at[idx,image_col])
+            source_row = source_df.loc[source_idx]
+            images = stable_shuffle_secondary(split_images(source_row.get(image_col, "")), clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx))
             if not images:
                 raise RuntimeError("产品图为空")
-            sku=clean_text(result.at[idx,sku_col]) if sku_col else str(idx)
-            original=images[0]
-            key=hashlib.sha256(original.encode("utf-8")).hexdigest()
-            cached=st.session_state.image_cache.get(key)
+            sku = clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx)
+            original = images[0]
+            key = hashlib.sha256(original.encode("utf-8")).hexdigest()
+            cached = st.session_state.image_cache.get(key)
             if cached:
-                url=cached["url"]; strategy=cached["strategy"]+"+缓存"
+                url = cached["url"]
+                strategy = cached["strategy"] + "+缓存"
             else:
-                processed,strategy=process_main_image(download_image(original),f"{sku}|{original}")
-                data=image_bytes(processed)
-                url=upload_main_image_to_cloudinary(data,sku or str(idx),original)
-                st.session_state.image_cache[key]={"url":url,"strategy":strategy}
-            images[0]=url
-            result.at[idx,image_col]=IMAGE_SEPARATOR.join(images)
-            result.at[idx,"首图处理状态"]="成功"
-            result.at[idx,"优化后首图链接"]=url
-            result.at[idx,"首图失败原因"]=""
-            result.at[idx,"首图处理方式"]=strategy
+                processed, strategy = process_main_image(download_image(original), f"{sku}|{original}")
+                data = image_bytes(processed)
+                url = upload_main_image_to_cloudinary(data, sku or str(source_idx), original)
+                st.session_state.image_cache[key] = {"url": url, "strategy": strategy}
+            images[0] = url
+            image_value = IMAGE_SEPARATOR.join(images)
+            mask = result["__源行索引"].astype(str).eq(str(source_idx)) & result["__生成行"].astype(str).eq("是")
+            result.loc[mask, image_col] = image_value
+            result.loc[mask, "首图处理状态"] = "成功"
+            result.loc[mask, "优化后首图链接"] = url
+            result.loc[mask, "首图失败原因"] = ""
+            result.loc[mask, "首图处理方式"] = strategy
         except Exception as exc:
-            remaining.append(idx)
-            result.at[idx,"首图处理状态"]="失败"
-            result.at[idx,"首图失败原因"]=str(exc)
-        progress.progress(pos/len(indices))
-    st.session_state.result_df=result
-    st.session_state.image_fail_indices=remaining
-    st.success(f"图片重试完成：剩余失败 {len(remaining)} 条")
+            remaining.append(source_idx)
+            mask = result["__源行索引"].astype(str).eq(str(source_idx)) & result["__生成行"].astype(str).eq("是")
+            result.loc[mask, "首图处理状态"] = "失败"
+            result.loc[mask, "首图失败原因"] = str(exc)
+        progress.progress(pos / len(source_indices))
+    st.session_state.result_df = result
+    st.session_state.image_fail_sources = remaining
+    st.success(f"图片重试完成：剩余失败 {len(remaining)} 个产品")
 
 def init_state() -> None:
     defaults = {
         "result_df": None,
+        "source_df": None,
         "fail_indices": [],
         "image_files": {},
-        "image_fail_indices": [],
+        "image_fail_sources": [],
         "logs": [],
         "source_name": "",
         "title_col": None,
         "desc_col": None,
+        "image_col": None,
         "bullet_cols": [],
-        "country": "美国",
+        "selected_languages": ["英语"],
         "text_cache": {},
         "image_cache": {},
     }
@@ -652,7 +663,12 @@ if not api_key:
     st.error("尚未配置 OPENAI_API_KEY，请在 Streamlit App Settings → Secrets 中配置。")
     st.stop()
 
-country = st.selectbox("目标国家", list(COUNTRIES.keys()), index=0)
+selected_languages = st.multiselect(
+    "优化语言（可多选）",
+    options=list(LANGUAGES.keys()),
+    default=["英语"],
+    help="每个原产品会按所选顺序生成对应语言的新行，SKU和父SKU保持不变。",
+)
 optimize_image = st.checkbox("优化首图（测试功能）", value=False)
 if optimize_image and not cloudinary_ready():
     st.warning("已勾选首图优化，但尚未配置 Cloudinary Secrets；图片处理会失败并保留原首图链接。")
@@ -665,6 +681,7 @@ if uploaded:
     desc_col = find_col(df, DESC_NAMES)
     image_col = find_col(df, IMAGE_NAMES)
     sku_col = find_col(df, SKU_NAMES)
+    language_col = find_col(df, ["语言", "Language"])
     bullet_cols = [find_col(df, names) for names in BULLET_NAMES]
 
     if not title_col:
@@ -673,105 +690,124 @@ if uploaded:
     if not desc_col:
         desc_col = "简介"
         df[desc_col] = ""
+    if not language_col:
+        language_col = "语言"
+        df[language_col] = ""
     for i, col in enumerate(bullet_cols):
         if not col:
             new_col = f"要点{i + 1}"
             df[new_col] = ""
             bullet_cols[i] = new_col
 
-    st.success(f"已读取 {len(df)} 行")
+    st.success(f"已读取 {len(df)} 个原始产品")
     st.dataframe(df.head(8), use_container_width=True)
 
-    if st.button("开始优化", type="primary"):
+    if st.button("开始多语言优化", type="primary", disabled=not selected_languages):
         client = OpenAI(api_key=api_key)
-        result = df.copy()
-        failures: list[int] = []
-        image_failures: list[int] = []
+        source_df = df.copy()
+        generated_rows: list[dict[str, Any]] = []
+        image_fail_sources: list[int] = []
         image_files: dict[str, bytes] = {}
         logs: list[str] = []
+        total_tasks = len(source_df) * len(selected_languages)
+        done_tasks = 0
         progress = st.progress(0)
         status = st.empty()
 
-        for pos, (idx, row) in enumerate(result.iterrows(), start=1):
-            status.write(f"正在处理 {pos}/{len(result)}")
-            original_title = clean_text(row.get(title_col, ""))
-            success, reason = optimize_row_text(
-                client, result, idx, title_col, bullet_cols, desc_col, country
-            )
-            if not success:
-                failures.append(idx)
+        # 图片只按原产品处理一次，随后复用到所有语言行。
+        image_values: dict[int, dict[str, str]] = {}
+        for source_idx, source_row in source_df.iterrows():
+            sku = clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx)
+            images = stable_shuffle_secondary(split_images(source_row.get(image_col, "")), sku) if image_col else []
+            image_info = {"value": IMAGE_SEPARATOR.join(images), "status": "未启用", "url": "", "reason": "", "strategy": ""}
+            if optimize_image and images:
+                try:
+                    original_main_url = images[0]
+                    image_key = hashlib.sha256(original_main_url.encode("utf-8")).hexdigest()
+                    cached = st.session_state.image_cache.get(image_key)
+                    if cached:
+                        cloudinary_url = cached["url"]
+                        strategy = cached["strategy"] + "+缓存"
+                        processed_bytes = b""
+                    else:
+                        processed, strategy = process_main_image(download_image(original_main_url), f"{sku}|{original_main_url}")
+                        processed_bytes = image_bytes(processed)
+                        cloudinary_url = upload_main_image_to_cloudinary(processed_bytes, sku or str(source_idx), original_main_url)
+                        st.session_state.image_cache[image_key] = {"url": cloudinary_url, "strategy": strategy}
+                    if processed_bytes:
+                        filename = f"optimized_main_images/{re.sub(r'[^A-Za-z0-9_-]+', '_', sku or str(source_idx))}.jpg"
+                        image_files[filename] = processed_bytes
+                    images[0] = cloudinary_url
+                    image_info = {"value": IMAGE_SEPARATOR.join(images), "status": "成功", "url": cloudinary_url, "reason": "", "strategy": strategy}
+                except Exception as exc:
+                    image_fail_sources.append(int(source_idx))
+                    image_info = {"value": IMAGE_SEPARATOR.join(images), "status": "失败", "url": "", "reason": str(exc), "strategy": ""}
+            image_values[int(source_idx)] = image_info
 
-            if image_col:
-                images = split_images(row.get(image_col, ""))
-                sku = clean_text(row.get(sku_col, "")) if sku_col else str(idx)
-                images = stable_shuffle_secondary(images, sku)
-                if optimize_image and images:
-                    try:
-                        original_main_url = images[0]
-                        image_key = hashlib.sha256(original_main_url.encode("utf-8")).hexdigest()
-                        cached_image = st.session_state.image_cache.get(image_key)
-                        if cached_image:
-                            cloudinary_url = cached_image["url"]
-                            image_strategy = cached_image["strategy"] + "+缓存"
-                            processed_bytes = b""
-                        else:
-                            processed, image_strategy = process_main_image(
-                                download_image(original_main_url), f"{sku}|{original_main_url}"
-                            )
-                            processed_bytes = image_bytes(processed)
-                            cloudinary_url = upload_main_image_to_cloudinary(
-                                processed_bytes, sku or str(idx), original_main_url
-                            )
-                            st.session_state.image_cache[image_key] = {"url": cloudinary_url, "strategy": image_strategy}
-                        filename = f"optimized_main_images/{re.sub(r'[^A-Za-z0-9_-]+', '_', sku or str(idx))}.jpg"
-                        if processed_bytes:
-                            image_files[filename] = processed_bytes
-                        # Only replace the first image. Secondary image links remain unchanged
-                        # apart from de-duplication and deterministic reordering.
-                        images[0] = cloudinary_url
-                        result.at[idx, "首图处理状态"] = "成功"
-                        result.at[idx, "优化后首图链接"] = cloudinary_url
-                        result.at[idx, "首图失败原因"] = ""
-                        result.at[idx, "首图处理方式"] = image_strategy
-                    except Exception as exc:
-                        # Keep the original first image URL if processing/upload fails.
-                        result.at[idx, "首图处理状态"] = "失败"
-                        result.at[idx, "首图失败原因"] = str(exc)
-                        result.at[idx, "首图处理方式"] = ""
-                        image_failures.append(idx)
-                elif image_col:
-                    result.at[idx, "首图处理状态"] = "未启用"
-                result.at[idx, image_col] = IMAGE_SEPARATOR.join(images)
+        # 原表保持在上方；所有优化行按原产品顺序及语言勾选顺序追加到下方。
+        for source_idx, source_row in source_df.iterrows():
+            for language in selected_languages:
+                done_tasks += 1
+                status.write(f"正在生成 {done_tasks}/{total_tasks}：第 {source_idx + 1} 个产品 / {language}")
+                row_dict = source_row.to_dict()
+                row_dict[language_col] = language
+                row_dict["__生成行"] = "是"
+                row_dict["__源行索引"] = int(source_idx)
+                row_dict["__目标语言"] = language
+                if image_col:
+                    info = image_values[int(source_idx)]
+                    row_dict[image_col] = info["value"]
+                    row_dict["首图处理状态"] = info["status"]
+                    row_dict["优化后首图链接"] = info["url"]
+                    row_dict["首图失败原因"] = info["reason"]
+                    row_dict["首图处理方式"] = info["strategy"]
+                generated_rows.append(row_dict)
+                temp = pd.DataFrame(generated_rows)
+                idx = temp.index[-1]
+                success, reason = optimize_row_text(client, temp, idx, source_row, title_col, bullet_cols, desc_col, language)
+                generated_rows[-1] = temp.loc[idx].to_dict()
+                sku = clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx)
+                logs.append(f"{done_tasks}/{total_tasks} - {sku}/{language} - {'成功' if success else '失败'} - {reason}")
+                progress.progress(done_tasks / total_tasks)
 
-            logs.append(f"{pos}/{len(result)} - {'成功' if success else '失败'} - {original_title[:45]}")
-            progress.progress(pos / len(result))
+        originals = source_df.copy()
+        originals["__生成行"] = "否"
+        originals["__源行索引"] = originals.index.astype(int)
+        originals["__目标语言"] = ""
+        generated_df = pd.DataFrame(generated_rows)
+        result = pd.concat([originals, generated_df], ignore_index=True, sort=False).fillna("")
 
+        st.session_state.source_df = source_df
         st.session_state.result_df = result
-        st.session_state.fail_indices = failures
+        st.session_state.fail_indices = refresh_fail_indices(result)
         st.session_state.image_files = image_files
-        st.session_state.image_fail_indices = image_failures
+        st.session_state.image_fail_sources = sorted(set(image_fail_sources))
         st.session_state.logs = logs
         st.session_state.source_name = uploaded.name
         st.session_state.title_col = title_col
         st.session_state.desc_col = desc_col
+        st.session_state.image_col = image_col
         st.session_state.bullet_cols = bullet_cols
-        st.session_state.country = country
-        st.success(f"处理完成：成功 {len(result)-len(failures)}，失败 {len(failures)}")
+        st.session_state.selected_languages = list(selected_languages)
+        generated_success = len(generated_df) - len(st.session_state.fail_indices)
+        st.success(f"处理完成：生成 {len(generated_df)} 条多语言结果，成功 {generated_success}，失败 {len(st.session_state.fail_indices)}")
 
 if st.session_state.result_df is not None:
     result_df = st.session_state.result_df
+    generated_mask = result_df["__生成行"].astype(str).eq("是") if "__生成行" in result_df.columns else pd.Series(True, index=result_df.index)
+    generated_count = int(generated_mask.sum())
     st.subheader("处理结果")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("总数", len(result_df))
-    c2.metric("文案成功", int((result_df.get("优化状态", "") == "成功").sum()) if "优化状态" in result_df else 0)
+    c1.metric("原始产品", len(st.session_state.source_df) if st.session_state.source_df is not None else 0)
+    c2.metric("生成语言行", generated_count)
     c3.metric("文案失败", len(st.session_state.fail_indices))
-    c4.metric("图片失败", len(st.session_state.image_fail_indices))
+    c4.metric("图片失败产品", len(st.session_state.image_fail_sources))
 
     if st.session_state.fail_indices:
-        st.warning("失败项已保留在完整表格中，可以全部重试或选择指定记录重试。")
+        st.warning("失败项按语言独立保留，可全部重试或选择指定产品/语言重试。")
         sku_col_now = find_col(result_df, SKU_NAMES)
         title_col_now = st.session_state.title_col or find_col(result_df, TITLE_NAMES)
-        show_cols = [c for c in [sku_col_now, title_col_now, "失败原因"] if c]
+        show_cols = [c for c in [sku_col_now, "语言", title_col_now, "失败原因"] if c and c in result_df.columns]
         failed_view = result_df.loc[st.session_state.fail_indices, show_cols].copy()
         failed_view.insert(0, "行索引", failed_view.index.astype(str))
         st.dataframe(failed_view, use_container_width=True)
@@ -779,40 +815,25 @@ if st.session_state.result_df is not None:
         labels = {}
         for idx in st.session_state.fail_indices:
             sku = clean_text(result_df.at[idx, sku_col_now]) if sku_col_now else str(idx)
+            language = clean_text(result_df.at[idx, "__目标语言"])
             title = clean_text(result_df.at[idx, title_col_now]) if title_col_now else ""
-            labels[f"{idx} | {sku} | {title[:55]}"] = idx
+            labels[f"{idx} | {sku} | {language} | {title[:45]}"] = idx
 
-        selected_labels = st.multiselect(
-            "选择需要单独重新优化的失败项",
-            options=list(labels.keys()),
-            placeholder="可选择一条或多条",
-        )
+        selected_labels = st.multiselect("选择需要单独重新优化的失败项", options=list(labels.keys()))
         b1, b2 = st.columns(2)
         with b1:
             if st.button("重新优化全部失败项", type="primary", use_container_width=True):
-                retry_indices(
-                    list(st.session_state.fail_indices),
-                    st.session_state.country,
-                    st.session_state.title_col,
-                    st.session_state.bullet_cols,
-                    st.session_state.desc_col,
-                )
+                retry_indices(list(st.session_state.fail_indices))
                 st.rerun()
         with b2:
             if st.button("重新优化选中失败项", use_container_width=True, disabled=not selected_labels):
-                retry_indices(
-                    [labels[x] for x in selected_labels],
-                    st.session_state.country,
-                    st.session_state.title_col,
-                    st.session_state.bullet_cols,
-                    st.session_state.desc_col,
-                )
+                retry_indices([labels[x] for x in selected_labels])
                 st.rerun()
 
-    if st.session_state.image_fail_indices:
-        st.warning(f"有 {len(st.session_state.image_fail_indices)} 条首图处理失败，可单独重试。")
+    if st.session_state.image_fail_sources:
+        st.warning(f"有 {len(st.session_state.image_fail_sources)} 个原产品首图处理失败；重试成功后会同步更新该产品的全部语言行。")
         if st.button("重新处理全部失败图片", use_container_width=True):
-            retry_image_indices(list(st.session_state.image_fail_indices))
+            retry_image_sources(list(st.session_state.image_fail_sources))
             st.rerun()
 
     st.download_button(
@@ -829,7 +850,6 @@ if st.session_state.result_df is not None:
             file_name="optimized_main_images.zip",
             mime="application/zip",
         )
-        st.success("已上传 Cloudinary 的首图会以完整 HTTPS 链接替换 Excel 产品图字段中的第一张图片。")
 
     with st.expander("运行日志"):
-        st.code("\n".join(st.session_state.logs[-500:]))
+        st.code("\n".join(st.session_state.logs[-1000:]))
