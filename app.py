@@ -19,8 +19,10 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.3.1-multilingual-test"
+VERSION = "V1.3.2-multilingual-short-title-test"
 MAX_TITLE_LEN = 75
+MAX_SHORT_TITLE_LEN = 60
+SHORT_TITLE_NAMES = ["短标题", "Short Title", "short_title"]
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
 TITLE_SIMILARITY_LIMIT = 0.94
@@ -135,12 +137,15 @@ def title_similarity(a: str, b: str) -> float:
 def seo_score(data: dict[str,str], language: str) -> int:
     score=100
     title=clean_text(data.get("title",""))
+    short_title=clean_text(data.get("short_title",""))
     bullets=[clean_text(data.get(f"bullet{i}","")) for i in range(1,6)]
     desc=clean_text(data.get("description",""))
-    all_text=" ".join([title,*bullets,desc]).lower()
+    all_text=" ".join([title,short_title,*bullets,desc]).lower()
     if not title: score-=35
     if len(title)>MAX_TITLE_LEN: score-=20
     if len(title)<35: score-=8
+    if not short_title: score-=10
+    if len(short_title)>MAX_SHORT_TITLE_LEN: score-=10
     if any(not b for b in bullets): score-=20
     if not desc: score-=15
     if any(t in all_text for t in FORBIDDEN_TERMS): score-=25
@@ -150,7 +155,7 @@ def seo_score(data: dict[str,str], language: str) -> int:
 
 
 def stable_cache_key(source: dict[str,Any], language: str) -> str:
-    payload=json.dumps({"language":language,"source":source},ensure_ascii=False,sort_keys=True)
+    payload=json.dumps({"schema":"v1.3.2-short-title","language":language,"source":source},ensure_ascii=False,sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 def build_prompt(source: dict[str, Any], language: str, retry_reason: str = "") -> str:
@@ -159,7 +164,7 @@ def build_prompt(source: dict[str, Any], language: str, retry_reason: str = "") 
     return f"""
 You are an Amazon listing SEO and compliance writer. Target output language: {language}.
 Write in {cfg['language']}.
-Return JSON only with keys: title, bullet1, bullet2, bullet3, bullet4, bullet5, description.
+Return JSON only with keys: title, short_title, bullet1, bullet2, bullet3, bullet4, bullet5, description.
 
 NON-NEGOTIABLE RULES:
 1. Every product is a non-original compatibility product.
@@ -173,6 +178,10 @@ NON-NEGOTIABLE RULES:
 9. Do not invent missing facts.
 10. If more than four compatible model numbers are supplied, keep only 2-4 representative models in the title and place the complete model list in bullets or description.
 11. The rewritten title must be materially different in wording/order from the source while preserving facts.
+12. short_title must be a concise merchandising/search summary no longer than {MAX_SHORT_TITLE_LEN} characters including spaces.
+13. Build short_title from the complete product information. Include only facts actually present, prioritizing: core product noun, material, use scenario, main function, strongest factual benefit, and high-value search keywords.
+14. Do not mechanically copy the long title. Do not invent material, scenario, function, benefit, or keywords. Omit any category that is not supported by the source.
+15. If a third-party brand appears in short_title, apply the same exact local compatibility phrase: {cfg['compat']}.
 {extra}
 SOURCE DATA:
 {json.dumps(source, ensure_ascii=False)}
@@ -215,7 +224,7 @@ def normalize_compatibility_text(text: str, language: str) -> str:
 
 def normalize_ai_output(data: dict[str, Any], language: str) -> dict[str, str]:
     normalized: dict[str, str] = {}
-    for key in ["title", "bullet1", "bullet2", "bullet3", "bullet4", "bullet5", "description"]:
+    for key in ["title", "short_title", "bullet1", "bullet2", "bullet3", "bullet4", "bullet5", "description"]:
         normalized[key] = normalize_compatibility_text(str(data.get(key, "") or ""), language)
     return normalized
 
@@ -233,6 +242,7 @@ def shorten_title_at_word_boundary(title: str, max_len: int = MAX_TITLE_LEN) -> 
 def qa_text(data: dict[str, str], original_title: str, language: str) -> tuple[bool, str]:
     cfg = LANGUAGES[language]
     title = clean_text(data.get("title", ""))
+    short_title = clean_text(data.get("short_title", ""))
     bullets = [clean_text(data.get(f"bullet{i}", "")) for i in range(1, 6)]
     desc = clean_text(data.get("description", ""))
     if not title:
@@ -242,6 +252,10 @@ def qa_text(data: dict[str, str], original_title: str, language: str) -> tuple[b
         return False, f"标题改写不足，相似度 {similarity:.0%}"
     if len(title) > MAX_TITLE_LEN:
         return False, f"标题超过 {MAX_TITLE_LEN} 字符"
+    if not short_title:
+        return False, "短标题为空"
+    if len(short_title) > MAX_SHORT_TITLE_LEN:
+        return False, f"短标题超过 {MAX_SHORT_TITLE_LEN} 字符"
     original_models = extract_model_tokens(original_title)
     title_models = extract_model_tokens(title)
     if len(original_models) > MAX_MODELS_IN_TITLE and len(title_models) > MAX_MODELS_IN_TITLE:
@@ -250,7 +264,7 @@ def qa_text(data: dict[str, str], original_title: str, language: str) -> tuple[b
         return False, "五点描述不足5条"
     if not desc:
         return False, "详情为空"
-    all_text = " ".join([title, *bullets, desc]).lower()
+    all_text = " ".join([title, short_title, *bullets, desc]).lower()
     bad = [term for term in FORBIDDEN_TERMS if term in all_text]
     if bad:
         return False, "含禁止词：" + ", ".join(bad[:3])
@@ -487,6 +501,7 @@ def optimize_row_text(
     title_col: str,
     bullet_cols: list[str],
     desc_col: str,
+    short_title_col: str,
     language: str,
     max_attempts: int = 4,
 ) -> tuple[bool, str]:
@@ -502,7 +517,8 @@ def optimize_row_text(
         data = cached.copy()
         success, reason = qa_text(data, source["title"], language)
         if success:
-            result.at[idx, title_col] = clean_text(data["title"])
+            result.at[idx, title_col] = shorten_title_at_word_boundary(clean_text(data["title"]), MAX_TITLE_LEN)
+            result.at[idx, short_title_col] = shorten_title_at_word_boundary(clean_text(data.get("short_title", "")), MAX_SHORT_TITLE_LEN)
             for i, c in enumerate(bullet_cols, start=1):
                 result.at[idx, c] = clean_text(data[f"bullet{i}"])
             result.at[idx, desc_col] = clean_text(data["description"])
@@ -519,8 +535,9 @@ def optimize_row_text(
         try:
             raw_data = call_ai(client, source, language, reason)
             data = normalize_ai_output(raw_data, language)
-            if attempt == max_attempts - 1 and len(data.get("title", "")) > MAX_TITLE_LEN:
-                data["title"] = shorten_title_at_word_boundary(data["title"])
+            # Hard limits are applied on every attempt so no language can escape the limit.
+            data["title"] = shorten_title_at_word_boundary(data.get("title", ""), MAX_TITLE_LEN)
+            data["short_title"] = shorten_title_at_word_boundary(data.get("short_title", ""), MAX_SHORT_TITLE_LEN)
             success, reason = qa_text(data, source["title"], language)
             if success:
                 break
@@ -529,7 +546,8 @@ def optimize_row_text(
         time.sleep(0.35)
 
     if success and data:
-        result.at[idx, title_col] = clean_text(data["title"])
+        result.at[idx, title_col] = shorten_title_at_word_boundary(clean_text(data["title"]), MAX_TITLE_LEN)
+        result.at[idx, short_title_col] = shorten_title_at_word_boundary(clean_text(data.get("short_title", "")), MAX_SHORT_TITLE_LEN)
         for i, c in enumerate(bullet_cols, start=1):
             result.at[idx, c] = clean_text(data[f"bullet{i}"])
         result.at[idx, desc_col] = clean_text(data["description"])
@@ -541,6 +559,12 @@ def optimize_row_text(
         st.session_state.text_cache[cache_key] = data.copy()
         return True, ""
 
+    # Even failed rows keep bounded draft text, preventing overlength content in exports/previews.
+    if data:
+        if data.get("title"):
+            result.at[idx, title_col] = shorten_title_at_word_boundary(clean_text(data["title"]), MAX_TITLE_LEN)
+        if data.get("short_title"):
+            result.at[idx, short_title_col] = shorten_title_at_word_boundary(clean_text(data["short_title"]), MAX_SHORT_TITLE_LEN)
     result.at[idx, "优化状态"] = "需重新优化"
     result.at[idx, "失败原因"] = reason or "未知质检失败"
     result.at[idx, "SEO评分"] = seo_score(data or {}, language)
@@ -566,6 +590,7 @@ def retry_indices(indices: list[Any]) -> None:
     title_col = st.session_state.title_col
     bullet_cols = st.session_state.bullet_cols
     desc_col = st.session_state.desc_col
+    short_title_col = st.session_state.short_title_col
     progress = st.progress(0)
     status = st.empty()
     sku_col = find_col(result, SKU_NAMES)
@@ -574,7 +599,7 @@ def retry_indices(indices: list[Any]) -> None:
         source_idx = int(result.at[idx, "__源行索引"])
         language = str(result.at[idx, "__目标语言"])
         source_row = source_df.loc[source_idx]
-        success, reason = optimize_row_text(client, result, idx, source_row, title_col, bullet_cols, desc_col, language)
+        success, reason = optimize_row_text(client, result, idx, source_row, title_col, bullet_cols, desc_col, short_title_col, language)
         sku = clean_text(result.at[idx, sku_col]) if sku_col else str(idx)
         st.session_state.logs.append(f"重试 {sku}/{language} - {'成功' if success else '失败'} - {reason}")
         progress.progress(pos / len(indices))
@@ -645,6 +670,7 @@ def init_state() -> None:
         "desc_col": None,
         "image_col": None,
         "bullet_cols": [],
+        "short_title_col": "短标题",
         "selected_languages": ["英语"],
         "text_cache": {},
         "image_cache": {},
@@ -678,6 +704,12 @@ if uploaded:
     raw = uploaded.getvalue()
     df = pd.read_excel(io.BytesIO(raw)).fillna("")
     title_col = find_col(df, TITLE_NAMES)
+    short_title_col = find_col(df, SHORT_TITLE_NAMES)
+    if not short_title_col:
+        short_title_col = "短标题"
+        # Insert immediately after the main title column to match the export template.
+        title_pos = list(df.columns).index(title_col) if title_col in df.columns else len(df.columns) - 1
+        df.insert(title_pos + 1, short_title_col, "")
     desc_col = find_col(df, DESC_NAMES)
     image_col = find_col(df, IMAGE_NAMES)
     sku_col = find_col(df, SKU_NAMES)
@@ -764,7 +796,7 @@ if uploaded:
                 generated_rows.append(row_dict)
                 temp = pd.DataFrame(generated_rows)
                 idx = temp.index[-1]
-                success, reason = optimize_row_text(client, temp, idx, source_row, title_col, bullet_cols, desc_col, language)
+                success, reason = optimize_row_text(client, temp, idx, source_row, title_col, bullet_cols, desc_col, short_title_col, language)
                 generated_rows[-1] = temp.loc[idx].to_dict()
                 sku = clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx)
                 logs.append(f"{done_tasks}/{total_tasks} - {sku}/{language} - {'成功' if success else '失败'} - {reason}")
@@ -784,6 +816,7 @@ if uploaded:
         st.session_state.source_name = uploaded.name
         st.session_state.title_col = title_col
         st.session_state.desc_col = desc_col
+        st.session_state.short_title_col = short_title_col
         st.session_state.image_col = image_col
         st.session_state.bullet_cols = bullet_cols
         st.session_state.selected_languages = list(selected_languages)
@@ -806,7 +839,7 @@ if st.session_state.result_df is not None:
         st.warning("失败项按语言独立保留，可全部重试或选择指定产品/语言重试。")
         sku_col_now = find_col(result_df, SKU_NAMES)
         title_col_now = st.session_state.title_col or find_col(result_df, TITLE_NAMES)
-        show_cols = [c for c in [sku_col_now, "语言", title_col_now, "失败原因"] if c and c in result_df.columns]
+        show_cols = [c for c in [sku_col_now, "语言", title_col_now, st.session_state.short_title_col, "失败原因"] if c and c in result_df.columns]
         failed_view = result_df.loc[st.session_state.fail_indices, show_cols].copy()
         failed_view.insert(0, "行索引", failed_view.index.astype(str))
         st.dataframe(failed_view, use_container_width=True)
