@@ -11,12 +11,14 @@ from typing import Any
 import pandas as pd
 import requests
 import streamlit as st
+import cloudinary
+import cloudinary.uploader
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from openai import OpenAI
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.2-P1.1-test"
+VERSION = "V1.2-P1.2-test"
 MAX_TITLE_LEN = 75
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
@@ -253,6 +255,50 @@ def image_bytes(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 
+def cloudinary_ready() -> bool:
+    required = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"]
+    return all(bool(st.secrets.get(k, "")) for k in required)
+
+
+def configure_cloudinary() -> None:
+    cloudinary.config(
+        cloud_name=st.secrets["CLOUDINARY_CLOUD_NAME"],
+        api_key=st.secrets["CLOUDINARY_API_KEY"],
+        api_secret=st.secrets["CLOUDINARY_API_SECRET"],
+        secure=True,
+    )
+
+
+def upload_main_image_to_cloudinary(data: bytes, sku: str, source_url: str) -> str:
+    """Upload processed main image and return Cloudinary's complete HTTPS URL.
+
+    The public ID is deterministic, so reprocessing the same SKU overwrites the old
+    asset instead of generating unlimited duplicates.
+    """
+    if not cloudinary_ready():
+        raise RuntimeError("未配置 Cloudinary Secrets")
+    configure_cloudinary()
+    safe_sku = re.sub(r"[^A-Za-z0-9_-]+", "_", sku or "product").strip("_") or "product"
+    source_hash = hashlib.sha256(source_url.encode("utf-8")).hexdigest()[:10]
+    public_id = f"{safe_sku}_{source_hash}"
+    buffer = io.BytesIO(data)
+    result = cloudinary.uploader.upload(
+        buffer,
+        resource_type="image",
+        asset_folder="optimized_main_images",
+        public_id=public_id,
+        overwrite=True,
+        unique_filename=False,
+        format="jpg",
+        invalidate=True,
+        tags=["amazon-main-image", safe_sku],
+    )
+    secure_url = str(result.get("secure_url", "")).strip()
+    if not secure_url.startswith("https://"):
+        raise RuntimeError("Cloudinary 未返回有效 HTTPS 图片链接")
+    return secure_url
+
+
 def output_excel(df: pd.DataFrame) -> bytes:
     out = io.BytesIO()
     with pd.ExcelWriter(out, engine="openpyxl") as writer:
@@ -376,6 +422,8 @@ if not api_key:
 
 country = st.selectbox("目标国家", list(COUNTRIES.keys()), index=0)
 optimize_image = st.checkbox("优化首图（测试功能）", value=False)
+if optimize_image and not cloudinary_ready():
+    st.warning("已勾选首图优化，但尚未配置 Cloudinary Secrets；图片处理会失败并保留原首图链接。")
 uploaded = st.file_uploader("上传 Excel", type=["xlsx"])
 
 if uploaded:
@@ -424,19 +472,29 @@ if uploaded:
                 images = split_images(row.get(image_col, ""))
                 sku = clean_text(row.get(sku_col, "")) if sku_col else str(idx)
                 images = stable_shuffle_secondary(images, sku)
-                result.at[idx, image_col] = IMAGE_SEPARATOR.join(images)
                 if optimize_image and images:
                     try:
-                        processed = process_main_image(download_image(images[0]))
+                        original_main_url = images[0]
+                        processed = process_main_image(download_image(original_main_url))
+                        processed_bytes = image_bytes(processed)
                         filename = f"optimized_main_images/{re.sub(r'[^A-Za-z0-9_-]+', '_', sku or str(idx))}.jpg"
-                        image_files[filename] = image_bytes(processed)
-                        result.at[idx, "首图处理状态"] = "已生成，待上传图片存储"
-                        result.at[idx, "首图本地文件"] = filename
+                        image_files[filename] = processed_bytes
+                        cloudinary_url = upload_main_image_to_cloudinary(
+                            processed_bytes, sku or str(idx), original_main_url
+                        )
+                        # Only replace the first image. Secondary image links remain unchanged
+                        # apart from de-duplication and deterministic reordering.
+                        images[0] = cloudinary_url
+                        result.at[idx, "首图处理状态"] = "成功"
+                        result.at[idx, "优化后首图链接"] = cloudinary_url
+                        result.at[idx, "首图失败原因"] = ""
                     except Exception as exc:
+                        # Keep the original first image URL if processing/upload fails.
                         result.at[idx, "首图处理状态"] = "失败"
                         result.at[idx, "首图失败原因"] = str(exc)
                 elif image_col:
                     result.at[idx, "首图处理状态"] = "未启用"
+                result.at[idx, image_col] = IMAGE_SEPARATOR.join(images)
 
             logs.append(f"{pos}/{len(result)} - {'成功' if success else '失败'} - {original_title[:45]}")
             progress.progress(pos / len(result))
@@ -516,7 +574,7 @@ if st.session_state.result_df is not None:
             file_name="optimized_main_images.zip",
             mime="application/zip",
         )
-        st.info("P1 暂不自动替换首图链接：线上生成的图片需要接入 Cloudinary、R2、S3 或 Supabase Storage 后才能获得永久网址。")
+        st.success("已上传 Cloudinary 的首图会以完整 HTTPS 链接替换 Excel 产品图字段中的第一张图片。")
 
     with st.expander("运行日志"):
         st.code("\n".join(st.session_state.logs[-500:]))
