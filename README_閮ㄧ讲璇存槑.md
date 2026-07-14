@@ -1,62 +1,34 @@
-# Amazon AI Listing Optimizer 线上部署包
+# Amazon AI Listing Optimizer V1.2-P1-test
 
-## 文件
+## 本阶段新增
+- 页面增加“优化首图（测试功能）”勾选框，默认关闭。
+- 只处理产品图字段里的第一张图片。
+- 首图输出为 1600×1600、白色画布、居中、轻度清晰度增强。
+- 第一张图片位置保持不变。
+- 第二张及之后图片：删除重复链接，并按 SKU 固定随机排序。
+- 文案优化、75字符、兼容表达、质检逻辑继续保留。
+- 图片失败不会中断整批处理。
 
-- `app.py`：网页程序
-- `requirements.txt`：依赖
-- `.streamlit/config.toml`：页面配置
-- `.gitignore`：防止 API Key 被上传
+## P1的重要限制
+P1 先验证稳定性，不接 AI 图片生成，也不做复杂背景抠除。
+线上生成的图片必须上传到长期图片存储后，才能获得可写入 Excel 的永久 URL。
+当前版本会：
+1. 在 Excel 中记录“首图本地文件”；
+2. 提供“下载已处理首图 ZIP”；
+3. 保留原首图链接，不会写入无效临时链接。
 
-## 部署步骤
+## GitHub测试分支升级
+只在测试分支操作：
+1. 切换到 `v1.1-test`（或新建 `v1.2-test`）。
+2. 替换 `app.py`。
+3. 替换 `requirements.txt`。
+4. 上传 `.streamlit/config.toml`（已有可覆盖）。
+5. Commit changes。
+6. 测试版 Streamlit 会自动重新部署。
 
-### 1. 创建 GitHub 私有仓库
-
-仓库名称建议：`amazon-ai-listing-optimizer`
-
-将本文件夹中的全部文件上传到仓库根目录。请保持 `.streamlit/config.toml` 的目录结构。
-
-### 2. 登录 Streamlit Community Cloud
-
-使用 GitHub 账号登录 Streamlit Community Cloud，创建新 App。
-
-填写：
-
-- Repository：刚创建的仓库
-- Branch：`main`
-- Main file path：`app.py`
-
-### 3. 设置 API Key
-
-进入 App settings → Secrets，填写：
-
-```toml
-OPENAI_API_KEY = "你的新OpenAI API Key"
-```
-
-不要把 API Key 写进 `app.py`，也不要上传 `secrets.toml`。
-
-### 4. 部署
-
-点击 Deploy。部署成功后会生成一个 `streamlit.app` 网址。
-
-### 5. 使用
-
-打开网址：
-
-1. 选择国家
-2. 上传采集插件导出的 `.xlsx`
-3. 点击“开始优化”
-4. 优化完成后点击“下载优化后的 Excel”
-
-## 固定规则
-
-页面不显示规则，但程序会固定执行：
-
-- 标题不超过 75 个字符
-- 所有产品默认是非原装兼容产品
-- 第三方品牌每次出现都必须使用目标语言的固定兼容词
-- 删除 Original、Genuine、Official、OEM、Best Seller、Promotion 等词
-- 删除 Manufacturer、ASIN、Item model number、Best Sellers Rank、店铺和物流信息
-- 综合标题、五点、详情和颜色理解产品后重新编写
-- 最多自动重试 3 次
-- 失败行标记“需人工检查”和失败原因
+## 测试清单
+- 不勾选图片优化：首图链接不变；后续图片固定随机排序且去重。
+- 勾选图片优化：可下载1600×1600白底首图ZIP。
+- 文案优化正常。
+- Excel列顺序和其它字段不被删除。
+- 某张图片下载失败时整批继续运行。
