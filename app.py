@@ -16,7 +16,7 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.2-P1-test"
+VERSION = "V1.2-P1.1-test"
 MAX_TITLE_LEN = 75
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
@@ -133,6 +133,49 @@ def call_ai(client: OpenAI, source: dict[str, Any], country: str, retry_reason: 
     return parse_json(response.output_text)
 
 
+def normalize_compatibility_text(text: str, country: str) -> str:
+    """Normalize common AI compatibility variants before QA.
+
+    This avoids false failures such as `Compatible Withr LG` while still
+    enforcing one fixed compatibility phrase in exported copy.
+    """
+    if not text:
+        return ""
+    compat = COUNTRIES[country]["compat"]
+    value = clean_text(text)
+    # Fix misspellings/case variants beginning with Compatible With...
+    value = re.sub(r"\bcompatible\s+with[a-z]*\b", compat, value, flags=re.I)
+    # Convert alternative compatibility wording to the fixed phrase.
+    alternatives = [
+        r"\bfits?\s+for\b", r"\bfits?\b", r"\bfit\s+for\b",
+        r"\bworks?\s+with\b", r"\bsuitable\s+for\b",
+        r"\bdesigned\s+for\s+use\s+with\b",
+        r"\bdesigned\s+for\s+compatibility\s+with\b",
+        r"\bintended\s+for\s+use\s+with\b",
+    ]
+    for pattern in alternatives:
+        value = re.sub(pattern, compat, value, flags=re.I)
+    value = re.sub(r"\s{2,}", " ", value).strip()
+    return value
+
+
+def normalize_ai_output(data: dict[str, Any], country: str) -> dict[str, str]:
+    normalized: dict[str, str] = {}
+    for key in ["title", "bullet1", "bullet2", "bullet3", "bullet4", "bullet5", "description"]:
+        normalized[key] = normalize_compatibility_text(str(data.get(key, "") or ""), country)
+    return normalized
+
+
+def shorten_title_at_word_boundary(title: str, max_len: int = MAX_TITLE_LEN) -> str:
+    title = re.sub(r"\s+", " ", title).strip(" ,;-–—")
+    if len(title) <= max_len:
+        return title
+    cut = title[: max_len + 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,;-–—")
+
+
 def qa_text(data: dict[str, str], original_title: str, country: str) -> tuple[bool, str]:
     cfg = COUNTRIES[country]
     title = clean_text(data.get("title", ""))
@@ -152,8 +195,8 @@ def qa_text(data: dict[str, str], original_title: str, country: str) -> tuple[bo
     bad = [term for term in FORBIDDEN_TERMS if term in all_text]
     if bad:
         return False, "含禁止词：" + ", ".join(bad[:3])
-    # 只做确定性检查：若输出自行使用 Fits/Fit for/Works with，则不通过。
-    if re.search(r"\b(fits?|fit for|works with|suitable for|designed for)\b", all_text, flags=re.I):
+    # 标准化后仍出现替代兼容表达才判定失败。不要把普通的“designed for easy use”误判为品牌兼容错误。
+    if re.search(r"\b(fits?\s+for|fit\s+for|works?\s+with|suitable\s+for)\b", all_text, flags=re.I):
         return False, f"兼容表达未统一为 {cfg['compat']}"
     return True, ""
 
@@ -225,6 +268,86 @@ def build_image_zip(files: dict[str, bytes]) -> bytes:
     return out.getvalue()
 
 
+def optimize_row_text(
+    client: OpenAI,
+    result: pd.DataFrame,
+    idx: Any,
+    title_col: str,
+    bullet_cols: list[str],
+    desc_col: str,
+    country: str,
+    max_attempts: int = 4,
+) -> tuple[bool, str]:
+    row = result.loc[idx]
+    source = {
+        "title": clean_text(row.get(title_col, "")),
+        "bullet_points": [clean_text(row.get(c, "")) for c in bullet_cols],
+        "description": clean_text(row.get(desc_col, "")),
+        "color_or_variant": clean_text(row.get("颜色", "")),
+    }
+    reason = ""
+    data: dict[str, str] | None = None
+    success = False
+    for attempt in range(max_attempts):
+        try:
+            raw_data = call_ai(client, source, country, reason)
+            data = normalize_ai_output(raw_data, country)
+            # Last-attempt deterministic safety for an otherwise valid but slightly long title.
+            if attempt == max_attempts - 1 and len(data.get("title", "")) > MAX_TITLE_LEN:
+                data["title"] = shorten_title_at_word_boundary(data["title"])
+            success, reason = qa_text(data, source["title"], country)
+            if success:
+                break
+        except Exception as exc:
+            reason = f"AI错误：{exc}"
+        time.sleep(0.35)
+
+    if success and data:
+        result.at[idx, title_col] = clean_text(data["title"])
+        for i, c in enumerate(bullet_cols, start=1):
+            result.at[idx, c] = clean_text(data[f"bullet{i}"])
+        result.at[idx, desc_col] = clean_text(data["description"])
+        result.at[idx, "优化状态"] = "成功"
+        result.at[idx, "失败原因"] = ""
+        return True, ""
+
+    result.at[idx, "优化状态"] = "需重新优化"
+    result.at[idx, "失败原因"] = reason or "未知质检失败"
+    return False, reason or "未知质检失败"
+
+
+def refresh_fail_indices(result: pd.DataFrame) -> list[Any]:
+    if "优化状态" not in result.columns:
+        return []
+    return result.index[result["优化状态"].astype(str) != "成功"].tolist()
+
+
+def retry_indices(
+    indices: list[Any],
+    country: str,
+    title_col: str,
+    bullet_cols: list[str],
+    desc_col: str,
+) -> None:
+    if not indices:
+        st.info("当前没有需要重新优化的记录。")
+        return
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    result = st.session_state.result_df.copy()
+    progress = st.progress(0)
+    status = st.empty()
+    for pos, idx in enumerate(indices, start=1):
+        status.write(f"重新优化 {pos}/{len(indices)}")
+        success, reason = optimize_row_text(client, result, idx, title_col, bullet_cols, desc_col, country)
+        sku_col = find_col(result, SKU_NAMES)
+        sku = clean_text(result.at[idx, sku_col]) if sku_col else str(idx)
+        st.session_state.logs.append(f"重试 {sku} - {'成功' if success else '失败'} - {reason}")
+        progress.progress(pos / len(indices))
+    st.session_state.result_df = result
+    st.session_state.fail_indices = refresh_fail_indices(result)
+    st.success(f"重试完成：剩余失败 {len(st.session_state.fail_indices)} 条")
+
+
 def init_state() -> None:
     defaults = {
         "result_df": None,
@@ -232,6 +355,10 @@ def init_state() -> None:
         "image_files": {},
         "logs": [],
         "source_name": "",
+        "title_col": None,
+        "desc_col": None,
+        "bullet_cols": [],
+        "country": "美国",
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -286,34 +413,12 @@ if uploaded:
 
         for pos, (idx, row) in enumerate(result.iterrows(), start=1):
             status.write(f"正在处理 {pos}/{len(result)}")
-            source = {
-                "title": clean_text(row.get(title_col, "")),
-                "bullet_points": [clean_text(row.get(c, "")) for c in bullet_cols],
-                "description": clean_text(row.get(desc_col, "")),
-                "color_or_variant": clean_text(row.get("颜色", "")),
-            }
-            success, reason, data = False, "", None
-            for attempt in range(3):
-                try:
-                    data = call_ai(client, source, country, reason)
-                    success, reason = qa_text(data, source["title"], country)
-                    if success:
-                        break
-                except Exception as exc:
-                    reason = f"AI错误：{exc}"
-                time.sleep(0.3)
-
-            if success and data:
-                result.at[idx, title_col] = clean_text(data["title"])
-                for i, c in enumerate(bullet_cols, start=1):
-                    result.at[idx, c] = clean_text(data[f"bullet{i}"])
-                result.at[idx, desc_col] = clean_text(data["description"])
-                result.at[idx, "优化状态"] = "成功"
-                result.at[idx, "失败原因"] = ""
-            else:
+            original_title = clean_text(row.get(title_col, ""))
+            success, reason = optimize_row_text(
+                client, result, idx, title_col, bullet_cols, desc_col, country
+            )
+            if not success:
                 failures.append(idx)
-                result.at[idx, "优化状态"] = "需重新优化"
-                result.at[idx, "失败原因"] = reason
 
             if image_col:
                 images = split_images(row.get(image_col, ""))
@@ -333,7 +438,7 @@ if uploaded:
                 elif image_col:
                     result.at[idx, "首图处理状态"] = "未启用"
 
-            logs.append(f"{pos}/{len(result)} - {'成功' if success else '失败'} - {source['title'][:45]}")
+            logs.append(f"{pos}/{len(result)} - {'成功' if success else '失败'} - {original_title[:45]}")
             progress.progress(pos / len(result))
 
         st.session_state.result_df = result
@@ -341,6 +446,10 @@ if uploaded:
         st.session_state.image_files = image_files
         st.session_state.logs = logs
         st.session_state.source_name = uploaded.name
+        st.session_state.title_col = title_col
+        st.session_state.desc_col = desc_col
+        st.session_state.bullet_cols = bullet_cols
+        st.session_state.country = country
         st.success(f"处理完成：成功 {len(result)-len(failures)}，失败 {len(failures)}")
 
 if st.session_state.result_df is not None:
@@ -352,9 +461,46 @@ if st.session_state.result_df is not None:
     c3.metric("需重新优化", len(st.session_state.fail_indices))
 
     if st.session_state.fail_indices:
-        st.warning("失败项已保留在完整表格中，可在下一阶段加入单独重试按钮。")
-        show_cols = [c for c in [find_col(result_df, SKU_NAMES), find_col(result_df, TITLE_NAMES), "失败原因"] if c]
-        st.dataframe(result_df.loc[st.session_state.fail_indices, show_cols], use_container_width=True)
+        st.warning("失败项已保留在完整表格中，可以全部重试或选择指定记录重试。")
+        sku_col_now = find_col(result_df, SKU_NAMES)
+        title_col_now = st.session_state.title_col or find_col(result_df, TITLE_NAMES)
+        show_cols = [c for c in [sku_col_now, title_col_now, "失败原因"] if c]
+        failed_view = result_df.loc[st.session_state.fail_indices, show_cols].copy()
+        failed_view.insert(0, "行索引", failed_view.index.astype(str))
+        st.dataframe(failed_view, use_container_width=True)
+
+        labels = {}
+        for idx in st.session_state.fail_indices:
+            sku = clean_text(result_df.at[idx, sku_col_now]) if sku_col_now else str(idx)
+            title = clean_text(result_df.at[idx, title_col_now]) if title_col_now else ""
+            labels[f"{idx} | {sku} | {title[:55]}"] = idx
+
+        selected_labels = st.multiselect(
+            "选择需要单独重新优化的失败项",
+            options=list(labels.keys()),
+            placeholder="可选择一条或多条",
+        )
+        b1, b2 = st.columns(2)
+        with b1:
+            if st.button("重新优化全部失败项", type="primary", use_container_width=True):
+                retry_indices(
+                    list(st.session_state.fail_indices),
+                    st.session_state.country,
+                    st.session_state.title_col,
+                    st.session_state.bullet_cols,
+                    st.session_state.desc_col,
+                )
+                st.rerun()
+        with b2:
+            if st.button("重新优化选中失败项", use_container_width=True, disabled=not selected_labels):
+                retry_indices(
+                    [labels[x] for x in selected_labels],
+                    st.session_state.country,
+                    st.session_state.title_col,
+                    st.session_state.bullet_cols,
+                    st.session_state.desc_col,
+                )
+                st.rerun()
 
     st.download_button(
         "导出完整 Excel",
