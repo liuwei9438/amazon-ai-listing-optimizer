@@ -1,5 +1,6 @@
 import hashlib
 import io
+import difflib
 import json
 import random
 import re
@@ -18,10 +19,13 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.2-P1.2-test"
+VERSION = "V1.2-stable-test"
 MAX_TITLE_LEN = 75
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
+TITLE_SIMILARITY_LIMIT = 0.94
+MAX_MODELS_IN_TITLE = 4
+
 
 COUNTRIES = {
     "美国": {"language": "English (US)", "compat": "Compatible with"},
@@ -103,6 +107,51 @@ def parse_json(text: str) -> dict[str, Any]:
     return json.loads(text[start:end + 1])
 
 
+def extract_model_tokens(text: str) -> list[str]:
+    """Extract likely product model/part-number tokens conservatively."""
+    if not text:
+        return []
+    tokens = re.findall(r"\b[A-Z]{0,4}\d[A-Z0-9-]{1,14}\b", text, flags=re.I)
+    blocked = {"1600", "2024", "2025", "2026"}
+    out=[]
+    for t in tokens:
+        u=t.upper().strip('-')
+        if u in blocked or len(u)<2:
+            continue
+        if u not in out:
+            out.append(u)
+    return out
+
+
+def title_similarity(a: str, b: str) -> float:
+    a=re.sub(r"\W+"," ",clean_text(a).lower()).strip()
+    b=re.sub(r"\W+"," ",clean_text(b).lower()).strip()
+    if not a or not b:
+        return 0.0
+    return difflib.SequenceMatcher(None,a,b).ratio()
+
+
+def seo_score(data: dict[str,str], country: str) -> int:
+    score=100
+    title=clean_text(data.get("title",""))
+    bullets=[clean_text(data.get(f"bullet{i}","")) for i in range(1,6)]
+    desc=clean_text(data.get("description",""))
+    all_text=" ".join([title,*bullets,desc]).lower()
+    if not title: score-=35
+    if len(title)>MAX_TITLE_LEN: score-=20
+    if len(title)<35: score-=8
+    if any(not b for b in bullets): score-=20
+    if not desc: score-=15
+    if any(t in all_text for t in FORBIDDEN_TERMS): score-=25
+    if re.search(r"\b(fits?|fit for|works? with|suitable for)\b", all_text): score-=15
+    if len(set(w.lower() for w in title.split())) < max(3, int(len(title.split())*0.65)): score-=5
+    return max(0,min(100,score))
+
+
+def stable_cache_key(source: dict[str,Any], country: str) -> str:
+    payload=json.dumps({"country":country,"source":source},ensure_ascii=False,sort_keys=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
 def build_prompt(source: dict[str, Any], country: str, retry_reason: str = "") -> str:
     cfg = COUNTRIES[country]
     extra = f"\nPrevious output failed QA because: {retry_reason}\n" if retry_reason else ""
@@ -121,6 +170,8 @@ NON-NEGOTIABLE RULES:
 7. Title must be newly rewritten, natural, search-focused and no longer than {MAX_TITLE_LEN} characters including spaces.
 8. Produce exactly five useful, factual bullet points.
 9. Do not invent missing facts.
+10. If more than four compatible model numbers are supplied, keep only 2-4 representative models in the title and place the complete model list in bullets or description.
+11. The rewritten title must be materially different in wording/order from the source while preserving facts.
 {extra}
 SOURCE DATA:
 {json.dumps(source, ensure_ascii=False)}
@@ -185,10 +236,15 @@ def qa_text(data: dict[str, str], original_title: str, country: str) -> tuple[bo
     desc = clean_text(data.get("description", ""))
     if not title:
         return False, "标题为空"
-    if title.strip().lower() == clean_text(original_title).strip().lower():
-        return False, "标题未重新编写"
+    similarity = title_similarity(title, original_title)
+    if similarity >= TITLE_SIMILARITY_LIMIT:
+        return False, f"标题改写不足，相似度 {similarity:.0%}"
     if len(title) > MAX_TITLE_LEN:
         return False, f"标题超过 {MAX_TITLE_LEN} 字符"
+    original_models = extract_model_tokens(original_title)
+    title_models = extract_model_tokens(title)
+    if len(original_models) > MAX_MODELS_IN_TITLE and len(title_models) > MAX_MODELS_IN_TITLE:
+        return False, "标题型号堆砌，需压缩到4个以内"
     if any(not b for b in bullets):
         return False, "五点描述不足5条"
     if not desc:
@@ -438,6 +494,22 @@ def optimize_row_text(
         "description": clean_text(row.get(desc_col, "")),
         "color_or_variant": clean_text(row.get("颜色", "")),
     }
+    cache_key = stable_cache_key(source, country)
+    cached = st.session_state.text_cache.get(cache_key)
+    if cached:
+        data = cached.copy()
+        success, reason = qa_text(data, source["title"], country)
+        if success:
+            result.at[idx, title_col] = clean_text(data["title"])
+            for i, c in enumerate(bullet_cols, start=1):
+                result.at[idx, c] = clean_text(data[f"bullet{i}"])
+            result.at[idx, desc_col] = clean_text(data["description"])
+            result.at[idx, "优化状态"] = "成功"
+            result.at[idx, "失败原因"] = ""
+            result.at[idx, "SEO评分"] = seo_score(data, country)
+            result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
+            result.at[idx, "缓存命中"] = "是"
+            return True, ""
     reason = ""
     data: dict[str, str] | None = None
     success = False
@@ -462,10 +534,17 @@ def optimize_row_text(
         result.at[idx, desc_col] = clean_text(data["description"])
         result.at[idx, "优化状态"] = "成功"
         result.at[idx, "失败原因"] = ""
+        result.at[idx, "SEO评分"] = seo_score(data, country)
+        result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
+        result.at[idx, "缓存命中"] = "否"
+        st.session_state.text_cache[cache_key] = data.copy()
         return True, ""
 
     result.at[idx, "优化状态"] = "需重新优化"
     result.at[idx, "失败原因"] = reason or "未知质检失败"
+    result.at[idx, "SEO评分"] = seo_score(data or {}, country)
+    result.at[idx, "标题相似度"] = round(title_similarity((data or {}).get("title", ""), source["title"]), 4) if data else ""
+    result.at[idx, "缓存命中"] = "否"
     return False, reason or "未知质检失败"
 
 
@@ -501,17 +580,63 @@ def retry_indices(
     st.success(f"重试完成：剩余失败 {len(st.session_state.fail_indices)} 条")
 
 
+def retry_image_indices(indices: list[Any]) -> None:
+    if not indices:
+        st.info("当前没有需要重新处理的图片。")
+        return
+    result=st.session_state.result_df.copy()
+    image_col=find_col(result,IMAGE_NAMES)
+    sku_col=find_col(result,SKU_NAMES)
+    if not image_col:
+        st.error("没有识别到产品图列。")
+        return
+    progress=st.progress(0)
+    remaining=[]
+    for pos,idx in enumerate(indices,start=1):
+        try:
+            images=split_images(result.at[idx,image_col])
+            if not images:
+                raise RuntimeError("产品图为空")
+            sku=clean_text(result.at[idx,sku_col]) if sku_col else str(idx)
+            original=images[0]
+            key=hashlib.sha256(original.encode("utf-8")).hexdigest()
+            cached=st.session_state.image_cache.get(key)
+            if cached:
+                url=cached["url"]; strategy=cached["strategy"]+"+缓存"
+            else:
+                processed,strategy=process_main_image(download_image(original),f"{sku}|{original}")
+                data=image_bytes(processed)
+                url=upload_main_image_to_cloudinary(data,sku or str(idx),original)
+                st.session_state.image_cache[key]={"url":url,"strategy":strategy}
+            images[0]=url
+            result.at[idx,image_col]=IMAGE_SEPARATOR.join(images)
+            result.at[idx,"首图处理状态"]="成功"
+            result.at[idx,"优化后首图链接"]=url
+            result.at[idx,"首图失败原因"]=""
+            result.at[idx,"首图处理方式"]=strategy
+        except Exception as exc:
+            remaining.append(idx)
+            result.at[idx,"首图处理状态"]="失败"
+            result.at[idx,"首图失败原因"]=str(exc)
+        progress.progress(pos/len(indices))
+    st.session_state.result_df=result
+    st.session_state.image_fail_indices=remaining
+    st.success(f"图片重试完成：剩余失败 {len(remaining)} 条")
+
 def init_state() -> None:
     defaults = {
         "result_df": None,
         "fail_indices": [],
         "image_files": {},
+        "image_fail_indices": [],
         "logs": [],
         "source_name": "",
         "title_col": None,
         "desc_col": None,
         "bullet_cols": [],
         "country": "美国",
+        "text_cache": {},
+        "image_cache": {},
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -561,6 +686,7 @@ if uploaded:
         client = OpenAI(api_key=api_key)
         result = df.copy()
         failures: list[int] = []
+        image_failures: list[int] = []
         image_files: dict[str, bytes] = {}
         logs: list[str] = []
         progress = st.progress(0)
@@ -582,15 +708,24 @@ if uploaded:
                 if optimize_image and images:
                     try:
                         original_main_url = images[0]
-                        processed, image_strategy = process_main_image(
-                            download_image(original_main_url), f"{sku}|{original_main_url}"
-                        )
-                        processed_bytes = image_bytes(processed)
+                        image_key = hashlib.sha256(original_main_url.encode("utf-8")).hexdigest()
+                        cached_image = st.session_state.image_cache.get(image_key)
+                        if cached_image:
+                            cloudinary_url = cached_image["url"]
+                            image_strategy = cached_image["strategy"] + "+缓存"
+                            processed_bytes = b""
+                        else:
+                            processed, image_strategy = process_main_image(
+                                download_image(original_main_url), f"{sku}|{original_main_url}"
+                            )
+                            processed_bytes = image_bytes(processed)
+                            cloudinary_url = upload_main_image_to_cloudinary(
+                                processed_bytes, sku or str(idx), original_main_url
+                            )
+                            st.session_state.image_cache[image_key] = {"url": cloudinary_url, "strategy": image_strategy}
                         filename = f"optimized_main_images/{re.sub(r'[^A-Za-z0-9_-]+', '_', sku or str(idx))}.jpg"
-                        image_files[filename] = processed_bytes
-                        cloudinary_url = upload_main_image_to_cloudinary(
-                            processed_bytes, sku or str(idx), original_main_url
-                        )
+                        if processed_bytes:
+                            image_files[filename] = processed_bytes
                         # Only replace the first image. Secondary image links remain unchanged
                         # apart from de-duplication and deterministic reordering.
                         images[0] = cloudinary_url
@@ -603,6 +738,7 @@ if uploaded:
                         result.at[idx, "首图处理状态"] = "失败"
                         result.at[idx, "首图失败原因"] = str(exc)
                         result.at[idx, "首图处理方式"] = ""
+                        image_failures.append(idx)
                 elif image_col:
                     result.at[idx, "首图处理状态"] = "未启用"
                 result.at[idx, image_col] = IMAGE_SEPARATOR.join(images)
@@ -613,6 +749,7 @@ if uploaded:
         st.session_state.result_df = result
         st.session_state.fail_indices = failures
         st.session_state.image_files = image_files
+        st.session_state.image_fail_indices = image_failures
         st.session_state.logs = logs
         st.session_state.source_name = uploaded.name
         st.session_state.title_col = title_col
@@ -624,10 +761,11 @@ if uploaded:
 if st.session_state.result_df is not None:
     result_df = st.session_state.result_df
     st.subheader("处理结果")
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("总数", len(result_df))
-    c2.metric("成功", int((result_df.get("优化状态", "") == "成功").sum()) if "优化状态" in result_df else 0)
-    c3.metric("需重新优化", len(st.session_state.fail_indices))
+    c2.metric("文案成功", int((result_df.get("优化状态", "") == "成功").sum()) if "优化状态" in result_df else 0)
+    c3.metric("文案失败", len(st.session_state.fail_indices))
+    c4.metric("图片失败", len(st.session_state.image_fail_indices))
 
     if st.session_state.fail_indices:
         st.warning("失败项已保留在完整表格中，可以全部重试或选择指定记录重试。")
@@ -670,6 +808,12 @@ if st.session_state.result_df is not None:
                     st.session_state.desc_col,
                 )
                 st.rerun()
+
+    if st.session_state.image_fail_indices:
+        st.warning(f"有 {len(st.session_state.image_fail_indices)} 条首图处理失败，可单独重试。")
+        if st.button("重新处理全部失败图片", use_container_width=True):
+            retry_image_indices(list(st.session_state.image_fail_indices))
+            st.rerun()
 
     st.download_button(
         "导出完整 Excel",
