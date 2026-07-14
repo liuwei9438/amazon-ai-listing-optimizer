@@ -19,7 +19,7 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.3-multilingual-test"
+VERSION = "V1.3.1-multilingual-test"
 MAX_TITLE_LEN = 75
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
@@ -770,12 +770,10 @@ if uploaded:
                 logs.append(f"{done_tasks}/{total_tasks} - {sku}/{language} - {'成功' if success else '失败'} - {reason}")
                 progress.progress(done_tasks / total_tasks)
 
-        originals = source_df.copy()
-        originals["__生成行"] = "否"
-        originals["__源行索引"] = originals.index.astype(int)
-        originals["__目标语言"] = ""
-        generated_df = pd.DataFrame(generated_rows)
-        result = pd.concat([originals, generated_df], ignore_index=True, sort=False).fillna("")
+        # 仅保留已经优化生成的多语言结果。原始表格只保存在 source_df 中，
+        # 用于失败重试和事实校验，不再写入最终导出的 Excel。
+        generated_df = pd.DataFrame(generated_rows).fillna("")
+        result = generated_df.reset_index(drop=True)
 
         st.session_state.source_df = source_df
         st.session_state.result_df = result
@@ -798,10 +796,11 @@ if st.session_state.result_df is not None:
     generated_count = int(generated_mask.sum())
     st.subheader("处理结果")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("原始产品", len(st.session_state.source_df) if st.session_state.source_df is not None else 0)
+    c1.metric("源产品数", len(st.session_state.source_df) if st.session_state.source_df is not None else 0)
     c2.metric("生成语言行", generated_count)
     c3.metric("文案失败", len(st.session_state.fail_indices))
     c4.metric("图片失败产品", len(st.session_state.image_fail_sources))
+    st.caption("导出的 Excel 仅包含已生成的优化语言行，原始内容不会重复导出。")
 
     if st.session_state.fail_indices:
         st.warning("失败项按语言独立保留，可全部重试或选择指定产品/语言重试。")
@@ -837,7 +836,7 @@ if st.session_state.result_df is not None:
             st.rerun()
 
     st.download_button(
-        "导出完整 Excel",
+        "导出已优化 Excel",
         data=output_excel(result_df),
         file_name=re.sub(r"\.xlsx$", "", st.session_state.source_name, flags=re.I) + f"_{VERSION}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
