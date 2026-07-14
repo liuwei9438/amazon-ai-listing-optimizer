@@ -16,10 +16,11 @@ import cloudinary
 import cloudinary.uploader
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from openai import OpenAI
+from core.ai_pipeline import optimize_listing
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V1.3.2-multilingual-short-title-test"
+VERSION = "V2.0-core-test"
 MAX_TITLE_LEN = 75
 MAX_SHORT_TITLE_LEN = 60
 SHORT_TITLE_NAMES = ["短标题", "Short Title", "short_title"]
@@ -514,7 +515,7 @@ def optimize_row_text(
     cache_key = stable_cache_key(source, language)
     cached = st.session_state.text_cache.get(cache_key)
     if cached:
-        data = cached.copy()
+        data = cached.get("data", cached).copy()
         success, reason = qa_text(data, source["title"], language)
         if success:
             result.at[idx, title_col] = shorten_title_at_word_boundary(clean_text(data["title"]), MAX_TITLE_LEN)
@@ -524,26 +525,22 @@ def optimize_row_text(
             result.at[idx, desc_col] = clean_text(data["description"])
             result.at[idx, "优化状态"] = "成功"
             result.at[idx, "失败原因"] = ""
-            result.at[idx, "SEO评分"] = seo_score(data, language)
+            result.at[idx, "SEO评分"] = int(cached.get("seo_score", seo_score(data, language))) if isinstance(cached, dict) else seo_score(data, language)
             result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
             result.at[idx, "缓存命中"] = "是"
             return True, ""
-    reason = ""
-    data: dict[str, str] | None = None
-    success = False
-    for attempt in range(max_attempts):
-        try:
-            raw_data = call_ai(client, source, language, reason)
-            data = normalize_ai_output(raw_data, language)
-            # Hard limits are applied on every attempt so no language can escape the limit.
-            data["title"] = shorten_title_at_word_boundary(data.get("title", ""), MAX_TITLE_LEN)
-            data["short_title"] = shorten_title_at_word_boundary(data.get("short_title", ""), MAX_SHORT_TITLE_LEN)
-            success, reason = qa_text(data, source["title"], language)
-            if success:
-                break
-        except Exception as exc:
-            reason = f"AI错误：{exc}"
-        time.sleep(0.35)
+
+    analysis_key = hashlib.sha256(json.dumps(source, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    analysis = st.session_state.product_analysis_cache.get(analysis_key)
+    try:
+        pipeline = optimize_listing(client, source, language, analysis=analysis, attempts=max_attempts)
+        data = pipeline.get("data", {})
+        if pipeline.get("analysis"):
+            st.session_state.product_analysis_cache[analysis_key] = pipeline["analysis"]
+        success = bool(pipeline.get("success"))
+        reason = str(pipeline.get("reason", ""))
+    except Exception as exc:
+        data, success, reason, pipeline = {}, False, f"AI错误：{exc}", {}
 
     if success and data:
         result.at[idx, title_col] = shorten_title_at_word_boundary(clean_text(data["title"]), MAX_TITLE_LEN)
@@ -553,13 +550,17 @@ def optimize_row_text(
         result.at[idx, desc_col] = clean_text(data["description"])
         result.at[idx, "优化状态"] = "成功"
         result.at[idx, "失败原因"] = ""
-        result.at[idx, "SEO评分"] = seo_score(data, language)
+        result.at[idx, "SEO评分"] = int(pipeline.get("seo_score", seo_score(data, language)))
         result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
         result.at[idx, "缓存命中"] = "否"
-        st.session_state.text_cache[cache_key] = data.copy()
+        result.at[idx, "产品类型"] = clean_text(pipeline.get("analysis", {}).get("product_type", ""))
+        result.at[idx, "本地关键词"] = " | ".join(pipeline.get("keywords", [])[:6])
+        st.session_state.text_cache[cache_key] = {
+            "data": data.copy(),
+            "seo_score": int(pipeline.get("seo_score", 0)),
+        }
         return True, ""
 
-    # Even failed rows keep bounded draft text, preventing overlength content in exports/previews.
     if data:
         if data.get("title"):
             result.at[idx, title_col] = shorten_title_at_word_boundary(clean_text(data["title"]), MAX_TITLE_LEN)
@@ -567,11 +568,13 @@ def optimize_row_text(
             result.at[idx, short_title_col] = shorten_title_at_word_boundary(clean_text(data["short_title"]), MAX_SHORT_TITLE_LEN)
     result.at[idx, "优化状态"] = "需重新优化"
     result.at[idx, "失败原因"] = reason or "未知质检失败"
-    result.at[idx, "SEO评分"] = seo_score(data or {}, language)
+    result.at[idx, "SEO评分"] = int(pipeline.get("seo_score", seo_score(data or {}, language))) if isinstance(pipeline, dict) else seo_score(data or {}, language)
     result.at[idx, "标题相似度"] = round(title_similarity((data or {}).get("title", ""), source["title"]), 4) if data else ""
     result.at[idx, "缓存命中"] = "否"
+    if isinstance(pipeline, dict):
+        result.at[idx, "产品类型"] = clean_text(pipeline.get("analysis", {}).get("product_type", ""))
+        result.at[idx, "本地关键词"] = " | ".join(pipeline.get("keywords", [])[:6])
     return False, reason or "未知质检失败"
-
 
 def refresh_fail_indices(result: pd.DataFrame) -> list[Any]:
     if "优化状态" not in result.columns:
