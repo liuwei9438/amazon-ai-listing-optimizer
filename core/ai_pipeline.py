@@ -28,11 +28,12 @@ You are an Amazon listing SEO and compliance writer.
 Target language: {profile['language']}.
 Return JSON only with keys: title, short_title, bullet1, bullet2, bullet3, bullet4, bullet5, description.
 
-PRODUCT UNDERSTANDING:
+VERIFIED PRODUCT UNDERSTANDING:
 {json.dumps(analysis, ensure_ascii=False)}
 
-LOCAL SEO KEYWORDS (use only when factually applicable):
+LOCAL SEO VOCABULARY:
 {json.dumps(local_keywords, ensure_ascii=False)}
+Use these terms only when they accurately describe product_type. Never turn an optional keyword into a new product fact.
 
 SOURCE DATA:
 {json.dumps(source, ensure_ascii=False)}
@@ -41,14 +42,16 @@ HARD RULES:
 1. This is always a non-original compatibility product.
 2. Every third-party brand mention must use the exact phrase: {profile['compat']}.
 3. Never claim Original, Genuine, Official, OEM, Authentic, authorization, rankings, promotions or unverifiable superiority.
-4. Preserve all facts exactly. Never invent material, scenario, function, benefit, quantity, model, size, color, voltage, power or package contents.
-5. Rewrite from the complete product understanding; do not translate sentence by sentence.
-6. Title must be natural, locally searchable and <= {profile['title_limit']} characters including spaces.
-7. Short title must summarize the core product/material/scenario/function/benefit only when supported and <= {profile['short_limit']} characters.
-8. Produce exactly five factual bullets and a clean description.
-9. Remove seller/store/manufacturer/ASIN/ranking/shipping/customer-service noise.
-10. If many models exist, keep 2-4 representative models in title and put the complete list in bullets/description.
-11. Previous QA issue to correct: {reason or 'none'}.
+4. Preserve facts exactly. Never invent material, scenario, function, benefit, quantity, model, size, color, voltage, power or package contents.
+5. Rewrite from the verified product understanding; do not translate sentence by sentence.
+6. Lead the title with the strongest local product noun. Do not begin with vague marketing wording.
+7. Title must be natural, locally searchable and <= {profile['title_limit']} characters including spaces.
+8. Short title must summarize only source-supported product/material/scenario/function/benefit and <= {profile['short_limit']} characters.
+9. Produce exactly five factual bullets and a clean description.
+10. Remove seller/store/manufacturer/ASIN/ranking/shipping/customer-service noise.
+11. If many models exist, keep 2-4 representative models in title and put the complete list in bullets/description.
+12. Do not use a material, function, scenario or selling point unless it appears in VERIFIED PRODUCT UNDERSTANDING.
+13. Previous QA issue to correct: {reason or 'none'}.
 """.strip()
     response = client.responses.create(model="gpt-4.1-mini", input=prompt)
     return _parse_json(response.output_text)
@@ -75,4 +78,13 @@ def optimize_listing(client: OpenAI, source: dict[str, Any], language: str, anal
         "seo_score": score,
         "analysis": analysis,
         "keywords": local_keywords,
+        "analysis_summary": {
+            "product_type": analysis.get("product_type", ""),
+            "category": analysis.get("category", ""),
+            "brands": analysis.get("third_party_brands", []),
+            "models": analysis.get("compatible_models", []),
+            "material": analysis.get("material", ""),
+            "functions": analysis.get("functions", []),
+            "scenarios": analysis.get("usage_scenarios", []),
+        },
     }
