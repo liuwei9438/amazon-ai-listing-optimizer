@@ -1,3 +1,4 @@
+
 # core/validator.py
 
 import re
@@ -63,64 +64,93 @@ def normalize_text(text):
 
 
 def get_language_key(language):
-    """
-    统一语言名称
-    """
 
     if not language:
         return "english"
 
-    lang = str(language).lower()
+
+    lang = str(language).lower().strip()
+
 
     mapping = {
 
+        # English
         "英语": "english",
+        "英文": "english",
         "english": "english",
+        "en": "english",
 
+
+        # Spanish
         "西班牙语": "spanish",
+        "西语": "spanish",
         "spanish": "spanish",
+        "es": "spanish",
 
+
+        # French
         "法语": "french",
         "french": "french",
+        "fr": "french",
 
+
+        # German
         "德语": "german",
         "german": "german",
+        "de": "german",
 
+
+        # Dutch
         "荷兰语": "dutch",
         "dutch": "dutch",
+        "nl": "dutch",
 
+
+        # Swedish
         "瑞典语": "swedish",
         "swedish": "swedish",
+        "sv": "swedish",
 
+
+        # Italian
         "意大利语": "italian",
         "italian": "italian",
+        "it": "italian",
 
+
+        # Portuguese
         "葡萄牙语": "portuguese",
         "portuguese": "portuguese",
+        "pt": "portuguese",
 
+
+        # Japanese
         "日语": "japanese",
         "japanese": "japanese",
+        "ja": "japanese",
     }
 
 
-    return mapping.get(
-        lang,
-        "english"
-    )
+    for key, value in mapping.items():
 
+        if key in lang:
+            return value
+
+
+    return "english"
 
 
 def has_compatibility_phrase(
     title,
-    language
+    language,
+    brand=None
 ):
-    """
-    检查标题是否包含正确兼容表达
-    """
 
     title_lower = normalize_text(title)
 
+
     lang_key = get_language_key(language)
+
 
     words = COMPATIBILITY_WORDS.get(
         lang_key,
@@ -130,12 +160,44 @@ def has_compatibility_phrase(
 
     for word in words:
 
-        if word.lower() in title_lower:
-            return True, word
+        word_lower = normalize_text(word)
+
+
+        if word_lower in title_lower:
+
+
+            # 如果提供品牌
+            # 检查兼容词是否在品牌前面
+
+            if brand:
+
+                brand_lower = normalize_text(brand)
+
+
+                compat_pos = title_lower.find(
+                    word_lower
+                )
+
+
+                brand_pos = title_lower.find(
+                    brand_lower
+                )
+
+
+                if (
+                    compat_pos != -1
+                    and brand_pos != -1
+                    and compat_pos < brand_pos
+                ):
+                    return True, word
+
+
+            else:
+
+                return True, word
 
 
     return False, None
-
 
 
 def clean_short_title(text):
