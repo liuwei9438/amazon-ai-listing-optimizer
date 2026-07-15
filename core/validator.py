@@ -55,6 +55,41 @@ def normalize_output(data: dict[str, Any], compat: str, title_limit: int, short_
     return result
 
 
+
+def _remove_forbidden(text: str) -> str:
+    value = clean(text)
+    for term in FORBIDDEN_TERMS:
+        value = re.sub(re.escape(term), "", value, flags=re.I)
+    return clean(value).strip(" ,;-–—")
+
+
+def deterministic_repair(data: dict[str, Any], profile: dict[str, Any], analysis: dict[str, Any]) -> dict[str, str]:
+    """Fast local repair before another API call."""
+    result = normalize_output(
+        data, str(profile["compat"]), int(profile["title_limit"]), int(profile["short_limit"])
+    )
+    for key in result:
+        result[key] = _remove_forbidden(result[key])
+    # Guarantee five non-empty bullets with verified facts only.
+    facts: list[str] = []
+    for field in ["functions", "usage_scenarios", "factual_selling_points", "package_contents"]:
+        for item in analysis.get(field, []) or []:
+            text = clean(item)
+            if text and text.casefold() not in {x.casefold() for x in facts}:
+                facts.append(text)
+    for field in ["material", "quantity", "dimensions", "color", "voltage", "power"]:
+        text = clean(analysis.get(field, ""))
+        if text and text.casefold() not in {x.casefold() for x in facts}:
+            facts.append(text)
+    product_type = clean(analysis.get("product_type", "")) or "Product feature"
+    for i in range(1, 6):
+        key = f"bullet{i}"
+        if not result.get(key):
+            result[key] = facts[i-1] if i-1 < len(facts) else product_type
+    if not result.get("description"):
+        result["description"] = ". ".join(facts[:6]) or product_type
+    return result
+
 def validate_listing(data: dict[str, str], source_title: str, profile: dict[str, Any], analysis: dict[str, Any]) -> tuple[bool, str, int]:
     title = clean(data.get("title"))
     short_title = clean(data.get("short_title"))
