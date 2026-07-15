@@ -1,7 +1,7 @@
-streamlit==1.49.1
-pandas==2.2.3
-openpyxl==3.1.5
-openai==1.99.9
-Pillow==11.3.0
-requests==2.32.4
-cloudinary==1.44.1
+streamlit>=1.41,<1.60
+pandas>=2.2,<3.0
+openpyxl>=3.1,<4.0
+openai>=1.60,<3.0
+Pillow>=10.0,<13.0
+requests>=2.32,<3.0
+cloudinary>=1.41,<2.0
