@@ -20,7 +20,7 @@ from core.ai_pipeline import optimize_listing
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V2.0-core-P1.1-test"
+VERSION = "V2.0-core-P1.2-test"
 MAX_TITLE_LEN = 75
 MAX_SHORT_TITLE_LEN = 60
 SHORT_TITLE_NAMES = ["短标题", "Short Title", "short_title"]
@@ -513,7 +513,7 @@ def optimize_row_text(
         "color_or_variant": clean_text(source_row.get("颜色", "")),
     }
     cache_key = stable_cache_key(source, language)
-    cached = st.session_state.text_cache.get(cache_key)
+    cached = get_session_dict("text_cache").get(cache_key)
     if cached:
         data = cached.get("data", cached).copy()
         success, reason = qa_text(data, source["title"], language)
@@ -531,12 +531,12 @@ def optimize_row_text(
             return True, ""
 
     analysis_key = hashlib.sha256(json.dumps(source, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
-    analysis = st.session_state.product_analysis_cache.get(analysis_key)
+    analysis = get_session_dict("product_analysis_cache").get(analysis_key)
     try:
         pipeline = optimize_listing(client, source, language, analysis=analysis, attempts=max_attempts)
         data = pipeline.get("data", {})
         if pipeline.get("analysis"):
-            st.session_state.product_analysis_cache[analysis_key] = pipeline["analysis"]
+            get_session_dict("product_analysis_cache")[analysis_key] = pipeline["analysis"]
         success = bool(pipeline.get("success"))
         reason = str(pipeline.get("reason", ""))
     except Exception as exc:
@@ -562,7 +562,7 @@ def optimize_row_text(
         result.at[idx, "识别功能"] = " | ".join(analysis_data.get("functions", [])[:6])
         result.at[idx, "使用场景"] = " | ".join(analysis_data.get("usage_scenarios", [])[:6])
         result.at[idx, "本地关键词"] = " | ".join(pipeline.get("keywords", [])[:6])
-        st.session_state.text_cache[cache_key] = {
+        get_session_dict("text_cache")[cache_key] = {
             "data": data.copy(),
             "seo_score": int(pipeline.get("seo_score", 0)),
         }
@@ -647,7 +647,7 @@ def retry_image_sources(source_indices: list[int]) -> None:
             sku = clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx)
             original = images[0]
             key = hashlib.sha256(original.encode("utf-8")).hexdigest()
-            cached = st.session_state.image_cache.get(key)
+            cached = get_session_dict("image_cache").get(key)
             if cached:
                 url = cached["url"]
                 strategy = cached["strategy"] + "+缓存"
@@ -655,7 +655,7 @@ def retry_image_sources(source_indices: list[int]) -> None:
                 processed, strategy = process_main_image(download_image(original), f"{sku}|{original}")
                 data = image_bytes(processed)
                 url = upload_main_image_to_cloudinary(data, sku or str(source_idx), original)
-                st.session_state.image_cache[key] = {"url": url, "strategy": strategy}
+                get_session_dict("image_cache")[key] = {"url": url, "strategy": strategy}
             images[0] = url
             image_value = IMAGE_SEPARATOR.join(images)
             mask = result["__源行索引"].astype(str).eq(str(source_idx)) & result["__生成行"].astype(str).eq("是")
@@ -674,6 +674,15 @@ def retry_image_sources(source_indices: list[int]) -> None:
     st.session_state.image_fail_sources = remaining
     st.success(f"图片重试完成：剩余失败 {len(remaining)} 个产品")
 
+def get_session_dict(key: str) -> dict:
+    """Return a session-state dictionary, recreating it after refresh/reboot if needed."""
+    value = st.session_state.get(key)
+    if not isinstance(value, dict):
+        value = {}
+        st.session_state[key] = value
+    return value
+
+
 def init_state() -> None:
     defaults = {
         "result_df": None,
@@ -691,6 +700,7 @@ def init_state() -> None:
         "selected_languages": ["英语"],
         "text_cache": {},
         "image_cache": {},
+        "product_analysis_cache": {},
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -773,7 +783,7 @@ if uploaded:
                 try:
                     original_main_url = images[0]
                     image_key = hashlib.sha256(original_main_url.encode("utf-8")).hexdigest()
-                    cached = st.session_state.image_cache.get(image_key)
+                    cached = get_session_dict("image_cache").get(image_key)
                     if cached:
                         cloudinary_url = cached["url"]
                         strategy = cached["strategy"] + "+缓存"
@@ -782,7 +792,7 @@ if uploaded:
                         processed, strategy = process_main_image(download_image(original_main_url), f"{sku}|{original_main_url}")
                         processed_bytes = image_bytes(processed)
                         cloudinary_url = upload_main_image_to_cloudinary(processed_bytes, sku or str(source_idx), original_main_url)
-                        st.session_state.image_cache[image_key] = {"url": cloudinary_url, "strategy": strategy}
+                        get_session_dict("image_cache")[image_key] = {"url": cloudinary_url, "strategy": strategy}
                     if processed_bytes:
                         filename = f"optimized_main_images/{re.sub(r'[^A-Za-z0-9_-]+', '_', sku or str(source_idx))}.jpg"
                         image_files[filename] = processed_bytes
