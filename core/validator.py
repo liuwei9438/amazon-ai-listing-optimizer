@@ -140,11 +140,11 @@ def get_language_key(language):
     return "english"
 
 
-def has_compatibility_phrase(
+def has_phrase, phrase = has_compatibility_phrase(
     title,
     language,
-    brand=None
-):
+    brand
+)
 
     title_lower = normalize_text(title)
 
