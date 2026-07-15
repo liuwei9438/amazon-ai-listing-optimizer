@@ -20,9 +20,9 @@ from core.ai_pipeline import optimize_listing
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V2.0-core-P1.2-test"
+VERSION = "V2.0-core-P1.3-convergent-test"
 MAX_TITLE_LEN = 75
-MAX_SHORT_TITLE_LEN = 60
+MAX_SHORT_TITLE_LEN = 125
 SHORT_TITLE_NAMES = ["短标题", "Short Title", "short_title"]
 IMAGE_SIZE = (1600, 1600)
 IMAGE_SEPARATOR = " | "
@@ -156,7 +156,7 @@ def seo_score(data: dict[str,str], language: str) -> int:
 
 
 def stable_cache_key(source: dict[str,Any], language: str) -> str:
-    payload=json.dumps({"schema":"v2.0-core-p1.1","language":language,"source":source},ensure_ascii=False,sort_keys=True)
+    payload=json.dumps({"schema":"v2.0-core-p1.3","language":language,"source":source},ensure_ascii=False,sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 def build_prompt(source: dict[str, Any], language: str, retry_reason: str = "") -> str:
@@ -179,9 +179,9 @@ NON-NEGOTIABLE RULES:
 9. Do not invent missing facts.
 10. If more than four compatible model numbers are supplied, keep only 2-4 representative models in the title and place the complete model list in bullets or description.
 11. The rewritten title must be materially different in wording/order from the source while preserving facts.
-12. short_title must be a concise merchandising/search summary no longer than {MAX_SHORT_TITLE_LEN} characters including spaces.
-13. Build short_title from the complete product information. Include only facts actually present, prioritizing: core product noun, material, use scenario, main function, strongest factual benefit, and high-value search keywords.
-14. Do not mechanically copy the long title. Do not invent material, scenario, function, benefit, or keywords. Omit any category that is not supported by the source.
+12. short_title is the Amazon Item Highlights field, not a shorter copy of the main title. It must be no longer than {MAX_SHORT_TITLE_LEN} characters including spaces.
+13. Build short_title from the complete product information, prioritizing source-supported material, use scenario, dimensions, quantity, main functions, factual selling points and high-value search terms.
+14. Do not mechanically copy the long title. Do not invent material, scenario, dimensions, function, benefit, or keywords. Omit unsupported facts.
 15. If a third-party brand appears in short_title, apply the same exact local compatibility phrase: {cfg['compat']}.
 {extra}
 SOURCE DATA:
@@ -504,7 +504,8 @@ def optimize_row_text(
     desc_col: str,
     short_title_col: str,
     language: str,
-    max_attempts: int = 4,
+    max_attempts: int = 2,
+    retry_round: int = 0,
 ) -> tuple[bool, str]:
     source = {
         "title": clean_text(source_row.get(title_col, "")),
@@ -533,7 +534,17 @@ def optimize_row_text(
     analysis_key = hashlib.sha256(json.dumps(source, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
     analysis = get_session_dict("product_analysis_cache").get(analysis_key)
     try:
-        pipeline = optimize_listing(client, source, language, analysis=analysis, attempts=max_attempts)
+        existing = {
+            "title": clean_text(result.at[idx, title_col]) if title_col in result.columns else "",
+            "short_title": clean_text(result.at[idx, short_title_col]) if short_title_col in result.columns else "",
+            **{f"bullet{i}": clean_text(result.at[idx, c]) if c in result.columns else "" for i, c in enumerate(bullet_cols, start=1)},
+            "description": clean_text(result.at[idx, desc_col]) if desc_col in result.columns else "",
+        }
+        previous_reason = clean_text(result.at[idx, "失败原因"]) if "失败原因" in result.columns else ""
+        pipeline = optimize_listing(
+            client, source, language, analysis=analysis, attempts=max_attempts,
+            retry_round=retry_round, previous_output=existing, previous_reason=previous_reason,
+        )
         data = pipeline.get("data", {})
         if pipeline.get("analysis"):
             get_session_dict("product_analysis_cache")[analysis_key] = pipeline["analysis"]
@@ -553,6 +564,7 @@ def optimize_row_text(
         result.at[idx, "SEO评分"] = int(pipeline.get("seo_score", seo_score(data, language)))
         result.at[idx, "标题相似度"] = round(title_similarity(data["title"], source["title"]), 4)
         result.at[idx, "缓存命中"] = "否"
+        result.at[idx, "重试轮次"] = retry_round
         analysis_data = pipeline.get("analysis", {})
         result.at[idx, "产品类型"] = clean_text(analysis_data.get("product_type", ""))
         result.at[idx, "产品类目"] = clean_text(analysis_data.get("category", ""))
@@ -578,6 +590,7 @@ def optimize_row_text(
     result.at[idx, "SEO评分"] = int(pipeline.get("seo_score", seo_score(data or {}, language))) if isinstance(pipeline, dict) else seo_score(data or {}, language)
     result.at[idx, "标题相似度"] = round(title_similarity((data or {}).get("title", ""), source["title"]), 4) if data else ""
     result.at[idx, "缓存命中"] = "否"
+    result.at[idx, "重试轮次"] = retry_round
     if isinstance(pipeline, dict):
         analysis_data = pipeline.get("analysis", {})
         result.at[idx, "产品类型"] = clean_text(analysis_data.get("product_type", ""))
@@ -616,9 +629,14 @@ def retry_indices(indices: list[Any]) -> None:
         source_idx = int(result.at[idx, "__源行索引"])
         language = str(result.at[idx, "__目标语言"])
         source_row = source_df.loc[source_idx]
-        success, reason = optimize_row_text(client, result, idx, source_row, title_col, bullet_cols, desc_col, short_title_col, language)
+        previous_round = int(result.at[idx, "重试轮次"] or 0) if "重试轮次" in result.columns else 0
+        current_round = previous_round + 1
+        success, reason = optimize_row_text(
+            client, result, idx, source_row, title_col, bullet_cols, desc_col, short_title_col, language,
+            max_attempts=1, retry_round=current_round,
+        )
         sku = clean_text(result.at[idx, sku_col]) if sku_col else str(idx)
-        st.session_state.logs.append(f"重试 {sku}/{language} - {'成功' if success else '失败'} - {reason}")
+        st.session_state.logs.append(f"第{current_round}轮重试 {sku}/{language} - {'成功' if success else '失败'} - {reason}")
         progress.progress(pos / len(indices))
     st.session_state.result_df = result
     st.session_state.fail_indices = refresh_fail_indices(result)
@@ -813,6 +831,7 @@ if uploaded:
                 row_dict["__生成行"] = "是"
                 row_dict["__源行索引"] = int(source_idx)
                 row_dict["__目标语言"] = language
+                row_dict["重试轮次"] = 0
                 if image_col:
                     info = image_values[int(source_idx)]
                     row_dict[image_col] = info["value"]
@@ -823,7 +842,7 @@ if uploaded:
                 generated_rows.append(row_dict)
                 temp = pd.DataFrame(generated_rows)
                 idx = temp.index[-1]
-                success, reason = optimize_row_text(client, temp, idx, source_row, title_col, bullet_cols, desc_col, short_title_col, language)
+                success, reason = optimize_row_text(client, temp, idx, source_row, title_col, bullet_cols, desc_col, short_title_col, language, max_attempts=2, retry_round=0)
                 generated_rows[-1] = temp.loc[idx].to_dict()
                 sku = clean_text(source_row.get(sku_col, "")) if sku_col else str(source_idx)
                 logs.append(f"{done_tasks}/{total_tasks} - {sku}/{language} - {'成功' if success else '失败'} - {reason}")
@@ -863,10 +882,10 @@ if st.session_state.result_df is not None:
     st.caption("导出的 Excel 仅包含已生成的优化语言行，原始内容不会重复导出。")
 
     if st.session_state.fail_indices:
-        st.warning("失败项按语言独立保留，可全部重试或选择指定产品/语言重试。")
+        st.warning("失败池会逐轮收敛：每次只处理当前失败项，成功项立即移出；可反复点击直到失败数降为 0。")
         sku_col_now = find_col(result_df, SKU_NAMES)
         title_col_now = st.session_state.title_col or find_col(result_df, TITLE_NAMES)
-        show_cols = [c for c in [sku_col_now, "语言", title_col_now, st.session_state.short_title_col, "失败原因"] if c and c in result_df.columns]
+        show_cols = [c for c in [sku_col_now, "语言", title_col_now, st.session_state.short_title_col, "失败原因", "重试轮次"] if c and c in result_df.columns]
         failed_view = result_df.loc[st.session_state.fail_indices, show_cols].copy()
         failed_view.insert(0, "行索引", failed_view.index.astype(str))
         st.dataframe(failed_view, use_container_width=True)
@@ -881,7 +900,7 @@ if st.session_state.result_df is not None:
         selected_labels = st.multiselect("选择需要单独重新优化的失败项", options=list(labels.keys()))
         b1, b2 = st.columns(2)
         with b1:
-            if st.button("重新优化全部失败项", type="primary", use_container_width=True):
+            if st.button("重新优化全部失败项（逐轮收敛）", type="primary", use_container_width=True):
                 retry_indices(list(st.session_state.fail_indices))
                 st.rerun()
         with b2:
