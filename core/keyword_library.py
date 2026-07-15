@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-# Stable, conservative seed terms. The AI may add only source-supported synonyms.
+# Conservative product-type SEO vocabulary. Terms are suggestions only and are used
+# only when the product analysis supports the corresponding product type.
 KEYWORD_LIBRARY: dict[str, dict[str, list[str]]] = {
     "power button": {
         "英语": ["Power Button", "Start Button", "Power Switch"],
@@ -46,14 +47,52 @@ KEYWORD_LIBRARY: dict[str, dict[str, list[str]]] = {
         "葡萄牙语": ["Cabeça de Impressão", "Cabeçote de Impressora"],
         "瑞典语": ["Skrivhuvud", "Skrivarhuvud"],
     },
+    "shaver head": {
+        "英语": ["Shaver Head", "Replacement Shaving Head", "Rotary Shaver Head"],
+        "西班牙语": ["Cabezal de Afeitadora", "Cabezal de Repuesto"],
+        "意大利语": ["Testina Rasoio", "Testina di Ricambio"],
+        "荷兰语": ["Scheerkop", "Vervangende Scheerkop"],
+        "日语": ["シェーバーヘッド", "交換用シェービングヘッド"],
+        "德语": ["Scherkopf", "Ersatz-Scherkopf"],
+        "法语": ["Tête de Rasoir", "Tête de Rasage de Rechange"],
+        "葡萄牙语": ["Cabeça de Barbeador", "Cabeça de Reposição"],
+        "瑞典语": ["Rakhuvud", "Ersättningshuvud"],
+    },
+    "extruder cover": {
+        "英语": ["Extruder Cover", "Extruder Housing", "3D Printer Cover"],
+        "西班牙语": ["Cubierta de Extrusor", "Carcasa de Extrusor"],
+        "意大利语": ["Coperchio Estrusore", "Alloggiamento Estrusore"],
+        "荷兰语": ["Extruderkap", "Extruderbehuizing"],
+        "日语": ["エクストルーダーカバー", "押出機ハウジング"],
+        "德语": ["Extruder-Abdeckung", "Extrudergehäuse"],
+        "法语": ["Couvercle d'Extrudeuse", "Boîtier d'Extrudeuse"],
+        "葡萄牙语": ["Tampa do Extrusor", "Carcaça do Extrusor"],
+        "瑞典语": ["Extruderkåpa", "Extruderhölje"],
+    },
+}
+
+ALIASES = {
+    "start button": "power button",
+    "power switch": "power button",
+    "washing machine button": "power button",
+    "filter": "vacuum filter",
+    "brush roll": "roller brush",
+    "printer head": "print head",
+    "shaving head": "shaver head",
+    "razor head": "shaver head",
+    "extruder top cover": "extruder cover",
 }
 
 
 def keywords_for(product_type: str, language: str) -> list[str]:
     key = (product_type or "").strip().lower()
+    key = ALIASES.get(key, key)
     if key in KEYWORD_LIBRARY:
         return KEYWORD_LIBRARY[key].get(language, [])
+    for alias, canonical in ALIASES.items():
+        if alias in key:
+            return KEYWORD_LIBRARY.get(canonical, {}).get(language, [])
     for known, by_lang in KEYWORD_LIBRARY.items():
-        if known in key or key in known:
+        if known in key or (key and key in known):
             return by_lang.get(language, [])
     return []
