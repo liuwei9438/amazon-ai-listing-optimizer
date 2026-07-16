@@ -86,3 +86,26 @@ def validate_listing(data: dict[str, str], source_title: str, profile: dict[str,
     if len(set(title.lower().split())) < max(3, int(len(title.split()) * 0.65)): score -= 5
     if not analysis.get("product_type"): score -= 5
     return True, "", max(0, score)
+def shorten_at_word_boundary(text, max_length=75):
+    """
+    按单词边界截断标题
+    保留亚马逊标题长度限制
+    """
+
+    if not text:
+        return ""
+
+    text = str(text).strip()
+
+    if len(text) <= max_length:
+        return text
+
+    cut = text[:max_length]
+
+    # 找最后一个空格
+    pos = cut.rfind(" ")
+
+    if pos > 0:
+        cut = cut[:pos]
+
+    return cut.strip()
