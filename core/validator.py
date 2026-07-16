@@ -30,7 +30,18 @@ def similarity(a: str, b: str) -> float:
     a = re.sub(r"\W+", " ", clean(a).lower()).strip()
     b = re.sub(r"\W+", " ", clean(b).lower()).strip()
     return difflib.SequenceMatcher(None, a, b).ratio() if a and b else 0.0
+def shorten_at_word_boundary(text: str, limit: int) -> str:
+    text = clean(text).strip(" ,;-–—")
 
+    if len(text) <= limit:
+        return text
+
+    cut = text[: limit + 1]
+
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+
+    return cut.rstrip(" ,;-–—")
 
 def normalize_compatibility(text: str, compat: str) -> str:
     value = clean(text)
