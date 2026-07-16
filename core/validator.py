@@ -34,15 +34,58 @@ def similarity(a: str, b: str) -> float:
 
 def normalize_compatibility(text: str, compat: str) -> str:
     value = clean(text)
+
     replacements = [
-        r"\bcompatible\s+with[a-z]*\b", r"\bfits?\s+for\b", r"\bfits?\b",
-        r"\bfit\s+for\b", r"\bworks?\s+with\b", r"\bsuitable\s+for\b",
+
+        # English
+        r"\bcompatible\s+with\b",
+
+        # Spanish
+        r"\bcompatible\s+con\b",
+
+        # French
+        r"\bcompatible\s+avec\b",
+
+        # German
+        r"\bkompatibel\s+mit\b",
+
+        # Dutch
+        r"\bcompatibel\s+met\b",
+        r"\bcompatible\s+met\b",
+
+        # Swedish
+        r"\bkompatibel\s+med\b",
+        r"\bcompatible\s+med\b",
+
+        # Italian
+        r"\bcompatibile\s+con\b",
+
+        # Portuguese
+        r"\bcompatível\s+com\b",
+        r"\bcompativel\s+com\b",
+
+
+        # Common AI mistakes
+        r"\bfits?\s+for\b",
+        r"\bfits?\b",
+        r"\bfit\s+for\b",
+        r"\bworks?\s+with\b",
+        r"\bsuitable\s+for\b",
         r"\bdesigned\s+for\s+use\s+with\b",
-        r"\bdesigned\s+for\s+compatibility\s+with\b",
         r"\bintended\s+for\s+use\s+with\b",
     ]
+
+
     for pattern in replacements:
-        value = re.sub(pattern, compat, value, flags=re.I)
+
+        value = re.sub(
+            pattern,
+            compat,
+            value,
+            flags=re.I
+        )
+
+
     return clean(value)
 
 
@@ -86,26 +129,3 @@ def validate_listing(data: dict[str, str], source_title: str, profile: dict[str,
     if len(set(title.lower().split())) < max(3, int(len(title.split()) * 0.65)): score -= 5
     if not analysis.get("product_type"): score -= 5
     return True, "", max(0, score)
-def shorten_at_word_boundary(text, max_length=75):
-    """
-    按单词边界截断标题
-    保留亚马逊标题长度限制
-    """
-
-    if not text:
-        return ""
-
-    text = str(text).strip()
-
-    if len(text) <= max_length:
-        return text
-
-    cut = text[:max_length]
-
-    # 找最后一个空格
-    pos = cut.rfind(" ")
-
-    if pos > 0:
-        cut = cut[:pos]
-
-    return cut.strip()
