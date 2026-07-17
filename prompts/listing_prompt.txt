@@ -1,0 +1,2 @@
+Reserved for future editable localized listing prompt templates.
+The current V2.0 Core Test keeps hard compliance rules in Python so users cannot accidentally change them.
