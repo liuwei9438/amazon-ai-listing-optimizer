@@ -30,7 +30,7 @@ from core.validator import (
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 
-VERSION = "V2.1.2-Pipeline-Fix"
+VERSION = "V2.1.2-Patch1-Image-Column-Fix"
 MAX_TITLE_LEN = 75
 MAX_SHORT_TITLE_LEN = 125
 SHORT_TITLE_NAMES = ["短标题", "Short Title", "short_title"]
@@ -69,7 +69,11 @@ NOISE_PATTERNS = [
 
 TITLE_NAMES = ["标题(必填)", "标题", "Title", "Product Title"]
 DESC_NAMES = ["简介", "详情", "描述", "Description", "Product Description"]
-IMAGE_NAMES = ["产品图", "图片", "Images", "Product Images"]
+IMAGE_NAMES = [
+    "产品图片", "产品图", "图片", "图片链接", "主图", "其他图片",
+    "Image", "Images", "Image URL", "Image URLs",
+    "Product Image", "Product Images", "Main Image", "Main Images",
+]
 SKU_NAMES = ["SKU", "sku", "子SKU"]
 BULLET_NAMES = [[f"要点{i}", f"Bullet{i}", f"Bullet Point {i}"] for i in range(1, 6)]
 
@@ -111,6 +115,44 @@ def find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
         if any(name.lower() in cn for name in candidates):
             return c
     return None
+
+
+def find_image_col(df: pd.DataFrame) -> str | None:
+    """Find the image column by header first, then by URL-like cell content."""
+    named = find_col(df, IMAGE_NAMES)
+    if named:
+        return named
+
+    image_url_pattern = re.compile(
+        r"https?://[^\s|]+(?:\.(?:jpg|jpeg|png|webp|gif|bmp)(?:\?[^\s|]*)?|/image/|/images/)",
+        flags=re.I,
+    )
+    best_col = None
+    best_ratio = 0.0
+    for column in df.columns:
+        series = df[column].astype(str).str.strip()
+        non_empty = series[series.ne("") & series.ne("nan")]
+        if non_empty.empty:
+            continue
+        sample = non_empty.head(100)
+        matches = sample.map(lambda value: bool(image_url_pattern.search(value)))
+        ratio = float(matches.mean())
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_col = column
+
+    return best_col if best_ratio >= 0.30 else None
+
+
+def validate_image_column_preserved(source_df: pd.DataFrame, export_df: pd.DataFrame, image_col: str | None) -> None:
+    """Stop export if an image column existed in the source but disappeared later."""
+    if not image_col:
+        return
+    if image_col not in source_df.columns:
+        return
+    if image_col not in export_df.columns:
+        raise ValueError(f"导出保护：原表图片列“{image_col}”在结果中丢失，已停止导出。")
+
 
 
 def parse_json(text: str) -> dict[str, Any]:
@@ -503,6 +545,11 @@ def output_excel(df: pd.DataFrame) -> bytes:
         columns=[c for c in export_df.columns if str(c).startswith("__")],
         errors="ignore",
     )
+
+    source_df = st.session_state.get("source_df")
+    image_col = st.session_state.get("image_col")
+    if isinstance(source_df, pd.DataFrame):
+        validate_image_column_preserved(source_df, export_df, image_col)
 
     with pd.ExcelWriter(out, engine="openpyxl") as writer:
         export_df.to_excel(writer, index=False)
@@ -931,10 +978,15 @@ if uploaded:
         title_pos = list(df.columns).index(title_col) if title_col in df.columns else len(df.columns) - 1
         df.insert(title_pos + 1, short_title_col, "")
     desc_col = find_col(df, DESC_NAMES)
-    image_col = find_col(df, IMAGE_NAMES)
+    image_col = find_image_col(df)
     sku_col = find_col(df, SKU_NAMES)
     language_col = find_col(df, ["语言", "Language"])
     bullet_cols = [find_col(df, names) for names in BULLET_NAMES]
+
+    if image_col:
+        st.info(f"已识别图片列：{image_col}")
+    else:
+        st.warning("未识别到图片列；图片优化将被跳过，原表其他字段仍会保留。")
 
     if not title_col:
         st.error("没有识别到标题列。")
@@ -961,6 +1013,7 @@ if uploaded:
         image_fail_sources: list[int] = []
         image_files: dict[str, bytes] = {}
         logs: list[str] = []
+        logs.append(f"图片列识别：{image_col if image_col else '未识别'}")
         total_tasks = len(source_df) * len(selected_languages)
         done_tasks = 0
         progress = st.progress(0)
@@ -1099,12 +1152,16 @@ if st.session_state.result_df is not None:
             retry_image_sources(list(st.session_state.image_fail_sources))
             st.rerun()
 
-    st.download_button(
-        "导出已优化 Excel",
-        data=output_excel(result_df),
-        file_name=re.sub(r"\.xlsx$", "", st.session_state.source_name, flags=re.I) + f"_{VERSION}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    try:
+        export_bytes = output_excel(result_df)
+        st.download_button(
+            "导出已优化 Excel",
+            data=export_bytes,
+            file_name=re.sub(r"\.xlsx$", "", st.session_state.source_name, flags=re.I) + f"_{VERSION}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as exc:
+        st.error(str(exc))
 
     if st.session_state.image_files:
         st.download_button(
