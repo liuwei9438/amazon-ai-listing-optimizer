@@ -7,6 +7,7 @@ import streamlit as st
 import json
 
 from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
+from services.config import get_openai_api_key
 
 from core import export_unchanged, integrity_report, read_workbook
 
@@ -100,7 +101,20 @@ if uploaded is not None:
 
     st.subheader("AI Product Understanding")
     st.caption("本阶段只验证商品理解与事实保护，不生成任何上架文案。建议先分析 1–5 个代表产品。")
-    api_key = st.text_input("OpenAI API Key", type="password", help="仅用于本次会话，不写入 Excel 或下载文件。")
+    saved_api_key = get_openai_api_key()
+
+    if saved_api_key:
+        st.success("✅ 已从 Streamlit Secrets 或系统环境变量读取 OpenAI API Key。")
+    else:
+        st.warning("⚠ 未检测到已保存的 OpenAI API Key，可在下方临时输入。")
+
+    manual_api_key = st.text_input(
+        "OpenAI API Key（可留空，默认读取 Secrets）",
+        type="password",
+        help="优先读取 Streamlit Secrets 或系统环境变量；手动输入仅用于当前会话。",
+    )
+    api_key = manual_api_key.strip() or saved_api_key
+
     model = st.text_input("模型", value="gpt-4.1-mini")
     max_products = st.number_input("本次分析产品数", min_value=1, max_value=max(1, min(20, len(envelope.records))), value=min(3, max(1, len(envelope.records))))
     if st.button("开始 AI 商品理解", type="primary"):
