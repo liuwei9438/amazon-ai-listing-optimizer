@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 import json
 
-from analyzer import ProductUnderstandingEngine, UnderstandingError
+from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
 
 from core import export_unchanged, integrity_report, read_workbook
 
