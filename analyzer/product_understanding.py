@@ -9,6 +9,7 @@ from .product_profile_schema import empty_profile, json_schema
 from .profile_validator import normalize_profile, validate_profile
 from .understanding_prompt import SYSTEM_PROMPT, build_user_prompt
 from .attribute_engine import extract_basic_attributes
+from .attribute_validator import validate_attributes
 
 
 class UnderstandingError(RuntimeError):
@@ -37,6 +38,10 @@ class ProductUnderstandingEngine:
 
         profile.setdefault("attributes", {})
         profile["attributes"].update(extracted_attributes)
+
+        # Task 3.4A-1.1:
+        # Validate deterministic attributes after extraction.
+        profile["attributes"] = validate_attributes(profile["attributes"])
 
         profile["source_identity"] = {
             "sku": getattr(record, "sku", ""),
