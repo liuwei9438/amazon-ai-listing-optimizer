@@ -28,7 +28,6 @@ MATERIAL_LIST = {
 
 def _text_from_record(record: Any) -> str:
     values = []
-
     for key in ["title", "description", "details", "material", "color"]:
         value = getattr(record, key, "")
         if value:
@@ -41,14 +40,14 @@ def _text_from_record(record: Any) -> str:
     return " ".join(values)
 
 
-def extract_quantity(text: str):
+def extract_quantity(text):
     match = re.search(r"\b(\d+)\s*(pack|packs|pcs|pieces|piece|set|sets)\b", text, re.I)
     if match:
         return {"value": match.group(1), "unit": match.group(2)}
     return {"value": "", "unit": ""}
 
 
-def extract_material(text: str):
+def extract_material(text):
     result = []
     lower = text.lower()
     for key, value in MATERIAL_LIST.items():
@@ -57,7 +56,7 @@ def extract_material(text: str):
     return list(dict.fromkeys(result))
 
 
-def extract_color(text: str):
+def extract_color(text):
     result = []
     for word in re.findall(r"\b[a-zA-Z]+\b", text):
         if word.lower() in COLOR_LIST:
@@ -65,7 +64,7 @@ def extract_color(text: str):
     return list(dict.fromkeys(result))
 
 
-def _extract_value_unit(text: str, units):
+def _extract_value_unit(text, units):
     pattern = r"(?<![A-Za-z])(\d+(?:\.\d+)?)\s*(" + "|".join(units) + r")\b"
     match = re.search(pattern, text, re.I)
     if match:
@@ -76,15 +75,15 @@ def _extract_value_unit(text: str, units):
     return {"value": "", "unit": ""}
 
 
-def extract_voltage(text: str):
+def extract_voltage(text):
     return _extract_value_unit(text, ["V", "volt", "volts"])
 
 
-def extract_power(text: str):
+def extract_power(text):
     return _extract_value_unit(text, ["W", "watt", "watts"])
 
 
-def extract_dimensions(text: str):
+def extract_dimensions(text):
     match = re.search(
         r"(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*(mm|cm|inch|in)?",
         text,
@@ -99,40 +98,50 @@ def extract_dimensions(text: str):
             "unit": match.group(4) or ""
         }
 
-    return {
-        "length": "",
-        "width": "",
-        "height": "",
-        "unit": ""
-    }
+    return {"length": "", "width": "", "height": "", "unit": ""}
 
 
-def extract_package_contents(text: str):
+def extract_package_contents(text):
+    results = []
+    match = re.search(
+        r"(?:package includes|package contains|includes|contents include)[:\s]+([^\n.]+)",
+        text,
+        re.I,
+    )
+
+    if match:
+        for item in re.split(r",|;|\n", match.group(1)):
+            item = item.strip()
+            if item:
+                results.append(item)
+
+    return list(dict.fromkeys(results))
+
+
+def extract_installation(text):
     """
-    Extract only explicitly stated package contents.
-    Does not infer accessories from product type.
+    Extract explicit installation/use requirements only.
+    Does not infer installation steps.
     """
 
     results = []
 
     patterns = [
-        r"(?:package includes|package contains|includes|contents include)[:\s]+([^\n.]+)",
+        r"(no special tools required)",
+        r"(requires? [^.]+)",
+        r"(easy installation[^.]+)",
+        r"(install(?:ation)? [^.]+)",
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, text, re.I)
-        if match:
-            content = match.group(1)
-            parts = re.split(r",|;|\n", content)
-            for part in parts:
-                item = part.strip()
-                if item:
-                    results.append(item)
+        matches = re.findall(pattern, text, re.I)
+        for item in matches:
+            results.append(item.strip())
 
     return list(dict.fromkeys(results))
 
 
-def extract_basic_attributes(record: Any):
+def extract_basic_attributes(record):
     text = _text_from_record(record)
 
     return {
@@ -143,4 +152,5 @@ def extract_basic_attributes(record: Any):
         "power": extract_power(text),
         "dimensions": extract_dimensions(text),
         "package_contents": extract_package_contents(text),
+        "installation": extract_installation(text),
     }
