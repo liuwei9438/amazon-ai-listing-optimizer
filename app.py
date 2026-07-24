@@ -7,6 +7,7 @@ import streamlit as st
 import json
 
 from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
+from analyzer.seo_intent_engine import generate_primary_search
 from services.config import get_openai_api_key
 
 from core import export_unchanged, integrity_report, read_workbook
@@ -127,6 +128,11 @@ if uploaded is not None:
             for i, record in enumerate(envelope.records[:int(max_products)]):
                 try:
                     profile = engine.analyze(record)
+
+                    # Task 4.2.2-A: Generate SEO Intent Primary Search
+                    seo_intent = generate_primary_search(profile)
+                    profile["seo_intent"] = seo_intent
+
                     profiles.append(profile)
                     with st.expander(f"{record.sku or '第'+str(i+1)+'个产品'}｜{profile['basic_info']['product_type'] or '未识别产品类型'}", expanded=i == 0):
                         a, b, c = st.columns(3)
