@@ -8,7 +8,6 @@ import json
 
 from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
 from analyzer.seo_intent_engine import generate_primary_search
-from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
 
 from core import export_unchanged, integrity_report, read_workbook
@@ -134,18 +133,6 @@ if uploaded is not None:
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
 
-                    # Task 4.2.3-B: Compliance Protection Layer
-                    primary_text = ""
-                    if seo_intent.get("primary_search"):
-                        primary_text = seo_intent["primary_search"][0]
-
-                    detected_brands = profile.get("compatibility", {}).get("brands", [])
-                    compliance_result = protect_text(
-                        primary_text,
-                        detected_brands=detected_brands,
-                    )
-                    profile["compliance_result"] = compliance_result
-
                     profiles.append(profile)
                     with st.expander(f"{record.sku or '第'+str(i+1)+'个产品'}｜{profile['basic_info']['product_type'] or '未识别产品类型'}", expanded=i == 0):
                         a, b, c = st.columns(3)
@@ -165,12 +152,6 @@ if uploaded is not None:
                             st.write("### SEO Intent")
                             primary_search = profile["seo_intent"].get("primary_search", [])
                             st.write("**Primary Search：**", "、".join(primary_search) or "Unknown")
-
-                        if "compliance_result" in profile:
-                            st.write("### Compliance Check")
-                            st.write("**Protected Text：**", profile["compliance_result"].get("text", ""))
-                            st.write("**Detected Brands：**", "、".join(profile["compliance_result"].get("detected_brands", [])) or "None")
-                            st.write("**Risk：**", profile["compliance_result"].get("risk", "Unknown"))
 
                         st.write("**事实锁：**", profile["fact_lock"])
                         st.json(profile)
