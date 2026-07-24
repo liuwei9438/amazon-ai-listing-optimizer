@@ -7,49 +7,75 @@ import re
 
 IGNORE_WORDS = {
     "compatible",
+    "compatiblewith",
+    "for",
+    "function",
+    "power",
+    "drive",
+    "button",
+    "part",
     "replacement",
     "replace",
-    "for",
-    "original",
-    "oem",
-    "official",
-    "genuine",
 }
 
 
-def _clean_words(text: str) -> list[str]:
-    words = re.findall(r"[A-Za-z0-9]+", text.lower())
-    return [
-        w for w in words
-        if w not in IGNORE_WORDS
-    ]
+CATEGORY_MAP = {
+    "washing machine part": "washing machine",
+    "washing machine": "washing machine",
+    "printer part": "printer",
+    "printer": "printer",
+    "shaver part": "electric shaver",
+    "shaver": "electric shaver",
+}
 
 
-def _normalize_product_type(product_type: str) -> str:
-    value = product_type.lower()
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", str(text).lower())
 
-    replacements = {
-        "washing machine part": "washing machine",
-        "appliance part": "appliance",
-        "printer part": "printer",
-        "shaver part": "electric shaver",
-    }
 
-    return replacements.get(value, product_type)
+def _clean_function(text: str) -> list[str]:
+    words = _words(text)
+
+    result = []
+    for word in words:
+        if word in IGNORE_WORDS:
+            continue
+        result.append(word)
+
+    return result
+
+
+def _normalize_category(value: str) -> str:
+    value = str(value).lower().strip()
+
+    for key, result in CATEGORY_MAP.items():
+        if key in value:
+            return result
+
+    return value
 
 
 def generate_primary_search(profile: dict[str, Any]) -> dict[str, Any]:
     """
-    Generate the main search phrase from Product Profile.
+    Generate Amazon-style primary search phrase.
 
-    Priority:
-    1. Product category
-    2. Main function
-    3. Remove brand/model/compatibility words
+    Structure:
+    product category + core function
+
+    Brand/model/compatibility information should be handled
+    by secondary search, not primary search.
     """
 
-    product_type = profile.get("product_type", "")
+    basic_info = profile.get("basic_info", {})
     attributes = profile.get("attributes", {})
+
+    product_type = (
+        profile.get("product_type")
+        or basic_info.get("product_type")
+        or ""
+    )
+
+    category = _normalize_category(product_type)
 
     functions = (
         attributes.get("functions")
@@ -60,18 +86,23 @@ def generate_primary_search(profile: dict[str, Any]) -> dict[str, Any]:
     if isinstance(functions, str):
         functions = [functions]
 
-    category = _normalize_product_type(product_type)
+    function_text = " ".join(functions)
 
-    function_text = ""
-    if functions:
-        function_text = " ".join(
-            _clean_words(functions[0])
-        )
+    function_words = _clean_function(function_text)
 
-    category_words = _clean_words(category)
+    # Special handling for common compound entities
+    if "start" in function_words and "button" in function_words:
+        function_phrase = "start button"
+    elif "print" in function_words and "head" in function_words:
+        function_phrase = "print head"
+    elif "head" in function_words:
+        function_phrase = "head"
+    else:
+        function_phrase = " ".join(function_words[:3])
 
     result = " ".join(
-        category_words + _clean_words(function_text)
+        part for part in [category, function_phrase]
+        if part
     ).strip()
 
     if not result:
