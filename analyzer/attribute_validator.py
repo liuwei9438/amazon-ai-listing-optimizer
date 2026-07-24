@@ -10,13 +10,20 @@ VALID_COLORS = {
     "brown", "beige",
 }
 
+VALID_MATERIALS = {
+    "abs": "ABS",
+    "pp": "PP",
+    "pvc": "PVC",
+    "aluminum": "Aluminum",
+    "aluminium": "Aluminum",
+    "metal": "Metal",
+    "rubber": "Rubber",
+    "silicone": "Silicone",
+    "glass": "Glass",
+}
+
 
 def validate_color(attributes: dict[str, Any]) -> dict[str, Any]:
-    """
-    Keep only explicit standard colors.
-    Remove product names, marketing words, and model numbers.
-    """
-
     colors = attributes.get("color", [])
 
     if not isinstance(colors, list):
@@ -37,15 +44,34 @@ def validate_color(attributes: dict[str, Any]) -> dict[str, Any]:
     return attributes
 
 
+def validate_material(attributes: dict[str, Any]) -> dict[str, Any]:
+    """
+    Keep only explicit material names.
+    Remove marketing descriptions and unsupported material text.
+    """
+
+    materials = attributes.get("material", [])
+
+    if not isinstance(materials, list):
+        materials = []
+
+    cleaned = []
+
+    for material in materials:
+        if not isinstance(material, str):
+            continue
+
+        value = material.strip().lower()
+
+        if value in VALID_MATERIALS:
+            cleaned.append(VALID_MATERIALS[value])
+
+    attributes["material"] = list(dict.fromkeys(cleaned))
+    return attributes
+
+
 def validate_attributes(attributes: dict[str, Any]) -> dict[str, Any]:
-    """
-    Current scope:
-    - color validation
+    attributes = validate_color(attributes)
+    attributes = validate_material(attributes)
 
-    Future scope:
-    - material
-    - quantity
-    - electrical parameters
-    """
-
-    return validate_color(attributes)
+    return attributes
