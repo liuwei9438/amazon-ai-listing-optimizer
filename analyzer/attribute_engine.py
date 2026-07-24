@@ -85,24 +85,19 @@ def extract_power(text: str):
 
 
 def extract_dimensions(text: str):
-    """
-    Extract explicit product dimensions only.
-    Does not infer size from product category or model numbers.
-    """
-
-    patterns = [
+    match = re.search(
         r"(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*(mm|cm|inch|in)?",
-    ]
+        text,
+        re.I,
+    )
 
-    for pattern in patterns:
-        match = re.search(pattern, text, re.I)
-        if match:
-            return {
-                "length": match.group(1),
-                "width": match.group(2),
-                "height": match.group(3),
-                "unit": match.group(4) or ""
-            }
+    if match:
+        return {
+            "length": match.group(1),
+            "width": match.group(2),
+            "height": match.group(3),
+            "unit": match.group(4) or ""
+        }
 
     return {
         "length": "",
@@ -110,6 +105,31 @@ def extract_dimensions(text: str):
         "height": "",
         "unit": ""
     }
+
+
+def extract_package_contents(text: str):
+    """
+    Extract only explicitly stated package contents.
+    Does not infer accessories from product type.
+    """
+
+    results = []
+
+    patterns = [
+        r"(?:package includes|package contains|includes|contents include)[:\s]+([^\n.]+)",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            content = match.group(1)
+            parts = re.split(r",|;|\n", content)
+            for part in parts:
+                item = part.strip()
+                if item:
+                    results.append(item)
+
+    return list(dict.fromkeys(results))
 
 
 def extract_basic_attributes(record: Any):
@@ -122,4 +142,5 @@ def extract_basic_attributes(record: Any):
         "voltage": extract_voltage(text),
         "power": extract_power(text),
         "dimensions": extract_dimensions(text),
+        "package_contents": extract_package_contents(text),
     }
