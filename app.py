@@ -14,7 +14,7 @@ from services.config import get_openai_api_key
 
 from core import export_unchanged, integrity_report, read_workbook
 
-VERSION = "V2.2.3-B-Compliance-Integration"
+VERSION = "V2.3.0-Product-Understanding-SEO"
 
 st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
 st.title("Amazon AI Listing Optimizer")
