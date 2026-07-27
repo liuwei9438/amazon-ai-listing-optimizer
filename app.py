@@ -172,33 +172,34 @@ if uploaded is not None:
                             st.write("### SEO Intent")
                             primary_search = profile["seo_intent"].get("primary_search", [])
                             st.write("**Primary Search：**", "、".join(primary_search) or "Unknown")
-if "seo" in profile:
-    st.write("### SEO Keywords")
+                        if "seo" in profile:
+                        st.write("### SEO Keywords")
 
-    st.write(
-        "**Primary Keywords：**",
-        "、".join(profile["seo"].get("primary_keywords", [])) or "Unknown"
-    )
+                        st.write(
+                        "**Primary Keywords：**",
+                        "、".join(profile["seo"].get("primary_keywords", [])) or "Unknown"
+                        )
 
-    st.write(
-        "**Secondary Keywords：**",
-        "、".join(profile["seo"].get("secondary_keywords", [])) or "Unknown"
-    )
+                      
+                        st.write(
+                        "**Secondary Keywords：**",
+                        "、".join(profile["seo"].get("secondary_keywords", [])) or "Unknown"
+                        )
 
-    st.write(
-        "**Model Keywords：**",
-        "、".join(profile["seo"].get("model_keywords", [])) or "Unknown"
-    )
+                        st.write(
+                        "**Model Keywords：**",
+                        "、".join(profile["seo"].get("model_keywords", [])) or "Unknown"
+                        )
 
-    st.write(
-        "**Use Case Keywords：**",
-        "、".join(profile["seo"].get("use_case_keywords", [])) or "Unknown"
-    )
+                       st.write(
+                       "**Use Case Keywords：**",
+                       "、".join(profile["seo"].get("use_case_keywords", [])) or "Unknown"
+                       )
 
-    st.write(
-        "**Long Tail Keywords：**",
-        "、".join(profile["seo"].get("long_tail_keywords", [])) or "Unknown"
-    )
+                       st.write(
+                       "**Long Tail Keywords：**",
+                        "、".join(profile["seo"].get("long_tail_keywords", [])) or "Unknown"
+                        )
                         if "compliance_result" in profile:
                             st.write("### Compliance Check")
                             st.write("**Protected Text：**", profile["compliance_result"].get("text", ""))
