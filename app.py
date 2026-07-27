@@ -173,41 +173,41 @@ if uploaded is not None:
                             primary_search = profile["seo_intent"].get("primary_search", [])
                             st.write("**Primary Search：**", "、".join(primary_search) or "Unknown")
                         if "seo" in profile:
-                        st.write("### SEO Keywords")
+                            st.write("### SEO Keywords")
 
-                        st.write(
-                        "**Primary Keywords：**",
-                        "、".join(profile["seo"].get("primary_keywords", [])) or "Unknown"
-                        )
+                            st.write(
+                                "**Primary Keywords：**",
+                                "、".join(profile["seo"].get("primary_keywords", [])) or "Unknown"
+                                )
 
                       
-                        st.write(
-                        "**Secondary Keywords：**",
-                        "、".join(profile["seo"].get("secondary_keywords", [])) or "Unknown"
-                        )
+                            st.write(
+                                "**Secondary Keywords：**",
+                                "、".join(profile["seo"].get("secondary_keywords", [])) or "Unknown"
+                                )
 
-                        st.write(
-                        "**Model Keywords：**",
-                        "、".join(profile["seo"].get("model_keywords", [])) or "Unknown"
-                        )
+                            st.write(
+                                "**Model Keywords：**",
+                                "、".join(profile["seo"].get("model_keywords", [])) or "Unknown"
+                                )
 
-                       st.write(
-                       "**Use Case Keywords：**",
-                       "、".join(profile["seo"].get("use_case_keywords", [])) or "Unknown"
-                       )
+                           st.write(
+                               "**Use Case Keywords：**",
+                               "、".join(profile["seo"].get("use_case_keywords", [])) or "Unknown"
+                               )
 
-                       st.write(
-                       "**Long Tail Keywords：**",
-                        "、".join(profile["seo"].get("long_tail_keywords", [])) or "Unknown"
-                        )
+                           st.write(
+                               "**Long Tail Keywords：**",
+                               "、".join(profile["seo"].get("long_tail_keywords", [])) or "Unknown"
+                               )
                         if "compliance_result" in profile:
                             st.write("### Compliance Check")
                             st.write("**Protected Text：**", profile["compliance_result"].get("text", ""))
                             st.write("**Detected Brands：**", "、".join(profile["compliance_result"].get("detected_brands", [])) or "None")
                             st.write("**Risk：**", profile["compliance_result"].get("risk", ""))
 
-                        st.write("**事实锁：**", profile["fact_lock"])
-                        st.json(profile)
+                            st.write("**事实锁：**", profile["fact_lock"])
+                            st.json(profile)
                 except UnderstandingError as exc:
                     st.error(f"{record.sku or '第'+str(i+1)+'个产品'} 分析失败：{exc}")
                 progress.progress((i + 1) / int(max_products))
