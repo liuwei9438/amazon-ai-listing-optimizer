@@ -8,7 +8,6 @@ import json
 
 from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
 from analyzer.seo_intent_engine import generate_primary_search
-from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
 
@@ -132,12 +131,8 @@ if uploaded is not None:
                     profile = engine.analyze(record)
 
                     # Task 4.2.2-A: SEO Intent Primary Search
-seo_intent = generate_primary_search(profile)
-profile["seo_intent"] = seo_intent
-
-# Task 4.3-B: SEO Keyword Engine
-seo_keywords = SEOKeywordEngine.generate(profile)
-profile["seo"] = seo_keywords
+                    seo_intent = generate_primary_search(profile)
+                    profile["seo_intent"] = seo_intent
 
                     primary_text = ""
                     if seo_intent.get("primary_search"):
@@ -172,33 +167,7 @@ profile["seo"] = seo_keywords
                             st.write("### SEO Intent")
                             primary_search = profile["seo_intent"].get("primary_search", [])
                             st.write("**Primary Search：**", "、".join(primary_search) or "Unknown")
-if "seo" in profile:
-    st.write("### SEO Keywords")
 
-    st.write(
-        "**Primary Keywords：**",
-        "、".join(profile["seo"].get("primary_keywords", [])) or "Unknown"
-    )
-
-    st.write(
-        "**Secondary Keywords：**",
-        "、".join(profile["seo"].get("secondary_keywords", [])) or "Unknown"
-    )
-
-    st.write(
-        "**Model Keywords：**",
-        "、".join(profile["seo"].get("model_keywords", [])) or "Unknown"
-    )
-
-    st.write(
-        "**Use Case Keywords：**",
-        "、".join(profile["seo"].get("use_case_keywords", [])) or "Unknown"
-    )
-
-    st.write(
-        "**Long Tail Keywords：**",
-        "、".join(profile["seo"].get("long_tail_keywords", [])) or "Unknown"
-    )
                         if "compliance_result" in profile:
                             st.write("### Compliance Check")
                             st.write("**Protected Text：**", profile["compliance_result"].get("text", ""))
