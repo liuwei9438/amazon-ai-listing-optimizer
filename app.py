@@ -164,7 +164,7 @@ if uploaded is not None:
                         st.write("**兼容品牌：**", "、".join(profile["compatibility"]["brands"]) or "Unknown")
                         st.write("**兼容型号：**", "、".join(profile["compatibility"]["models"]) or "Unknown")
                         st.write("**核心功能：**", profile["basic_info"]["main_function"] or "Unknown")
-                        st.write("**主要关键词：**", "、".join(profile["seo"]["main_keywords"]) or "Unknown")
+                        st.write("**主要关键词：**", "、".join(profile["seo"]["primary_keywords"]) or "Unknown")
                         st.write("**搜索意图：**", profile["seo"]["search_intent"] or "Unknown")
 
                         if "seo_intent" in profile:
