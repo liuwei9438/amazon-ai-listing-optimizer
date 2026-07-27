@@ -132,12 +132,12 @@ if uploaded is not None:
                     profile = engine.analyze(record)
 
                     # Task 4.2.2-A: SEO Intent Primary Search
-seo_intent = generate_primary_search(profile)
-profile["seo_intent"] = seo_intent
+                    seo_intent = generate_primary_search(profile)
+                    profile["seo_intent"] = seo_intent
 
-# Task 4.3-B: SEO Keyword Engine
-seo_keywords = SEOKeywordEngine.generate(profile)
-profile["seo"] = seo_keywords
+                    # Task 4.3-B: SEO Keyword Engine
+                    seo_keywords = SEOKeywordEngine.generate(profile)
+                    profile["seo"] = seo_keywords
 
                     primary_text = ""
                     if seo_intent.get("primary_search"):
