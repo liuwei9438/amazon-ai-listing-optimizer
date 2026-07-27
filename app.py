@@ -8,6 +8,7 @@ import json
 
 from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
 from analyzer.seo_intent_engine import generate_primary_search
+from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
 
@@ -133,6 +134,9 @@ if uploaded is not None:
                     # Task 4.2.2-A: SEO Intent Primary Search
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
+                    # Task 4.3-B: SEO Keyword Engine
+                    seo_keywords = SEOKeywordEngine.generate(profile)
+                    profile["seo"] = seo_keywords
 
                     primary_text = ""
                     if seo_intent.get("primary_search"):
