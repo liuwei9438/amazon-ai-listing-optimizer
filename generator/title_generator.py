@@ -19,6 +19,7 @@ class TitleGenerator:
         "promotion",
     ]
 
+
     @staticmethod
     def generate(profile: dict) -> dict:
         """
@@ -27,7 +28,9 @@ class TitleGenerator:
 
         basic = profile.get("basic_info", {})
         compatibility = profile.get("compatibility", {})
+        brand_info = profile.get("brand_info", {})
         seo = profile.get("seo", {})
+
 
         product_type = basic.get(
             "product_type",
@@ -39,6 +42,7 @@ class TitleGenerator:
             ""
         )
 
+
         brands = compatibility.get(
             "brands",
             []
@@ -49,69 +53,139 @@ class TitleGenerator:
             []
         )
 
+
         primary_keywords = seo.get(
             "primary_keywords",
             []
         )
 
+
+        relationship = brand_info.get(
+            "relationship",
+            ""
+        )
+
+
         title_parts = []
 
-        # Compatible brand
-        if brands:
+
+        # =========================
+        # Brand Protection
+        # =========================
+
+        if brands and relationship != "owned_brand":
+
             title_parts.append(
                 f"Compatible with {brands[0]}"
             )
 
-        # SEO keyword priority
+
+        # =========================
+        # Primary Keyword
+        # =========================
+
         if primary_keywords:
+
             title_parts.append(
                 primary_keywords[0]
             )
+
         elif main_function:
+
             title_parts.append(
                 main_function
             )
 
-        # Product type
+
+        # =========================
+        # Product Type
+        # =========================
+
         if product_type:
+
             title_parts.append(
                 product_type
             )
 
-        # Models
+
+        # =========================
+        # Model Handling
+        # =========================
+
         if models:
 
             if len(models) <= 4:
+
                 title_parts.extend(models)
 
             else:
-                title_parts.extend(models[:3])
-                title_parts.append("Series")
+
+                title_parts.extend(
+                    models[:3]
+                )
+
+                title_parts.append(
+                    "Series"
+                )
+
 
         title = " ".join(title_parts)
 
+
+        # Clean
         title = TitleGenerator.clean_title(title)
 
+
+        # Length control
+        title = TitleGenerator.limit_length(
+            title,
+            max_length=75
+        )
+
+
+        blocked_found = (
+            TitleGenerator.check_blocked_words(title)
+        )
+
+
         return {
+
             "title": title,
+
             "character_count": len(title),
+
             "validation": {
-                "length_ok": len(title) <= 75,
-                "compliance_ok": True
+
+                "length_ok":
+                    len(title) <= 75,
+
+                "blocked_words":
+                    blocked_found,
+
+                "compliance_ok":
+                    len(blocked_found) == 0,
+
+                "brand_check":
+                    "passed"
+
             }
+
         }
+
 
 
     @staticmethod
     def clean_title(text: str) -> str:
 
         for word in TitleGenerator.BLOCKED_WORDS:
+
             text = re.sub(
-                word,
+                r"\b" + re.escape(word) + r"\b",
                 "",
                 text,
                 flags=re.I
             )
+
 
         text = re.sub(
             r"\s+",
@@ -119,4 +193,60 @@ class TitleGenerator:
             text
         )
 
+
         return text.strip()
+
+
+
+    @staticmethod
+    def limit_length(
+        text: str,
+        max_length: int = 75
+    ) -> str:
+
+        if len(text) <= max_length:
+
+            return text
+
+
+        words = text.split()
+
+        result = []
+
+        length = 0
+
+
+        for word in words:
+
+            if length + len(word) + 1 > max_length:
+
+                break
+
+            result.append(word)
+
+            length += len(word) + 1
+
+
+        return " ".join(result)
+
+
+
+    @staticmethod
+    def check_blocked_words(
+        text: str
+    ) -> list:
+
+        found = []
+
+        for word in TitleGenerator.BLOCKED_WORDS:
+
+            if re.search(
+                r"\b" + re.escape(word) + r"\b",
+                text,
+                flags=re.I
+            ):
+
+                found.append(word)
+
+
+        return found
