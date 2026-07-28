@@ -2,10 +2,6 @@ from __future__ import annotations
 
 import re
 
-from __future__ import annotations
-
-import re
-
 class TitleGenerator:
 
     BLOCKED_WORDS = [
