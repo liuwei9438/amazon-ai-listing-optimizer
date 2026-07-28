@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from generator.seo_scorer import SEOElementScorer
 
 class TitleGenerator:
 
@@ -107,29 +108,85 @@ class TitleGenerator:
         if main_keyword:
             title_parts.append(main_keyword)
 
+        # Models + SEO Selection
 
-        # Models
         selected_models = []
         removed_models = []
 
         if models:
 
-             for model in models:
+            candidates = []
 
-                test_title = (
+
+            # 生成不同型号组合
+            for count in range(
+                1,
+                len(models) + 1
+            ):
+
+                selected = models[:count]
+
+
+                candidate_title = (
                     " ".join(title_parts)
-                    + " "
-                    + " ".join(selected_models)
-                    + " "
-                    + model
+                    +
+                    " "
+                    +
+                    " ".join(selected)
                 )
 
-                if len(test_title) <= 75:
-                    selected_models.append(model)
 
-                else:
-                    removed_models.append(model)
+                if len(candidate_title) <= 75:
 
+                    model_score = sum(
+                        SEOElementScorer.model_score(m)
+                        for m in selected
+                    )
+
+
+                    keyword_score = SEOElementScorer.keyword_score(
+                        main_keyword
+                    )
+
+
+                    character_score = SEOElementScorer.score_per_character(
+                        keyword_score + model_score,
+                        candidate_title
+                    )
+
+
+                    total = SEOElementScorer.total_score(
+                        keyword_score,
+                        model_score,
+                        0,
+                        character_score
+                    )
+
+
+                    candidates.append(
+                        {
+                            "title": candidate_title,
+                            "models": selected,
+                            "score": total
+                        }
+                    )
+
+
+            if candidates:
+
+                best = max(
+                    candidates,
+                    key=lambda x:x["score"]
+                )
+
+
+                selected_models = best["models"]
+
+
+                removed_models = [
+                    m for m in models
+                    if m not in selected_models
+                ]
 
         # Add selected models into title
         title_parts.extend(selected_models)
