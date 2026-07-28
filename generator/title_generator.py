@@ -114,26 +114,18 @@ class TitleGenerator:
 
         if models:
 
-            # 标题预留空间
-            current_length = len(
-                " ".join(title_parts)
-            )
+             for model in models:
 
-            max_model_space = 75 - current_length
-
-            for model in models:
-
-                # 每个型号加入后测试长度
                 test_title = (
-                " ".join(title_parts)
-                + " "
-                + " ".join(selected_models)
-                + " "
-                + model
+                    " ".join(title_parts)
+                    + " "
+                    + " ".join(selected_models)
+                    + " "
+                    + model
                 )
 
                 if len(test_title) <= 75:
-                selected_models.append(model)
+                    selected_models.append(model)
 
                 else:
                     removed_models.append(model)
@@ -169,7 +161,7 @@ class TitleGenerator:
         )
 
 
-         return {
+        return {
              "title": title,
 
              "selected_models": selected_models,
