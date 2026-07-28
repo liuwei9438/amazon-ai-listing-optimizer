@@ -153,6 +153,8 @@ if uploaded is not None:
                         detected_brands=detected_brands
                     )
 
+                    title_result = TitleGenerator.generate(profile)
+                    profile["generated_title"] = title_result
                     profiles.append(profile)
                     with st.expander(f"{record.sku or '第'+str(i+1)+'个产品'}｜{profile['basic_info']['product_type'] or '未识别产品类型'}", expanded=i == 0):
                         a, b, c = st.columns(3)
@@ -181,6 +183,11 @@ if uploaded is not None:
 
                         st.write("**事实锁：**", profile["fact_lock"])
                         st.json(profile)
+                        if "generated_title" in profile:
+                            st.write("### AI生成标题")
+                            st.write(
+                            profile["generated_title"]["title"]
+                            )
                 except UnderstandingError as exc:
                     st.error(f"{record.sku or '第'+str(i+1)+'个产品'} 分析失败：{exc}")
                 progress.progress((i + 1) / int(max_products))
