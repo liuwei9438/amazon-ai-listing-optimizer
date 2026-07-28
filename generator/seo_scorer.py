@@ -165,3 +165,22 @@ class SEOElementScorer:
             +
             character_score
         )
+
+    @staticmethod
+    def candidate_title_score(
+        title,
+        keyword_score,
+        model_score
+    ):
+        length_score = SEOElementScorer.score_per_character(
+            keyword_score + model_score,
+            title
+        )
+
+        return (
+            keyword_score * 0.4
+            +
+            model_score * 0.4
+            +
+            length_score * 0.2
+        )
