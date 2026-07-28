@@ -147,3 +147,21 @@ class SEOElementScorer:
             score / length,
             3
         )
+
+    @staticmethod
+    def total_score(
+        keyword_score,
+        model_score,
+        attribute_score,
+        character_score
+    ):
+
+        return (
+            keyword_score * 0.4
+            +
+            model_score * 0.4
+            +
+            attribute_score * 0.2
+            +
+            character_score
+        )
