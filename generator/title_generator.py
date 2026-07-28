@@ -87,8 +87,18 @@ class TitleGenerator:
 
 
         # Remove duplicated product words
+        # Product type only add when keyword does not describe product
         if product_type:
-            if product_type.lower() not in main_keyword.lower():
+            product_words = product_type.lower().split()
+
+            keyword_words = main_keyword.lower().split()
+
+            overlap = len(
+                set(product_words) &
+                set(keyword_words)
+            )
+
+            if overlap == 0:
                 main_keyword = (
                     main_keyword + " " + product_type
                 )
