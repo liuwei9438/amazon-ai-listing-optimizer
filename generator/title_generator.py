@@ -132,7 +132,7 @@ class TitleGenerator:
                     removed_models.append(model)
 
         # Add models while protecting SEO keywords
-
+        
         final_models = []
 
         for model in selected_models:
