@@ -131,8 +131,25 @@ class TitleGenerator:
 
                     removed_models.append(model)
 
-        # Add selected models into title
-        title_parts.extend(selected_models)
+        # Add models while protecting SEO keywords
+
+        final_models = []
+
+        for model in selected_models:
+
+            test_title = (
+                " ".join(title_parts)
+                + " "
+                + " ".join(final_models)
+                + " "
+                + model
+             )
+
+             if len(test_title) <= 75:
+                 final_models.append(model)
+
+
+        title_parts.extend(final_models)
 
 
         title = " ".join(title_parts)
