@@ -175,6 +175,7 @@ class TitleGenerator:
 
 
         title = " ".join(title_parts)
+        
         # Format title case
         title = TitleGenerator.format_title_case(title)
 
