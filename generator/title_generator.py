@@ -149,17 +149,10 @@ class TitleGenerator:
                     )
 
 
-                    character_score = SEOElementScorer.score_per_character(
-                        keyword_score + model_score,
-                        candidate_title
-                    )
-
-
-                    total = SEOElementScorer.total_score(
+                    total = SEOElementScorer.candidate_title_score(
+                        candidate_title,
                         keyword_score,
-                        model_score,
-                        0,
-                        character_score
+                        model_score
                     )
 
 
