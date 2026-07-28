@@ -169,29 +169,24 @@ class TitleGenerator:
         )
 
 
-        return {
+         return {
+             "title": title,
 
-            "title": title,
+             "selected_models": selected_models,
 
-            "character_count": len(title),
+             "removed_models": removed_models,
 
-            "validation": {
+             "character_count": len(title),
 
-                "length_ok":
-                    len(title) <= 75,
+             "validation": {
+             "length_ok": len(title) <= 75,
+             "compliance_ok": len(blocked_found) == 0
+             },
 
-                "blocked_words":
-                    blocked_found,
+             "blocked_words": blocked_found,
 
-                "compliance_ok":
-                    len(blocked_found) == 0,
-
-                "brand_check":
-                    "passed"
-
-            }
-
-        }
+             "brand_check": "passed"
+         }
 
 
 
