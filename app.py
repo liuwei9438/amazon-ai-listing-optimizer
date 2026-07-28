@@ -11,6 +11,7 @@ from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
+from generator.title_generator import TitleGenerator
 
 from core import export_unchanged, integrity_report, read_workbook
 
@@ -190,9 +191,54 @@ if uploaded is not None:
                     file_name="product_profiles_v2.2.3.json",
                     mime="application/json",
                 )
+    if st.button("测试标题生成"):
 
-    st.subheader("原始数据预览")
-    st.dataframe(envelope.dataframe.head(10), use_container_width=True)
+        test_profile = {
+
+        "basic_info": {
+            "product_type": "Washing Machine Part",
+            "main_function": "Start Button Power Drive Button"
+        },
+
+        "brand_info": {
+            "relationship": "unbranded_compatible"
+        },
+
+        "compatibility": {
+
+            "brands": [
+                "LG"
+            ],
+
+            "models": [
+                "WD-N10240D",
+                "WD-T12360D",
+                "A12355DS"
+            ]
+
+        },
+
+        "seo": {
+
+            "primary_keywords": [
+                "washing machine start button"
+            ]
+
+            }
+
+        }
+
+
+        result = TitleGenerator.generate(
+            test_profile
+        )
+
+
+        st.subheader("测试标题生成结果")
+        st.json(result)
+    
+        st.subheader("原始数据预览")
+        st.dataframe(envelope.dataframe.head(10), use_container_width=True)
 
     exported = export_unchanged(envelope)
     integrity = integrity_report(envelope, exported)
