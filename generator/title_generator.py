@@ -67,13 +67,6 @@ class TitleGenerator:
         title_parts = []
 
 
-        # Compatible brand
-        if brands:
-            title_parts.append(
-                f"Compatible with {brands[0]}"
-            )
-
-
         # Main keyword
         main_keyword = ""
 
@@ -104,7 +97,11 @@ class TitleGenerator:
 
         if main_keyword:
             title_parts.append(main_keyword)
-
+        # Compatible brand after main keyword
+        if brands:
+            title_parts.append(
+                f"Compatible with {brands[0]}"
+            )
         # Models + SEO Selection
 
         selected_models = []
