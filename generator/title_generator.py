@@ -69,70 +69,57 @@ class TitleGenerator:
         title_parts = []
 
 
-        # =========================
-        # Brand Protection
-        # =========================
-
-        if brands and relationship != "owned_brand":
-
+        # Compatible brand
+        if brands:
             title_parts.append(
                 f"Compatible with {brands[0]}"
             )
 
 
-        # =========================
-        # Primary Keyword
-        # =========================
+        # Main keyword
+        main_keyword = ""
 
         if primary_keywords:
-
-            title_parts.append(
-                primary_keywords[0]
-            )
+            main_keyword = primary_keywords[0]
 
         elif main_function:
-
-            title_parts.append(
-                main_function
-            )
+            main_keyword = main_function
 
 
-        # =========================
-        # Product Type
-        # =========================
-
+        # Remove duplicated product words
         if product_type:
+            if product_type.lower() not in main_keyword.lower():
+                main_keyword = (
+                    main_keyword + " " + product_type
+                )
 
-            title_parts.append(
-                product_type
-            )
+
+        if main_keyword:
+            title_parts.append(main_keyword)
 
 
-        # =========================
-        # Model Handling
-        # =========================
-
+        # Models
         if models:
 
             if len(models) <= 4:
-
                 title_parts.extend(models)
 
             else:
-
-                title_parts.extend(
-                    models[:3]
-                )
-
-                title_parts.append(
-                    "Series"
-                )
+                title_parts.extend(models[:3])
+                title_parts.append("Series")
 
 
         title = " ".join(title_parts)
 
 
         # Clean
+        title = title.strip()
+        
+        for brand in brands:
+            title = title.replace(
+                brand.title(),
+                brand.upper()
+            )
         title = TitleGenerator.clean_title(title)
 
 
