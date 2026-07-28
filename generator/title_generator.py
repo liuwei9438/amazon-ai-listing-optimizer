@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import re
 
+from generator.seo_scorer import SEOElementScorer
+from generator.model_ranker import ModelRanker
+
 class TitleGenerator:
 
     BLOCKED_WORDS = [
