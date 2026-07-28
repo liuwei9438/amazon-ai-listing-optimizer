@@ -12,6 +12,7 @@ from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
 from generator.title_generator import TitleGenerator
+from generator.bullet_generator import BulletGenerator
 
 from core import export_unchanged, integrity_report, read_workbook
 
@@ -154,7 +155,15 @@ if uploaded is not None:
                     )
 
                     title_result = TitleGenerator.generate(profile)
+
+                    bullet_result = BulletGenerator.generate(profile)
+
+
                     profile["generated_title"] = title_result
+
+                    profile["bullet_result"] = bullet_result
+
+
                     profiles.append(profile)
                     with st.expander(f"{record.sku or '第'+str(i+1)+'个产品'}｜{profile['basic_info']['product_type'] or '未识别产品类型'}", expanded=i == 0):
                         a, b, c = st.columns(3)
@@ -188,6 +197,17 @@ if uploaded is not None:
                             st.write(
                             profile["generated_title"]["title"]
                             )
+
+
+                        if "bullet_result" in profile:
+
+                            st.write("### AI生成五点描述")
+
+                            for bullet in profile["bullet_result"]:
+
+                                st.write(
+                                    "• " + bullet
+                                )
                 except UnderstandingError as exc:
                     st.error(f"{record.sku or '第'+str(i+1)+'个产品'} 分析失败：{exc}")
                 progress.progress((i + 1) / int(max_products))
