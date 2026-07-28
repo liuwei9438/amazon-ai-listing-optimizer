@@ -18,6 +18,8 @@ class BulletGenerator:
         "hot sale",
         "discount",
         "promotion",
+        "top quality",
+        "perfect",
     ]
 
 
@@ -25,6 +27,7 @@ class BulletGenerator:
     def generate(profile: dict) -> list:
         """
         Generate Amazon bullet points
+        from Product Profile
         """
 
 
@@ -33,23 +36,24 @@ class BulletGenerator:
             {}
         )
 
-
         compatibility = profile.get(
             "compatibility",
             {}
         )
-
 
         attributes = profile.get(
             "attributes",
             {}
         )
 
+        seo = profile.get(
+            "seo",
+            {})
 
 
         product_type = basic.get(
             "product_type",
-            "product"
+            ""
         )
 
 
@@ -71,78 +75,105 @@ class BulletGenerator:
         )
 
 
+        primary_keyword = ""
+
+        keywords = seo.get(
+            "primary_keywords",
+            []
+        )
+
+        if keywords:
+            primary_keyword = keywords[0]
+
 
         bullets = []
 
 
-
-        # 1 Compatibility
-
-        compatibility_text = (
-            BulletGenerator
-            .compatibility_bullet(
-                brands,
-                models
-            )
-        )
-
-
-        bullets.append(
-            compatibility_text
-        )
-
-
-
-        # 2 Function
-
+        # Bullet 1
         bullets.append(
             BulletGenerator.clean(
-                f"Function: Designed to restore the {main_function} function and help replace damaged or worn {product_type} components."
+                f"{main_function.capitalize()} designed as a compatible replacement part for {brands[0] if brands else ''} {product_type.lower()}."
             )
         )
 
 
+        # Bullet 2 - Models
+        if models:
 
-        # 3 Material
-
-        material = attributes.get(
-            "material",
-            ""
-        )
-
-
-        if material:
+            model_text = ", ".join(
+                models[:4]
+            )
 
             bullets.append(
                 BulletGenerator.clean(
-                    f"Durable Material: Made from {material} material for reliable daily use and stable performance."
+                    f"Compatible with {brands[0] if brands else ''} models {model_text} for replacement use. Please confirm your appliance model before purchase."
                 )
             )
 
         else:
 
             bullets.append(
-                "Durable Construction: Designed for reliable performance and long-term daily use."
+                "Please confirm your appliance model before purchase to ensure compatibility."
             )
 
 
+        # Bullet 3 - Material / Attribute
 
-        # 4 Installation
+        material = attributes.get(
+            "material",
+            ""
+        )
 
-        bullets.append(
-            "Easy Installation: Designed as a replacement part. Please follow proper installation steps or seek professional assistance when needed."
+        color = attributes.get(
+            "color",
+            ""
         )
 
 
+        attribute_parts = []
 
-        # 5 Purchase reminder
+
+        if material:
+            attribute_parts.append(
+                f"Material: {material}"
+            )
+
+
+        if color:
+            attribute_parts.append(
+                f"Color: {color}"
+            )
+
+
+        if attribute_parts:
+
+            bullets.append(
+                BulletGenerator.clean(
+                    " ".join(attribute_parts) + "."
+                )
+            )
+
+        else:
+
+            bullets.append(
+                "Designed for replacing worn or damaged parts and helping restore normal appliance operation."
+            )
+
+
+        # Bullet 4 - Installation
 
         bullets.append(
             BulletGenerator.clean(
-                "Compatibility Check: Please confirm your appliance model number before purchase to ensure proper compatibility."
+                "Designed for straightforward replacement installation. Check the existing part and appliance model before installation."
             )
         )
 
+
+        # Bullet 5 - Compliance
+
+        bullets.append(
+            "Replacement component only. This product is not manufactured or endorsed by the original brand."
+        )
 
 
         return bullets
@@ -150,74 +181,16 @@ class BulletGenerator:
 
 
     @staticmethod
-    def compatibility_bullet(
-        brands,
-        models
-    ):
-
-
-        text = ""
-
-
-        if brands:
-
-            text += (
-                f"Compatible with {brands[0]}"
-            )
-
-
-        else:
-
-            text += (
-                "Compatible with selected models"
-            )
-
-
-
-        if models:
-
-
-            show_models = models[:4]
-
-
-            text += (
-                " models including "
-                +
-                ", ".join(show_models)
-            )
-
-
-
-        text += (
-            ". Please check your model number before purchase."
-        )
-
-
-        return text
-
-
-
-    @staticmethod
-    def clean(text):
+    def clean(text: str) -> str:
 
 
         for word in BulletGenerator.BLOCKED_WORDS:
 
-
             text = re.sub(
-
-                r"\b"
-                +
-                re.escape(word)
-                +
-                r"\b",
-
+                r"\b" + re.escape(word) + r"\b",
                 "",
-
                 text,
-
                 flags=re.I
-
             )
 
 
