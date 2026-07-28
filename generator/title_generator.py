@@ -132,7 +132,14 @@ class TitleGenerator:
 
 
         title = " ".join(title_parts)
+        # Format title case
+        title = TitleGenerator.format_title_case(title)
 
+
+        # Clean
+        title = title.strip()
+        # Format title case
+        title = title.title()
 
         # Clean
         title = title.strip()
@@ -175,7 +182,27 @@ class TitleGenerator:
 
              "brand_check": "passed"
          }
+    @staticmethod
+    def format_title_case(text):
 
+        words = text.split()
+
+        small_words = [
+        "with",
+        "and",
+        "for"
+        ]
+
+        result=[]
+
+        for i,w in enumerate(words):
+
+            if i > 0 and w.lower() in small_words:
+                result.append(w.lower())
+            else:
+                result.append(w.capitalize())
+
+        return " ".join(result)
 
 
     @staticmethod
