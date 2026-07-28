@@ -53,6 +53,7 @@ class TitleGenerator:
             "models",
             []
         )
+        
         models = ModelRanker.rank(models)
 
         primary_keywords = seo.get(
