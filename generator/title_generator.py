@@ -20,7 +20,29 @@ class TitleGenerator:
         "discount",
         "promotion",
     ]
+    @staticmethod
+    def format_title_case(text):
 
+        words = text.split()
+
+        small_words = [
+            "with",
+            "and",
+            "for"
+        ]
+
+        result = []
+
+        for i, w in enumerate(words):
+
+            if i > 0 and w.lower() in small_words:
+                result.append(w.lower())
+
+            else:
+                result.append(w.capitalize())
+
+
+        return " ".join(result)
     @staticmethod
     def generate(profile: dict) -> dict:
         """
