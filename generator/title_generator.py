@@ -3,16 +3,12 @@ from __future__ import annotations
 import re
 
 from generator.model_ranker import ModelRanker
-from generator.keyword_ranker import KeywordRanker
-from generator.title_scorer import TitleScorer
-
 
 
 class TitleGenerator:
 
 
     BLOCKED_WORDS = [
-
         "best",
         "best seller",
         "#1",
@@ -24,13 +20,14 @@ class TitleGenerator:
         "hot sale",
         "discount",
         "promotion",
-
     ]
 
 
-
     @staticmethod
-    def generate(profile: dict):
+    def generate(profile: dict) -> dict:
+        """
+        Generate Amazon title from Product Profile
+        """
 
 
         basic = profile.get(
@@ -38,12 +35,10 @@ class TitleGenerator:
             {}
         )
 
-
         compatibility = profile.get(
             "compatibility",
             {}
         )
-
 
         seo = profile.get(
             "seo",
@@ -63,7 +58,6 @@ class TitleGenerator:
         )
 
 
-
         brands = compatibility.get(
             "brands",
             []
@@ -76,64 +70,77 @@ class TitleGenerator:
         )
 
 
-
         primary_keywords = seo.get(
             "primary_keywords",
             []
         )
 
 
-        secondary_keywords = seo.get(
-            "secondary_keywords",
-            []
-        )
+
+        title_parts = []
 
 
 
-        all_keywords = (
-            primary_keywords
-            +
-            secondary_keywords
-        )
+        # -------------------------
+        # Compatible brand
+        # -------------------------
+
+        if brands:
+
+            title_parts.append(
+                f"Compatible with {brands[0]}"
+            )
 
 
 
-        # ======================
-        # Keyword Ranking
-        # ======================
+        # -------------------------
+        # Main keyword
+        # -------------------------
 
-        keywords = KeywordRanker.rank(
-            all_keywords
-        )
+        main_keyword = ""
 
 
+        if primary_keywords:
 
-        # ======================
-        # Model Ranking
-        # ======================
+            main_keyword = primary_keywords[0]
 
-        models = ModelRanker.rank(
-            models
-        )
+
+        elif main_function:
+
+            main_keyword = main_function
 
 
 
-        if keywords:
-
-            best_keyword = keywords[0]
-
-        else:
-
-            best_keyword = main_function
-
-
+        # avoid duplicate words
 
         if product_type:
 
-            if product_type.lower() not in best_keyword.lower():
 
-                best_keyword = (
-                    best_keyword
+            product_words = (
+                product_type
+                .lower()
+                .split()
+            )
+
+
+            keyword_words = (
+                main_keyword
+                .lower()
+                .split()
+            )
+
+
+            overlap = len(
+                set(product_words)
+                &
+                set(keyword_words)
+            )
+
+
+            if overlap == 0:
+
+                main_keyword = (
+                    main_keyword
                     +
                     " "
                     +
@@ -142,181 +149,132 @@ class TitleGenerator:
 
 
 
-        # ======================
-        # Generate Candidates
-        # ======================
+        if main_keyword:
 
-
-        candidates = []
-
-
-
-        brand_text = ""
-
-
-        if brands:
-
-            brand_text = (
-                "Compatible with "
-                +
-                brands[0]
+            title_parts.append(
+                main_keyword
             )
 
 
 
-        # 不同关键词组合
+        # -------------------------
+        # Model ranking
+        # -------------------------
 
-        keyword_candidates = keywords[:3]
+        selected_models = []
+
+        removed_models = []
 
 
 
-        for keyword in keyword_candidates:
+        if models:
 
 
-            base = (
+            ranked_models = (
+                ModelRanker.rank(models)
+            )
 
-                brand_text
+
+            selected_models = (
+                ranked_models[:3]
+            )
+
+
+            removed_models = [
+                m
+                for m in ranked_models
+                if m not in selected_models
+            ]
+
+
+
+        # -------------------------
+        # Protect 75 characters
+        # -------------------------
+
+        final_models = []
+
+
+        for model in selected_models:
+
+
+            test_title = (
+
+                " ".join(title_parts)
+
                 +
+
                 " "
+
                 +
-                keyword
 
-            ).strip()
+                " ".join(final_models)
 
-
-
-            selected_models = []
-
-
-
-            title = base
-
-
-
-            for model in models:
-
-
-                test_title = (
-
-                    title
-                    +
-                    " "
-                    +
-                    " "
-                    .join(selected_models)
-                    +
-                    " "
-                    +
-                    model
-
-                ).strip()
-
-
-
-                if len(test_title) <= 75:
-
-                    selected_models.append(
-                        model
-                    )
-
-
-
-            final_title = (
-
-                title
                 +
+
                 " "
+
                 +
-                " "
-                .join(selected_models)
 
-            ).strip()
-
-
-
-            score = TitleScorer.total_score(
-
-                final_title,
-
-                keywords,
-
-                models
+                model
 
             )
 
 
+            if len(test_title) <= 75:
 
-            candidates.append(
-
-                {
-
-                    "title":
-                        final_title,
+                final_models.append(model)
 
 
-                    "models":
-                        selected_models,
+            else:
 
-
-                    "score":
-                        score
-
-                }
-
-            )
+                removed_models.append(model)
 
 
 
-        # ======================
-        # Select Best
-        # ======================
-
-
-        if candidates:
-
-
-            best = max(
-
-                candidates,
-
-                key=lambda x:x["score"]
-
-            )
-
-
-            title = best["title"]
-
-            selected_models = best["models"]
-
-
-
-        else:
-
-
-            title = brand_text + " " + best_keyword
-
-            selected_models = []
-
-
-
-
-        removed_models = [
-
-            m for m in models
-
-            if m not in selected_models
-
-        ]
-
-
-
-        title = TitleGenerator.clean_title(
-            title
+        title_parts.extend(
+            final_models
         )
 
 
-        title = TitleGenerator.format_title_case(
-            title
+
+        title = (
+            " ".join(title_parts)
+        )
+
+
+
+        # -------------------------
+        # Clean title
+        # -------------------------
+
+        title = (
+            TitleGenerator
+            .clean_title(title)
+        )
+
+
+
+        title = (
+            TitleGenerator
+            .format_title_case(title)
+        )
+
+
+
+        title = (
+            TitleGenerator
+            .limit_length(
+                title,
+                75
+            )
+        )
+
+
+
+        blocked_found = (
+            TitleGenerator
+            .check_blocked_words(title)
         )
 
 
@@ -327,35 +285,29 @@ class TitleGenerator:
             "title": title,
 
 
-            "selected_models":
-                selected_models,
+            "selected_models": final_models,
 
 
-            "removed_models":
-                removed_models,
+            "removed_models": removed_models,
 
 
-            "character_count":
-                len(title),
+            "character_count": len(title),
 
 
-            "validation":
-                {
+            "validation": {
 
-                    "length_ok":
-                        len(title)<=75,
+                "length_ok":
+                    len(title) <= 75,
 
 
-                    "compliance_ok":
-                        len(
-                            TitleGenerator.check_blocked_words(title)
-                        ) == 0
+                "compliance_ok":
+                    len(blocked_found) == 0
 
-                },
+            },
 
 
             "blocked_words":
-                TitleGenerator.check_blocked_words(title),
+                blocked_found,
 
 
             "brand_check":
@@ -365,54 +317,14 @@ class TitleGenerator:
 
 
 
-
     @staticmethod
-    def format_title_case(text):
-
-
-        words=text.split()
-
-
-        small_words=[
-            "with",
-            "and",
-            "for"
-        ]
-
-
-        result=[]
-
-
-        for i,w in enumerate(words):
-
-
-            if i>0 and w.lower() in small_words:
-
-                result.append(
-                    w.lower()
-                )
-
-            else:
-
-                result.append(
-                    w.capitalize()
-                )
-
-
-        return " ".join(result)
-
-
-
-
-
-    @staticmethod
-    def clean_title(text):
+    def clean_title(text: str):
 
 
         for word in TitleGenerator.BLOCKED_WORDS:
 
 
-            text=re.sub(
+            text = re.sub(
 
                 r"\b"
                 +
@@ -429,10 +341,15 @@ class TitleGenerator:
             )
 
 
-        text=re.sub(
+
+        text = re.sub(
+
             r"\s+",
+
             " ",
+
             text
+
         )
 
 
@@ -440,12 +357,112 @@ class TitleGenerator:
 
 
 
+    @staticmethod
+    def format_title_case(text):
+
+
+        words = text.split()
+
+
+        small_words = [
+
+            "with",
+
+            "and",
+
+            "for"
+
+        ]
+
+
+        result = []
+
+
+        for i, word in enumerate(words):
+
+
+            if (
+                i > 0
+                and word.lower()
+                in small_words
+            ):
+
+                result.append(
+                    word.lower()
+                )
+
+
+            else:
+
+                result.append(
+                    word.capitalize()
+                )
+
+
+        return " ".join(result)
+
+
+
+    @staticmethod
+    def limit_length(
+        text: str,
+        max_length: int = 75
+    ):
+
+
+        if len(text) <= max_length:
+
+            return text
+
+
+
+        words = text.split()
+
+
+        result = []
+
+
+        length = 0
+
+
+
+        for word in words:
+
+
+            if (
+                length
+                +
+                len(word)
+                +
+                1
+                >
+                max_length
+            ):
+
+                break
+
+
+
+            result.append(word)
+
+
+            length += (
+                len(word)
+                +
+                1
+            )
+
+
+
+        return " ".join(result)
+
+
 
     @staticmethod
     def check_blocked_words(text):
 
 
-        found=[]
+        found = []
 
 
         for word in TitleGenerator.BLOCKED_WORDS:
@@ -465,10 +482,8 @@ class TitleGenerator:
 
             ):
 
-
                 found.append(word)
 
 
 
         return found
-
