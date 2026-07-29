@@ -17,6 +17,7 @@ from core import export_unchanged, integrity_report, read_workbook
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
+from generator.short_title_generator import ShortTitleGenerator
 from generator.title_generator import TitleGenerator
 from services.config import get_openai_api_key
 from services.listing_exporter import ListingExporter
