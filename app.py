@@ -303,15 +303,27 @@ if uploaded is not None:
                     title_result = TitleGenerator.generate(profile)
                     short_title_result = ShortTitleGenerator.generate(profile)
                     highlight_result = HighlightGenerator.generate(profile)
+                   
                     models = ModelProtection.extract_models(
                         profile
                     )
-
+                    
+                    title_result = ModelProtection.protect_result(
+                        title_result,
+                        models,
+                    )
+                    short_title_result = ModelProtection.protect_result(
+                        short_title_result,
+                        models,
+                    )
+                    highlight_result = ModelProtection.protect_result(
+                        highlight_result,
+                        models,
+                    )
                     bullet_result = BulletGenerator.generate(
                         profile,
                         highlight_result,
                     )
-
                     description_result = DescriptionGenerator.generate(
                         profile,
                         highlight_result,
