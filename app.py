@@ -1,47 +1,127 @@
 from __future__ import annotations
 
+import json
 import re
 
 import pandas as pd
 import streamlit as st
-import json
 
-from analyzer.product_understanding import ProductUnderstandingEngine, UnderstandingError
+from analyzer.product_understanding import (
+    ProductUnderstandingEngine,
+    UnderstandingError,
+)
 from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
-from services.config import get_openai_api_key
-from generator.title_generator import TitleGenerator
-from services.listing_exporter import ListingExporter
+from core import export_unchanged, integrity_report, read_workbook
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
-from core import export_unchanged, integrity_report, read_workbook
+from generator.title_generator import TitleGenerator
+from services.config import get_openai_api_key
+from services.listing_exporter import ListingExporter
 
-VERSION = "V2.3.0-Product-Understanding-SEO"
 
-st.set_page_config(page_title="Amazon AI Listing Optimizer", layout="wide")
+VERSION = "V2.4.0-Highlight-Pipeline"
+
+
+def display_highlights(highlight_result: dict) -> None:
+    """Display highlights while supporting both current and older data structures."""
+    highlights = highlight_result.get("highlights", [])
+
+    if isinstance(highlights, list):
+        for item in highlights:
+            if isinstance(item, dict):
+                text = str(item.get("text", "")).strip()
+            else:
+                text = str(item).strip()
+
+            if text:
+                st.write("• " + text)
+
+    elif isinstance(highlights, dict):
+        for value in highlights.values():
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        text = str(item.get("text", item.get("value", ""))).strip()
+                    else:
+                        text = str(item).strip()
+
+                    if text:
+                        st.write("• " + text)
+
+            else:
+                text = str(value).strip()
+                if text:
+                    st.write("• " + text)
+
+
+def display_generated_content(profile: dict) -> None:
+    title_result = profile.get("generated_title", {})
+    if title_result.get("title"):
+        st.write("### AI生成标题")
+        st.write(title_result["title"])
+
+    highlight_result = profile.get("highlight_result", {})
+    if highlight_result:
+        st.write("### AI商品亮点")
+        display_highlights(highlight_result)
+
+    bullet_result = profile.get("bullet_result", {})
+    bullets = bullet_result.get("bullets", [])
+    if bullets:
+        st.write("### AI生成五点描述")
+        for bullet in bullets:
+            text = str(bullet).strip()
+            if text:
+                st.write("• " + text)
+
+    description_result = profile.get("description_result", {})
+    description = str(description_result.get("description", "")).strip()
+    if description:
+        st.write("### AI生成详情描述")
+        st.write(description)
+
+
+st.set_page_config(
+    page_title="Amazon AI Listing Optimizer",
+    layout="wide",
+)
+
 st.title("Amazon AI Listing Optimizer")
 st.caption(VERSION)
 st.info(
-    "本版本在稳定数据层上新增 AI 商品理解模块。不会生成标题、五点或详情，也不会修改图片。"
-    "导出仍与上传文件字节级一致。"
+    "本版本基于 AI 商品理解生成商品亮点、标题、五点和详情。"
+    "所有内容遵循事实保护规则，不主动添加未确认的材质、参数或功能。"
+    "同时保留原文件完整性测试导出。"
 )
 
 uploaded = st.file_uploader("上传 Excel", type=["xlsx"])
 
 if uploaded is not None:
+    upload_key = f"{uploaded.name}:{len(uploaded.getvalue())}"
+
+    if st.session_state.get("upload_key") != upload_key:
+        st.session_state["upload_key"] = upload_key
+        st.session_state["profiles"] = []
+
     try:
-        envelope = read_workbook(uploaded.name, uploaded.getvalue())
+        envelope = read_workbook(
+            uploaded.name,
+            uploaded.getvalue(),
+        )
     except Exception as exc:
         st.error(f"读取失败：{exc}")
         st.stop()
 
     fields = envelope.fields
     diagnostics = envelope.diagnostics
+
     st.success(
         f"读取成功：工作表 {envelope.sheet_name}，"
-        f"{diagnostics['row_count']} 行，{diagnostics['column_count']} 列。"
+        f"{diagnostics['row_count']} 行，"
+        f"{diagnostics['column_count']} 列。"
     )
 
     c1, c2, c3, c4, c5 = st.columns(5)
@@ -52,12 +132,14 @@ if uploaded is not None:
     c5.metric("含图片链接记录", diagnostics["records_with_image_urls"])
 
     st.subheader("字段识别报告")
+
     report_rows = []
     for label, value in fields.as_dict().items():
         if isinstance(value, tuple):
             display_value = "、".join(value)
         else:
             display_value = value or ""
+
         report_rows.append(
             {
                 "标准字段": label,
@@ -65,23 +147,34 @@ if uploaded is not None:
                 "状态": "✓ 已识别" if display_value else "× 未识别",
             }
         )
-    st.dataframe(pd.DataFrame(report_rows), hide_index=True, use_container_width=True)
 
-    with st.expander(f"未匹配的原始列（{len(diagnostics['unmatched_columns'])}）"):
+    st.dataframe(
+        pd.DataFrame(report_rows),
+        hide_index=True,
+        use_container_width=True,
+    )
+
+    with st.expander(
+        f"未匹配的原始列（{len(diagnostics['unmatched_columns'])}）"
+    ):
         if diagnostics["unmatched_columns"]:
             st.write("、".join(diagnostics["unmatched_columns"]))
         else:
             st.success("所有列均已匹配到标准字段。")
 
     st.subheader("图片识别诊断")
+
     if fields.images:
         st.success(
-            f"图片链接列：{fields.images}；识别方式：{diagnostics['image_detection_method']}；"
-            f"含有效图片链接的记录：{diagnostics['records_with_image_urls']}。"
+            f"图片链接列：{fields.images}；"
+            f"识别方式：{diagnostics['image_detection_method']}；"
+            f"含有效图片链接的记录："
+            f"{diagnostics['records_with_image_urls']}。"
         )
     elif diagnostics["embedded_image_count"]:
         st.success(
-            f"未发现图片链接列，但包含 {diagnostics['embedded_image_count']} 个 Excel 嵌入图片对象。"
+            f"未发现图片链接列，但包含 "
+            f"{diagnostics['embedded_image_count']} 个 Excel 嵌入图片对象。"
             "原样导出会保留这些对象。"
         )
     else:
@@ -91,6 +184,7 @@ if uploaded is not None:
         )
 
     st.subheader("ProductRecord 预览")
+
     record_preview = []
     for record in envelope.records[:10]:
         record_preview.append(
@@ -104,282 +198,327 @@ if uploaded is not None:
                 "语言": record.language,
             }
         )
-    st.dataframe(pd.DataFrame(record_preview), hide_index=True, use_container_width=True)
+
+    st.dataframe(
+        pd.DataFrame(record_preview),
+        hide_index=True,
+        use_container_width=True,
+    )
 
     st.subheader("AI Product Understanding")
-    st.caption("本阶段只验证商品理解与事实保护，不生成任何上架文案。建议先分析 1–5 个代表产品。")
+    st.caption(
+        "建议先分析 1–5 个代表产品，确认商品理解、事实保护、"
+        "标题、商品亮点、五点和详情结果。"
+    )
+
     saved_api_key = get_openai_api_key()
 
     if saved_api_key:
-        st.success("✅ 已从 Streamlit Secrets 或系统环境变量读取 OpenAI API Key。")
+        st.success(
+            "✅ 已从 Streamlit Secrets 或系统环境变量读取 OpenAI API Key。"
+        )
     else:
-        st.warning("⚠ 未检测到已保存的 OpenAI API Key，可在下方临时输入。")
+        st.warning(
+            "⚠ 未检测到已保存的 OpenAI API Key，可在下方临时输入。"
+        )
 
     manual_api_key = st.text_input(
         "OpenAI API Key（可留空，默认读取 Secrets）",
         type="password",
-        help="优先读取 Streamlit Secrets 或系统环境变量；手动输入仅用于当前会话。",
+        help=(
+            "优先读取 Streamlit Secrets 或系统环境变量；"
+            "手动输入仅用于当前会话。"
+        ),
     )
-    api_key = manual_api_key.strip() or saved_api_key
 
+    api_key = manual_api_key.strip() or saved_api_key
     model = st.text_input("模型", value="gpt-4.1-mini")
-    max_products = st.number_input("本次分析产品数", min_value=1, max_value=max(1, min(20, len(envelope.records))), value=min(3, max(1, len(envelope.records))))
+
+    record_count = max(1, len(envelope.records))
+    max_products = st.number_input(
+        "本次分析产品数",
+        min_value=1,
+        max_value=max(1, min(20, record_count)),
+        value=min(3, record_count),
+    )
+
     if st.button("开始 AI 商品理解", type="primary"):
         if not api_key.strip():
             st.error("请先填写 OpenAI API Key。")
         else:
-            engine = ProductUnderstandingEngine(api_key=api_key, model=model)
+            engine = ProductUnderstandingEngine(
+                api_key=api_key,
+                model=model,
+            )
+
             profiles = []
             progress = st.progress(0)
-            for i, record in enumerate(envelope.records[:int(max_products)]):
+            target_records = envelope.records[: int(max_products)]
+
+            for i, record in enumerate(target_records):
                 try:
                     profile = engine.analyze(record)
 
-                    # Task 4.2.2-A: SEO Intent Primary Search
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
-                    # Task 4.3-B: SEO Keyword Engine
+
                     seo_keywords = SEOKeywordEngine.generate(profile)
                     profile["seo"] = seo_keywords
 
-                    primary_text = ""
-                    if seo_intent.get("primary_search"):
-                        primary_text = seo_intent["primary_search"][0]
+                    primary_search = seo_intent.get("primary_search", [])
+                    primary_text = primary_search[0] if primary_search else ""
 
                     detected_brands = (
-                        profile.get("brand_info", {}).get("detected_brands", [])
-                        or profile.get("compatibility", {}).get("brands", [])
+                        profile.get("brand_info", {}).get(
+                            "detected_brands",
+                            [],
+                        )
+                        or profile.get("compatibility", {}).get(
+                            "brands",
+                            [],
+                        )
                     )
 
                     profile["compliance_result"] = protect_text(
                         primary_text,
-                        detected_brands=detected_brands
+                        detected_brands=detected_brands,
                     )
 
                     title_result = TitleGenerator.generate(profile)
-
                     highlight_result = HighlightGenerator.generate(profile)
-
 
                     bullet_result = BulletGenerator.generate(
                         profile,
-                        highlight_result
+                        highlight_result,
                     )
+
                     description_result = DescriptionGenerator.generate(
                         profile,
-                        highlight_result
+                        highlight_result,
                     )
 
                     profile["generated_title"] = title_result
-
                     profile["highlight_result"] = highlight_result
-
                     profile["bullet_result"] = bullet_result
-
                     profile["description_result"] = description_result
 
-                    
-
-
                     profiles.append(profile)
-                    with st.expander(f"{record.sku or '第'+str(i+1)+'个产品'}｜{profile['basic_info']['product_type'] or '未识别产品类型'}", expanded=i == 0):
+
+                    product_type = (
+                        profile.get("basic_info", {}).get(
+                            "product_type",
+                            "",
+                        )
+                        or "未识别产品类型"
+                    )
+
+                    expander_title = (
+                        f"{record.sku or '第' + str(i + 1) + '个产品'}"
+                        f"｜{product_type}"
+                    )
+
+                    with st.expander(
+                        expander_title,
+                        expanded=i == 0,
+                    ):
                         a, b, c = st.columns(3)
+
                         a.write("**产品类型**")
-                        a.write(profile["basic_info"]["product_type"] or "Unknown")
+                        a.write(product_type)
+
                         b.write("**品牌关系**")
-                        b.write(profile["brand_info"]["relationship"])
-                        c.write("**风险等级**")
-                        c.write(profile["compliance"]["risk_level"])
-                        st.write("**兼容品牌：**", "、".join(profile["compatibility"]["brands"]) or "Unknown")
-                        st.write("**兼容型号：**", "、".join(profile["compatibility"]["models"]) or "Unknown")
-                        st.write("**核心功能：**", profile["basic_info"]["main_function"] or "Unknown")
-                        st.write("**主要关键词：**", "、".join(profile["seo"]["primary_keywords"]) or "Unknown")
-                        st.write("**搜索意图：**", profile["seo"]["search_intent"] or "Unknown")
-
-                        if "seo_intent" in profile:
-                            st.write("### SEO Intent")
-                            primary_search = profile["seo_intent"].get("primary_search", [])
-                            st.write("**Primary Search：**", "、".join(primary_search) or "Unknown")
-
-                        if "compliance_result" in profile:
-                            st.write("### Compliance Check")
-                            st.write("**Protected Text：**", profile["compliance_result"].get("text", ""))
-                            st.write("**Detected Brands：**", "、".join(profile["compliance_result"].get("detected_brands", [])) or "None")
-                            st.write("**Risk：**", profile["compliance_result"].get("risk", ""))
-
-                        st.write("**事实锁：**", profile["fact_lock"])
-                        st.json(profile)
-                        if "generated_title" in profile:
-                            st.write("### AI生成标题")
-                            st.write(
-                            profile["generated_title"]["title"]
+                        b.write(
+                            profile.get("brand_info", {}).get(
+                                "relationship",
+                                "Unknown",
                             )
-                        # ======================
-                        # AI 商品亮点
-                        # ======================
-    if "highlight_result" in profile:
+                        )
 
-       st.subheader("AI商品亮点")
+                        c.write("**风险等级**")
+                        c.write(
+                            profile.get("compliance", {}).get(
+                                "risk_level",
+                                "Unknown",
+                            )
+                        )
 
+                        compatible_brands = profile.get(
+                            "compatibility",
+                            {},
+                        ).get("brands", [])
 
-       highlight_data = profile[
-           "highlight_result"
-       ].get(
-           "highlights",
-           {}
-       )
+                        compatible_models = profile.get(
+                            "compatibility",
+                            {},
+                        ).get("models", [])
 
-
-       for key, value in highlight_data.items():
-
-           if value:
-
-               if isinstance(value, list):
-
-                   for item in value:
-
-                       st.write(
-                           "• " + str(item)
-                       )
-
-               else:
-
-                   st.write(
-                      "• " + str(value)
-                   )
-                        # ======================
-                        # AI 五点描述
-                        # ======================
-
-                        if "bullet_result" in profile:
-
-                           st.subheader(
-                              "AI生成五点描述"
-                           )
-
-
-                           bullets = profile[
-                              "bullet_result"
-                           ].get(
-                               "bullets",
-                               []
-                           )
-
-
-                           for bullet in bullets:
-
-                               st.write(
-                               "• " + bullet
-                           )
-                        # ======================
-                        # AI详情描述
-                        # ======================
-
-                        if "description_result" in profile:
-
-                           st.subheader(
-                               "AI生成详情描述"
-                           )
-
-
-                           description = profile[
-                                "description_result"
-                           ].get(
-                               "description",
-                               ""
-                           )
-
-
-                           if description:
-
-                               st.write(
-                                   description
-                               )
-                        if "bullet_result" in profile:
-
-                            st.write("### AI生成五点描述")
-
-                            for bullet in profile["bullet_result"]:
-
-                                st.write(
-                                    "• " + bullet
+                        st.write(
+                            "**兼容品牌：**",
+                            "、".join(compatible_brands) or "Unknown",
+                        )
+                        st.write(
+                            "**兼容型号：**",
+                            "、".join(compatible_models) or "Unknown",
+                        )
+                        st.write(
+                            "**核心功能：**",
+                            profile.get("basic_info", {}).get(
+                                "main_function",
+                                "",
+                            )
+                            or "Unknown",
+                        )
+                        st.write(
+                            "**主要关键词：**",
+                            "、".join(
+                                profile.get("seo", {}).get(
+                                    "primary_keywords",
+                                    [],
                                 )
+                            )
+                            or "Unknown",
+                        )
+                        st.write(
+                            "**搜索意图：**",
+                            profile.get("seo", {}).get(
+                                "search_intent",
+                                "",
+                            )
+                            or "Unknown",
+                        )
+
+                        st.write("### SEO Intent")
+                        st.write(
+                            "**Primary Search：**",
+                            "、".join(primary_search) or "Unknown",
+                        )
+
+                        compliance_result = profile.get(
+                            "compliance_result",
+                            {},
+                        )
+
+                        st.write("### Compliance Check")
+                        st.write(
+                            "**Protected Text：**",
+                            compliance_result.get("text", ""),
+                        )
+                        st.write(
+                            "**Detected Brands：**",
+                            "、".join(
+                                compliance_result.get(
+                                    "detected_brands",
+                                    [],
+                                )
+                            )
+                            or "None",
+                        )
+                        st.write(
+                            "**Risk：**",
+                            compliance_result.get("risk", ""),
+                        )
+
+                        st.write(
+                            "**事实锁：**",
+                            profile.get("fact_lock", {}),
+                        )
+
+                        display_generated_content(profile)
+
+                        with st.expander("查看完整 Product Profile JSON"):
+                            st.json(profile)
+
                 except UnderstandingError as exc:
-                    st.error(f"{record.sku or '第'+str(i+1)+'个产品'} 分析失败：{exc}")
-                progress.progress((i + 1) / int(max_products))
-            if profiles:
-                st.download_button(
-                    "下载 Product Profile JSON",
-                    data=json.dumps(profiles, ensure_ascii=False, indent=2).encode("utf-8"),
-                    file_name="product_profiles_v2.2.3.json",
-                    mime="application/json",
-                )
-    if st.button("测试标题生成"):
+                    st.error(
+                        f"{record.sku or '第' + str(i + 1) + '个产品'} "
+                        f"分析失败：{exc}"
+                    )
+                except Exception as exc:
+                    st.error(
+                        f"{record.sku or '第' + str(i + 1) + '个产品'} "
+                        f"处理失败：{exc}"
+                    )
 
-        test_profile = {
+                progress.progress((i + 1) / len(target_records))
 
-        "basic_info": {
-            "product_type": "Washing Machine Part",
-            "main_function": "Start Button Power Drive Button"
-        },
+            st.session_state["profiles"] = profiles
 
-        "brand_info": {
-            "relationship": "unbranded_compatible"
-        },
+    profiles = st.session_state.get("profiles", [])
 
-        "compatibility": {
-
-            "brands": [
-                "LG"
-            ],
-
-            "models": [
-                "WD-N10240D",
-                "WD-T12360D",
-                "A12355DS"
-            ]
-
-        },
-
-        "seo": {
-
-            "primary_keywords": [
-                "washing machine start button"
-            ]
-
-            }
-
-        }
-
-
-        result = TitleGenerator.generate(
-            test_profile
+    if profiles:
+        st.download_button(
+            "下载 Product Profile JSON",
+            data=json.dumps(
+                profiles,
+                ensure_ascii=False,
+                indent=2,
+            ).encode("utf-8"),
+            file_name="product_profiles_v2.4.0.json",
+            mime="application/json",
         )
 
+        st.subheader("AI优化结果导出")
 
-        st.subheader("测试标题生成结果")
-        st.json(result)
-    
-        st.subheader("原始数据预览")
-        st.dataframe(envelope.dataframe.head(10), use_container_width=True)
+        try:
+            optimized_export = ListingExporter.export(
+                envelope.dataframe,
+                profiles,
+            )
 
-    exported = ListingExporter.export(
-        envelope["dataframe"],
-        profiles
+            if hasattr(optimized_export, "getvalue"):
+                optimized_data = optimized_export.getvalue()
+            else:
+                optimized_data = optimized_export
+
+            safe_stem = re.sub(
+                r"\.xlsx$",
+                "",
+                uploaded.name,
+                flags=re.I,
+            )
+
+            st.download_button(
+                "导出 AI 优化结果",
+                data=optimized_data,
+                file_name=f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
+                mime=(
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
+                type="primary",
+            )
+        except Exception as exc:
+            st.error(f"生成 AI 优化结果文件失败：{exc}")
+
+    st.subheader("原文件完整性导出")
+
+    unchanged_export = export_unchanged(envelope)
+    integrity = integrity_report(
+        envelope,
+        unchanged_export,
     )
-    integrity = integrity_report(envelope, exported)
-    st.subheader("导出完整性")
+
     if integrity["byte_identical"]:
-        st.success(f"验证通过：导出文件与原文件完全一致，大小 {integrity['export_size']:,} 字节。")
-    else:
-        st.error("完整性验证失败，已停止导出。")
-        st.stop()
+        st.success(
+            "验证通过：原样导出文件与上传文件完全一致，"
+            f"大小 {integrity['export_size']:,} 字节。"
+        )
 
-    safe_stem = re.sub(r"\.xlsx$", "", uploaded.name, flags=re.I)
-    st.download_button(
-        "导出完整性测试文件",
-        data=exported,
-        file_name=f"{safe_stem}_{VERSION}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        type="primary",
-    )
+        safe_stem = re.sub(
+            r"\.xlsx$",
+            "",
+            uploaded.name,
+            flags=re.I,
+        )
+
+        st.download_button(
+            "导出原文件完整性测试文件",
+            data=unchanged_export,
+            file_name=f"{safe_stem}_{VERSION}_原样导出.xlsx",
+            mime=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+        )
+    else:
+        st.error("原文件完整性验证失败，已停止原样导出。")
