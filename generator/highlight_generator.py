@@ -6,18 +6,23 @@ import re
 class HighlightGenerator:
 
     """
-    Generate Amazon product highlights.
+    Generate Amazon product highlight structure.
 
-    Purpose:
-    - Create structured product highlights
-    - Used by BulletGenerator and DescriptionGenerator
+    Output:
+    - short_title
+    - product_highlights
+    - core_function
+    - compatibility
+    - usage
+    - product_facts
 
     Rules:
     - Facts only
     - No invented specifications
-    - No marketing claims
-    - No prohibited words
+    - No marketing exaggeration
+    - Compatible wording protected
     """
+
 
 
     BLOCKED_WORDS = [
@@ -36,6 +41,7 @@ class HighlightGenerator:
         "top quality"
 
     ]
+
 
 
     @staticmethod
@@ -60,26 +66,6 @@ class HighlightGenerator:
         )
 
 
-        #
-        # Compatibility compatibility fix
-        #
-
-        if isinstance(
-            compatibility,
-            str
-        ):
-
-            compatibility = {
-
-                "brands": [
-                    compatibility
-                ],
-
-                "models": []
-
-            }
-
-
         if not isinstance(
             compatibility,
             dict
@@ -89,7 +75,22 @@ class HighlightGenerator:
 
 
 
+        if not isinstance(
+            attributes,
+            dict
+        ):
+
+            attributes = {}
+
+
+
         highlights = {
+
+
+            "short_title": "",
+
+
+            "product_highlights": [],
 
 
             "core_function": "",
@@ -108,8 +109,18 @@ class HighlightGenerator:
 
 
         # =========================
-        # Core Function
+        # Basic information
         # =========================
+
+
+        product_type = HighlightGenerator.clean(
+
+            basic_info.get(
+                "product_type",
+                ""
+            )
+
+        )
 
 
         main_function = HighlightGenerator.clean(
@@ -122,15 +133,10 @@ class HighlightGenerator:
         )
 
 
-        product_type = HighlightGenerator.clean(
 
-            basic_info.get(
-                "product_type",
-                ""
-            )
-
-        )
-
+        # =========================
+        # Core Function
+        # =========================
 
 
         if main_function:
@@ -157,6 +163,48 @@ class HighlightGenerator:
                 +
 
                 product_type
+
+            )
+
+
+
+        # =========================
+        # Short Title
+        # =========================
+
+
+        short_parts = []
+
+
+        if main_function:
+
+            short_parts.append(
+
+                main_function
+
+            )
+
+
+        elif product_type:
+
+            short_parts.append(
+
+                product_type
+
+            )
+
+
+
+        if short_parts:
+
+
+            highlights["short_title"] = (
+
+                " ".join(short_parts)
+
+                +
+
+                " Replacement"
 
             )
 
@@ -210,6 +258,7 @@ class HighlightGenerator:
             ]
 
 
+
         if isinstance(
             models,
             str
@@ -230,6 +279,7 @@ class HighlightGenerator:
             if x
 
         ]
+
 
 
         models = [
@@ -280,6 +330,7 @@ class HighlightGenerator:
             )
 
 
+
         elif brands:
 
 
@@ -296,7 +347,7 @@ class HighlightGenerator:
 
 
         # =========================
-        # Usage Scenario
+        # Usage
         # =========================
 
 
@@ -309,15 +360,14 @@ class HighlightGenerator:
         )
 
 
+
         if isinstance(
             usage,
             str
         ):
 
             usage = [
-
                 usage
-
             ]
 
 
@@ -350,31 +400,82 @@ class HighlightGenerator:
 
 
         # =========================
-        # Product Facts
+        # Product Highlights
         # =========================
 
 
-        if not isinstance(
-            attributes,
-            dict
-        ):
+        if highlights["core_function"]:
 
-            attributes = {}
 
+            highlights["product_highlights"].append(
+
+                {
+
+                    "title":
+                    "Functional Replacement",
+
+
+                    "content":
+                    highlights["core_function"]
+
+                }
+
+            )
+
+
+
+        if highlights["compatibility"]:
+
+
+            highlights["product_highlights"].append(
+
+                {
+
+                    "title":
+                    "Compatibility",
+
+
+                    "content":
+                    highlights["compatibility"]
+
+                }
+
+            )
+
+
+
+        if highlights["usage"]:
+
+
+            highlights["product_highlights"].append(
+
+                {
+
+                    "title":
+                    "Application",
+
+
+                    "content":
+                    highlights["usage"]
+
+                }
+
+            )
+
+
+
+        # =========================
+        # Product Facts
+        # =========================
 
 
         for key in [
 
             "quantity",
-
             "material",
-
             "color",
-
             "voltage",
-
             "power",
-
             "dimensions"
 
         ]:
@@ -401,7 +502,16 @@ class HighlightGenerator:
 
                 highlights["product_facts"].append(
 
-                    f"{key}: {value}"
+                    {
+
+                        "name":
+                        key,
+
+
+                        "value":
+                        value
+
+                    }
 
                 )
 
@@ -410,11 +520,14 @@ class HighlightGenerator:
         return {
 
 
-            "highlights": highlights,
+            "highlights":
+
+            highlights,
 
 
-            "validation": {
+            "validation":
 
+            {
 
                 "compliance_ok":
 
@@ -428,10 +541,7 @@ class HighlightGenerator:
 
                 )
 
-                ==
-
-                0
-
+                == 0
 
             },
 
@@ -444,8 +554,8 @@ class HighlightGenerator:
 
             )
 
-
         }
+
 
 
 
