@@ -14,6 +14,7 @@ from services.config import get_openai_api_key
 from generator.title_generator import TitleGenerator
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
+from generator.highlight_generator import HighlightGenerator
 from core import export_unchanged, integrity_report, read_workbook
 
 VERSION = "V2.3.0-Product-Understanding-SEO"
@@ -171,7 +172,13 @@ if uploaded is not None:
 
                     profile["generated_title"] = title_result
 
+                    profile["highlight_result"] = highlight_result
+
                     profile["bullet_result"] = bullet_result
+
+                    profile["description_result"] = description_result
+
+                    
 
 
                     profiles.append(profile)
