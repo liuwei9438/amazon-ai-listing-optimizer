@@ -166,8 +166,7 @@ if uploaded is not None:
                     )
                     description_result = DescriptionGenerator.generate(
                         profile,
-                        highlight_result,
-                        bullet_result
+                        highlight_result
                     )
 
                     profile["generated_title"] = title_result
