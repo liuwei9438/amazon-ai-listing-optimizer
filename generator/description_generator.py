@@ -1,11 +1,20 @@
 from __future__ import annotations
 
-
 import re
 
 
-
 class DescriptionGenerator:
+
+
+    """
+    Generate Amazon product description.
+
+    Rules:
+    - Based on verified highlights
+    - No invented specifications
+    - No marketing exaggeration
+    - Compatible wording protected
+    """
 
 
 
@@ -22,7 +31,8 @@ class DescriptionGenerator:
         "discount",
         "promotion",
         "perfect",
-        "guaranteed"
+        "top quality",
+        "durable"
 
     ]
 
@@ -31,10 +41,8 @@ class DescriptionGenerator:
     @staticmethod
     def generate(
         profile: dict,
-        highlights: dict,
-        bullet_result: dict
+        highlights: dict
     ) -> dict:
-
 
 
         basic = profile.get(
@@ -43,30 +51,9 @@ class DescriptionGenerator:
         )
 
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
-
-
-
-        product_type = basic.get(
-            "product_type",
-            ""
-        )
-
-
-
-        models = compatibility.get(
-            "models",
-            []
-        )
-
-
-
-        highlight_data = highlights.get(
+        items = highlights.get(
             "highlights",
-            {}
+            []
         )
 
 
@@ -75,163 +62,144 @@ class DescriptionGenerator:
 
 
 
-        # =====================
+        # ==========================
         # Product introduction
-        # =====================
+        # ==========================
+
+        product_type = basic.get(
+            "product_type",
+            ""
+        )
 
 
         if product_type:
 
-            paragraphs.append(
-
-                f"This {product_type} is designed as a replacement component for compatible equipment."
-
-            )
-
-
-
-        # =====================
-        # Compatibility
-        # =====================
-
-
-        if models:
-
-
-            model_text = ", ".join(
-                models
-            )
-
 
             paragraphs.append(
 
-                "Compatible with models: "
-                +
-                model_text
+                DescriptionGenerator.clean(
+
+                    f"This product is a {product_type} replacement component."
+
+                )
 
             )
 
 
 
-        # =====================
-        # Core function
-        # =====================
+        # ==========================
+        # Highlight details
+        # ==========================
+
+        for item in items:
 
 
-        function = highlight_data.get(
-
-            "core_function",
-
-            ""
-
-        )
-
-
-        if function:
-
-
-            paragraphs.append(
-
-                function
-
-            )
-
-
-
-        # =====================
-        # Usage
-        # =====================
-
-
-        usage = highlight_data.get(
-
-            "usage",
-
-            ""
-
-        )
-
-
-        if usage:
-
-
-            paragraphs.append(
-
-                "Suitable for "
-                +
-                usage
-
-            )
-
-
-
-        # =====================
-        # Attributes
-        # =====================
-
-
-        attributes = highlight_data.get(
-
-            "attributes",
-
-            []
-
-        )
-
-
-
-        for item in attributes:
-
-
-            name = item.get(
-
-                "name",
-
+            text = item.get(
+                "text",
                 ""
-
             )
 
 
-            value = item.get(
-
-                "value",
-
+            h_type = item.get(
+                "type",
                 ""
-
             )
 
 
-            if value:
+            if not text:
+
+                continue
+
+
+
+            if h_type == "compatibility":
 
 
                 paragraphs.append(
 
-                    f"{name}: {value}"
+                    DescriptionGenerator.clean(
+
+                        text + "."
+
+                    )
+
+                )
+
+
+            elif h_type == "function":
+
+
+                paragraphs.append(
+
+                    DescriptionGenerator.clean(
+
+                        "Function: "
+                        +
+                        text
+                        +
+                        "."
+
+                    )
+
+                )
+
+
+            elif h_type == "usage":
+
+
+                paragraphs.append(
+
+                    DescriptionGenerator.clean(
+
+                        "Application: "
+                        +
+                        text
+                        +
+                        "."
+
+                    )
+
+                )
+
+
+            else:
+
+
+                paragraphs.append(
+
+                    DescriptionGenerator.clean(
+
+                        text
+                        +
+                        "."
+
+                    )
 
                 )
 
 
 
+        # ==========================
+        # Remove duplicate
+        # ==========================
+
+
+        result = []
+
+
+        for p in paragraphs:
+
+
+            if p not in result:
+
+                result.append(
+                    p
+                )
+
+
+
         description = "\n\n".join(
-
-            paragraphs
-
-        )
-
-
-
-        description = DescriptionGenerator.clean(
-
-            description
-
-        )
-
-
-
-        blocked = DescriptionGenerator.check_blocked_words(
-
-            description
-
+            result
         )
 
 
@@ -239,33 +207,47 @@ class DescriptionGenerator:
         return {
 
 
-            "description": description,
+            "description":
+
+            description,
 
 
-            "validation": {
+            "validation":
 
+            {
 
                 "compliance_ok":
 
-                len(blocked) == 0
+                len(
 
+                    DescriptionGenerator.check_blocked_words(
+
+                        description
+
+                    )
+
+                ) == 0
 
             },
 
 
-            "blocked_words": blocked
+            "blocked_words":
 
+            DescriptionGenerator.check_blocked_words(
+
+                description
+
+            )
 
         }
 
 
 
 
-
     @staticmethod
-    def clean(
-        text
-    ):
+    def clean(text):
+
+        text = str(text)
 
 
         text = re.sub(
@@ -284,11 +266,8 @@ class DescriptionGenerator:
 
 
 
-
     @staticmethod
-    def check_blocked_words(
-        text
-    ):
+    def check_blocked_words(text):
 
 
         found = []
@@ -312,7 +291,9 @@ class DescriptionGenerator:
             ):
 
 
-                found.append(word)
+                found.append(
+                    word
+                )
 
 
         return found
