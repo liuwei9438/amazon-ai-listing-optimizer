@@ -5,17 +5,15 @@ import re
 
 class BulletGenerator:
 
-
     """
-    Generate Amazon bullet points from verified highlights.
+    Generate Amazon bullet points from verified product highlights.
 
     Rules:
-    - Convert facts into readable bullets
-    - Never invent specifications
-    - No marketing claims
-    - Protect compatibility wording
+    - Fact based only
+    - No invented specifications
+    - No marketing exaggeration
+    - Compatible wording protected
     """
-
 
 
     BLOCKED_WORDS = [
@@ -33,10 +31,10 @@ class BulletGenerator:
         "perfect",
         "top quality",
         "durable",
-        "high quality"
+        "long lasting",
+        "easy installation"
 
     ]
-
 
 
     @staticmethod
@@ -46,171 +44,247 @@ class BulletGenerator:
     ) -> dict:
 
 
-
-        items = highlights.get(
+        data = highlights.get(
             "highlights",
             []
         )
+
+
+        extracted = {
+
+            "function": "",
+            "compatibility": "",
+            "usage": "",
+            "attributes": []
+
+        }
+
+
+        # ==========================
+        # Parse Highlight Data
+        # ==========================
+
+        if isinstance(data, list):
+
+            for item in data:
+
+                if isinstance(item, dict):
+
+                    text = item.get(
+                        "text",
+                        ""
+                    )
+
+                    category = item.get(
+                        "type",
+                        ""
+                    )
+
+
+                    if category == "function":
+                        extracted["function"] = text
+
+
+                    elif category == "compatibility":
+                        extracted["compatibility"] = text
+
+
+                    elif category == "usage":
+                        extracted["usage"] = text
+
+
+                    else:
+                        extracted["attributes"].append(
+                            text
+                        )
+
+
+                else:
+
+                    extracted["attributes"].append(
+                        str(item)
+                    )
+
+
+        elif isinstance(data, dict):
+
+            extracted["function"] = data.get(
+                "core_function",
+                ""
+            )
+
+            extracted["compatibility"] = data.get(
+                "compatibility",
+                ""
+            )
+
+            extracted["usage"] = data.get(
+                "usage",
+                ""
+            )
+
+            extracted["attributes"] = data.get(
+                "attributes",
+                []
+            )
+
 
 
         bullets = []
 
 
 
-        function_added = False
-        compatibility_added = False
-        replacement_added = False
+        # ==========================
+        # Bullet 1 Function
+        # ==========================
 
+        if extracted["function"]:
 
+            bullets.append(
 
-        for item in items:
+                BulletGenerator.clean(
 
+                    "Replacement component designed for "
+                    +
+                    extracted["function"]
 
-            h_type = item.get(
-                "type",
-                ""
+                )
+
             )
 
 
-            text = item.get(
-                "text",
-                ""
+
+        # ==========================
+        # Bullet 2 Compatibility
+        # ==========================
+
+        if extracted["compatibility"]:
+
+            bullets.append(
+
+                BulletGenerator.clean(
+
+                    extracted["compatibility"]
+
+                )
+
             )
 
 
-            if not text:
 
-                continue
+        # ==========================
+        # Bullet 3 Usage
+        # ==========================
 
+        if extracted["usage"]:
 
+            bullets.append(
 
-            # =====================
-            # Function
-            # =====================
-
-            if h_type == "function":
-
-
-                bullets.append(
-
-                    "Designed to "
-                    +
-                    BulletGenerator.clean(
-                        text
-                    )
-
+                "Suitable for "
+                +
+                BulletGenerator.clean(
+                    extracted["usage"]
                 )
 
-                function_added = True
+            )
 
 
 
-            # =====================
-            # Compatibility
-            # =====================
+        # ==========================
+        # Bullet 4 Attributes
+        # ==========================
 
-            elif h_type == "compatibility":
+        for item in extracted["attributes"]:
 
+            if isinstance(item, dict):
 
-                bullets.append(
-
-                    BulletGenerator.clean(
-                        text
-                    )
-
+                name = item.get(
+                    "name",
+                    ""
                 )
 
-                compatibility_added = True
-
-
-
-            # =====================
-            # Replacement
-            # =====================
-
-            elif h_type == "replacement":
-
-
-                bullets.append(
-
-                    BulletGenerator.clean(
-                        text
-                    )
-
+                value = item.get(
+                    "value",
+                    ""
                 )
 
-                replacement_added = True
+                if value:
 
+                    bullets.append(
 
+                        f"{name}: {value}"
 
-            # =====================
-            # Usage
-            # =====================
-
-            elif h_type == "usage":
-
-
-                bullets.append(
-
-                    "Suitable for "
-                    +
-                    BulletGenerator.clean(
-                        text
                     )
-
-                )
-
-
-
-            # =====================
-            # Other facts
-            # =====================
 
             else:
 
+                text = str(item).strip()
 
-                bullets.append(
+                if text:
 
-                    BulletGenerator.clean(
+                    bullets.append(
                         text
                     )
 
+
+
+        # ==========================
+        # Bullet 5 Product Type
+        # ==========================
+
+        product_type = profile.get(
+            "basic_info",
+            {}
+        ).get(
+            "product_type",
+            ""
+        )
+
+
+        if product_type:
+
+            bullets.append(
+
+                "Replacement component for "
+                +
+                product_type
+
+            )
+
+
+
+        # Clean
+
+        final = []
+
+
+        for bullet in bullets:
+
+            bullet = BulletGenerator.clean(
+                bullet
+            )
+
+
+            if not bullet:
+                continue
+
+
+            if bullet not in final:
+
+                final.append(
+                    bullet
                 )
 
 
-
-        # =========================
-        # Remove duplicate
-        # =========================
-
-        result = []
-
-
-        for item in bullets:
-
-
-            if item not in result:
-
-                result.append(
-                    item
-                )
-
-
-        bullets = result[:5]
+        final = final[:5]
 
 
 
         return {
 
+            "bullets": final,
 
-            "bullets":
-
-            bullets,
-
-
-            "validation":
-
-            {
+            "validation": {
 
                 "compliance_ok":
 
@@ -218,12 +292,11 @@ class BulletGenerator:
 
                     BulletGenerator.check_blocked_words(
 
-                        str(bullets)
+                        str(final)
 
                     )
 
                 ) == 0
-
 
             },
 
@@ -232,10 +305,9 @@ class BulletGenerator:
 
             BulletGenerator.check_blocked_words(
 
-                str(bullets)
+                str(final)
 
             )
-
 
         }
 
@@ -245,9 +317,7 @@ class BulletGenerator:
     @staticmethod
     def clean(text):
 
-
         text = str(text)
-
 
         text = re.sub(
 
@@ -259,15 +329,15 @@ class BulletGenerator:
 
         )
 
-
         return text.strip()
 
 
 
 
     @staticmethod
-    def check_blocked_words(text):
-
+    def check_blocked_words(
+        text
+    ):
 
         found = []
 
@@ -278,9 +348,13 @@ class BulletGenerator:
             if re.search(
 
                 r"\b"
+
                 +
+
                 re.escape(word)
+
                 +
+
                 r"\b",
 
                 text,
@@ -288,7 +362,6 @@ class BulletGenerator:
                 flags=re.I
 
             ):
-
 
                 found.append(
                     word
