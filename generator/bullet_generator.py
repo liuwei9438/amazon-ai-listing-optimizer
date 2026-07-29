@@ -1,25 +1,12 @@
 from __future__ import annotations
 
-
 import re
-
 
 
 class BulletGenerator:
 
 
-    """
-    Generate Amazon bullets from product highlights.
-
-    Rules:
-    - Use verified facts only
-    - No invented features
-    - No marketing words
-    """
-
-
-
-    BLOCKED_WORDS = [
+    BLOCKED_WORDS=[
 
         "best",
         "best seller",
@@ -40,131 +27,74 @@ class BulletGenerator:
 
     @staticmethod
     def generate(
-        profile: dict,
+        profile:dict,
         highlights
     ):
 
 
+        bullets=[]
 
-        # ======================
-        # Data protection
-        # ======================
 
+
+        # 新版 list
 
         if isinstance(
             highlights,
-            str
-        ):
-
-            highlights = {}
-
-
-
-        data = highlights.get(
-            "highlights",
-            {}
-        )
-
-
-        if not isinstance(
-            data,
-            dict
-        ):
-
-            data = {}
-
-
-
-        bullets = []
-
-
-
-        # ======================
-        # Core function
-        # ======================
-
-
-        core = data.get(
-            "core_function",
-            ""
-        )
-
-
-        if core:
-
-            bullets.append(
-                core
-            )
-
-
-
-        # ======================
-        # Compatibility
-        # ======================
-
-
-        compatibility = data.get(
-            "compatibility",
-            ""
-        )
-
-
-        if compatibility:
-
-            bullets.append(
-                compatibility
-            )
-
-
-
-        # ======================
-        # Usage
-        # ======================
-
-
-        usage = data.get(
-            "usage",
-            ""
-        )
-
-
-        if usage:
-
-            bullets.append(
-                usage
-            )
-
-
-
-        # ======================
-        # Facts
-        # ======================
-
-
-        facts = data.get(
-            "product_facts",
-            []
-        )
-
-
-        if isinstance(
-            facts,
             list
         ):
 
-
-            for fact in facts:
-
-
-                if fact:
-
-                    bullets.append(
-                        str(fact)
-                    )
+            bullets.extend(
+                [
+                    str(x)
+                    for x in highlights
+                    if x
+                ]
+            )
 
 
 
-        bullets = [
+        # 旧版 dict
+
+        elif isinstance(
+            highlights,
+            dict
+        ):
+
+
+            data=highlights.get(
+                "highlights",
+                {}
+            )
+
+
+            if isinstance(
+                data,
+                dict
+            ):
+
+                for value in data.values():
+
+                    if isinstance(
+                        value,
+                        list
+                    ):
+
+                        bullets.extend(
+                            [
+                                str(x)
+                                for x in value
+                            ]
+                        )
+
+                    elif value:
+
+                        bullets.append(
+                            str(value)
+                        )
+
+
+
+        bullets=[
 
             BulletGenerator.clean(x)
 
@@ -176,46 +106,32 @@ class BulletGenerator:
 
 
 
-        bullets = bullets[:5]
+        # 亚马逊五点限制
+
+        bullets=bullets[:5]
 
 
 
         return {
 
-
-            "bullets":
-
-            bullets,
+            "bullets":bullets,
 
 
-            "validation": {
-
+            "validation":{
 
                 "compliance_ok":
-
                 len(
-
                     BulletGenerator.check_blocked_words(
-
                         str(bullets)
-
                     )
-
-                )
-
-                ==
-
-                0
+                )==0
 
             },
 
 
             "blocked_words":
-
             BulletGenerator.check_blocked_words(
-
                 str(bullets)
-
             )
 
         }
@@ -225,15 +141,10 @@ class BulletGenerator:
     @staticmethod
     def clean(text):
 
-
         return re.sub(
-
             r"\s+",
-
             " ",
-
             str(text)
-
         ).strip()
 
 
@@ -241,33 +152,18 @@ class BulletGenerator:
     @staticmethod
     def check_blocked_words(text):
 
-
         found=[]
 
 
         for word in BulletGenerator.BLOCKED_WORDS:
 
-
             if re.search(
-
-                r"\b"
-
-                +
-
-                re.escape(word)
-
-                +
-
-                r"\b",
-
+                r"\b"+re.escape(word)+r"\b",
                 text,
-
                 flags=re.I
-
             ):
 
                 found.append(word)
-
 
 
         return found
