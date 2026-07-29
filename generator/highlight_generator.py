@@ -6,13 +6,14 @@ import re
 class HighlightGenerator:
 
     """
-    Extract Amazon product highlights from Product Profile.
+    Generate Amazon product highlights.
 
-    Principles:
-    - Only use confirmed facts
-    - No invented specifications
-    - No marketing exaggeration
-    - Prepare structured data for title/bullet/description
+    Rules:
+    - Facts only
+    - No invented attributes
+    - No assumed materials
+    - No marketing claims
+    - Used by bullet and description generators
     """
 
 
@@ -25,11 +26,10 @@ class HighlightGenerator:
         "genuine",
         "official",
         "authentic",
-        "hot sale",
         "discount",
         "promotion",
-        "top quality",
         "perfect",
+        "top quality",
     ]
 
 
@@ -47,72 +47,63 @@ class HighlightGenerator:
             {}
         )
 
-        attributes = profile.get(
-            "attributes",
-            {}
-        )
-        fact_lock = profile.get(
-            "fact_lock",
-            {}
-        )
-        fact_lock = profile.get(
-            "fact_lock",
-            {}
-        )
         seo = profile.get(
             "seo",
             {}
         )
 
 
-        highlights = {
-
-            "core_function": "",
-
-            "compatibility": "",
-
-            "usage": "",
-
-            "attributes": [],
-
-            "keywords": [],
-
-        }
+        highlights = []
 
 
-        # ======================
-        # Core Function
-        # ======================
+        # =========================
+        # 1. Core Function
+        # =========================
 
-        main_function = HighlightGenerator.clean(
-            basic.get(
-                "main_function",
-                ""
-            )
+        main_function = basic.get(
+            "main_function",
+            ""
         )
 
 
-        product_type = HighlightGenerator.clean(
-            basic.get(
-                "product_type",
-                ""
-            )
+        product_type = basic.get(
+            "product_type",
+            ""
         )
 
 
         if main_function:
 
-            highlights["core_function"] = (
-                HighlightGenerator.normalize_function(
-                    main_function,
+            highlights.append({
+
+                "type": "function",
+
+                "text":
+                HighlightGenerator.clean(
+                    main_function
+                )
+
+            })
+
+
+        elif product_type:
+
+            highlights.append({
+
+                "type": "product",
+
+                "text":
+                HighlightGenerator.clean(
                     product_type
                 )
-            )
+
+            })
 
 
-        # ======================
-        # Compatibility
-        # ======================
+
+        # =========================
+        # 2. Compatibility
+        # =========================
 
         brands = compatibility.get(
             "brands",
@@ -125,45 +116,64 @@ class HighlightGenerator:
         )
 
 
-        brand_text = ""
+        if brands or models:
 
-        if brands:
-
-            brand_text = ", ".join(
-                brands
-            )
-
-
-        model_text = ""
-
-        if models:
-
-            model_text = ", ".join(
-                models
-            )
-
-
-        if brand_text or model_text:
 
             text = "Compatible with"
 
-            if brand_text:
 
-                text += f" {brand_text}"
+            if brands:
 
+                text += " "
 
-            if model_text:
-
-                text += f" models {model_text}"
-
-
-            highlights["compatibility"] = text
+                text += ", ".join(
+                    brands
+                )
 
 
+            if models:
 
-        # ======================
-        # Usage
-        # ======================
+                text += " models "
+
+                text += ", ".join(
+                    models[:5]
+                )
+
+
+            highlights.append({
+
+                "type":
+                "compatibility",
+
+                "text":
+                text
+
+            })
+
+
+
+        # =========================
+        # 3. Replacement Purpose
+        # =========================
+
+        if product_type:
+
+
+            highlights.append({
+
+                "type":
+                "replacement",
+
+                "text":
+                f"Replacement part for {HighlightGenerator.clean(product_type)}"
+
+            })
+
+
+
+        # =========================
+        # 4. Usage Scenario
+        # =========================
 
         usage = profile.get(
             "usage_scenarios",
@@ -171,212 +181,84 @@ class HighlightGenerator:
         )
 
 
-        if usage:
+        for item in usage[:2]:
 
-            highlights["usage"] = (
-                ", ".join(
-                    [
-                        HighlightGenerator.clean(x)
-                        for x in usage
-                    ]
-                )
-            )
+            if item:
 
+                highlights.append({
 
+                    "type":
+                    "usage",
 
-        # ======================
-        # Attributes
-        # ======================
-
-        for key in [
-            "material",
-            "color",
-            "quantity",
-            "voltage",
-            "power",
-        ]:
-
-            value = attributes.get(
-                key,
-                ""
-            )
-
-            value = HighlightGenerator.clean(
-                value
-            )
-
-
-            if not value:
-                continue
-
-
-            # Fact Lock Protection
-
-            if key == "material":
-
-                confirmed = HighlightGenerator.clean(
-                    fact_lock.get(
-                        "material",
-                        ""
+                    "text":
+                    HighlightGenerator.clean(
+                        item
                     )
-                )
 
-                if not confirmed:
-                    continue
-
-
-            highlights["attributes"].append(
-                {
-                    "name": key,
-                    "value": value
-                }
-            )
-
-            value = attributes.get(
-                key,
-                ""
-            )
-
-
-            value = HighlightGenerator.clean(
-                value
-            )
-
-
-            if not value:
-                continue
+                })
 
 
 
-            # ======================
-            # Fact Protection
-            # ======================
-
-            # 材质必须来自事实锁定
-            if key == "material":
-
-                confirmed_material = HighlightGenerator.clean(
-                    fact_lock.get(
-                        "material",
-                        ""
-                    )
-                )
-
-
-                if not confirmed_material:
-
-                    continue
-
-
-
-            highlights["attributes"].append(
-                {
-                    "name": key,
-                    "value": value
-                }
-            )
-
-
-
-        # ======================
-        # Keywords
-        # ======================
-
-        primary_keywords = seo.get(
-            "primary_keywords",
-            []
-        )
-
-        secondary_keywords = seo.get(
-            "secondary_keywords",
-            []
-        )
-
+        # =========================
+        # 5. SEO Keywords
+        # =========================
 
         keywords = []
 
-        for item in (
-            primary_keywords
-            +
-            secondary_keywords
+
+        for item in seo.get(
+            "primary_keywords",
+            []
         ):
 
             item = HighlightGenerator.clean(
                 item
             )
 
-            if item and item not in keywords:
+            if item:
 
                 keywords.append(
                     item
                 )
 
 
-        highlights["keywords"] = keywords[:10]
-
-
         return {
 
-            "highlights": highlights,
 
-            "validation": {
+            "highlights":
+
+            highlights,
+
+
+            "validation":
+
+            {
 
                 "compliance_ok":
+
                 len(
+
                     HighlightGenerator.check_blocked_words(
+
                         str(highlights)
+
                     )
+
                 ) == 0
 
             },
 
+
             "blocked_words":
+
             HighlightGenerator.check_blocked_words(
+
                 str(highlights)
-            )
 
-        }
-
-
-
-    @staticmethod
-    def normalize_function(
-        function,
-        product_type
-    ):
-
-
-        text = function.lower()
-
-
-        replacements = {
-
-            "start button power drive":
-            "washing machine start button replacement",
-
-            "power button":
-            "power button replacement",
-
-        }
-
-
-        for old,new in replacements.items():
-
-            if old in text:
-
-                return new
-
-
-        if product_type:
-
-            return (
-                function
-                +
-                " replacement component"
             )
 
 
-        return function
+        }
 
 
 
@@ -387,27 +269,39 @@ class HighlightGenerator:
 
             return ""
 
-        return str(text).strip()
+        return re.sub(
+
+            r"\s+",
+
+            " ",
+
+            str(text)
+
+        ).strip()
 
 
 
     @staticmethod
-    def check_blocked_words(
-        text
-    ):
+    def check_blocked_words(text):
 
         found = []
 
+
         for word in HighlightGenerator.BLOCKED_WORDS:
 
+
             if re.search(
+
                 r"\b"
                 +
                 re.escape(word)
                 +
                 r"\b",
+
                 text,
+
                 flags=re.I
+
             ):
 
                 found.append(
