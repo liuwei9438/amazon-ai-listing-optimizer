@@ -78,19 +78,64 @@ class ListingExporter:
             highlight_text = []
 
 
-            for key,value in highlights.items():
+            if isinstance(highlights, list):
 
-                if isinstance(value,list):
+               for item in highlights:
 
-                    highlight_text.extend(
-                        value
-                    )
+                   if isinstance(item, dict):
 
-                elif value:
+                      text = item.get(
+                          "text",
+                          ""
+                      )
 
-                    highlight_text.append(
-                        value
-                    )
+                      if text:
+                          highlight_text.append(
+                              text
+                          )
+
+                   else:
+
+                       if item:
+                           highlight_text.append(
+                               str(item)
+                           )
+
+
+            elif isinstance(highlights, dict):
+
+               for value in highlights.values():
+
+                   if isinstance(value, list):
+
+                       for item in value:
+
+                           if isinstance(item, dict):
+
+                              text = item.get(
+                                  "text",
+                                  item.get(
+                                      "value",
+                                      ""
+                                  )
+                              )
+
+                              if text:
+                                  highlight_text.append(
+                                      text
+                                  )
+
+                           elif item:
+
+                              highlight_text.append(
+                                  str(item)
+                              )
+
+                   elif value:
+
+                      highlight_text.append(
+                          str(value)
+                      )
 
 
             row["商品亮点"] = "\n".join(
