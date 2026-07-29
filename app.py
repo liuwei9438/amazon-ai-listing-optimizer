@@ -156,7 +156,13 @@ if uploaded is not None:
 
                     title_result = TitleGenerator.generate(profile)
 
-                    bullet_result = BulletGenerator.generate(profile)
+                    highlight_result = HighlightGenerator.generate(profile)
+
+
+                    bullet_result = BulletGenerator.generate(
+                        profile,
+                        highlight_result
+                    )
 
 
                     profile["generated_title"] = title_result
