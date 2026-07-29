@@ -213,8 +213,88 @@ if uploaded is not None:
                             st.write(
                             profile["generated_title"]["title"]
                             )
+                        # ======================
+                        # AI 商品亮点
+                        # ======================
+
+                        if "highlight_result" in profile:
+
+                           st.subheader("AI商品亮点")
 
 
+                           highlight_data = profile[
+                               "highlight_result"
+                          ].get(
+                               "highlights",
+                               {}
+                          )
+
+
+                          for key, value in highlight_data.items():
+
+                              if value:
+
+                                 if isinstance(value, list):
+
+                                    for item in value:
+
+                                        st.write(
+                                            "• " + str(item)
+                                        )
+
+                                    else:
+
+                                        st.write(
+                                            "• " + str(value)
+                                        )
+                        # ======================
+                        # AI 五点描述
+                        # ======================
+
+                        if "bullet_result" in profile:
+
+                           st.subheader(
+                              "AI生成五点描述"
+                           )
+
+
+                           bullets = profile[
+                              "bullet_result"
+                           ].get(
+                               "bullets",
+                               []
+                           )
+
+
+                           for bullet in bullets:
+
+                               st.write(
+                               "• " + bullet
+                           )
+                        # ======================
+                        # AI详情描述
+                        # ======================
+
+                        if "description_result" in profile:
+
+                           st.subheader(
+                               "AI生成详情描述"
+                           )
+
+
+                           description = profile[
+                                "description_result"
+                           ].get(
+                               "description",
+                               ""
+                           )
+
+
+                           if description:
+
+                               st.write(
+                                   description
+                               )
                         if "bullet_result" in profile:
 
                             st.write("### AI生成五点描述")
