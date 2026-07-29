@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-
 import re
-
 
 
 class BulletGenerator:
@@ -12,10 +10,10 @@ class BulletGenerator:
     Generate Amazon bullet points from verified highlights.
 
     Rules:
-    - Facts only
-    - No invented features
-    - No marketing words
-    - Compatible wording protected
+    - Convert facts into readable bullets
+    - Never invent specifications
+    - No marketing claims
+    - Protect compatibility wording
     """
 
 
@@ -33,7 +31,9 @@ class BulletGenerator:
         "discount",
         "promotion",
         "perfect",
-        "top quality"
+        "top quality",
+        "durable",
+        "high quality"
 
     ]
 
@@ -47,183 +47,170 @@ class BulletGenerator:
 
 
 
-        data = highlights.get(
+        items = highlights.get(
             "highlights",
-            {}
+            []
         )
-
 
 
         bullets = []
 
 
 
-        # ==========================
-        # Bullet 1 - Core Function
-        # ==========================
-
-        core = data.get(
-            "core_function",
-            ""
-        )
-
-
-        if core:
-
-            bullets.append(
-                BulletGenerator.clean(
-                    core
-                )
-            )
+        function_added = False
+        compatibility_added = False
+        replacement_added = False
 
 
 
-        # ==========================
-        # Bullet 2 - Compatibility
-        # ==========================
-
-        compatibility = data.get(
-            "compatibility",
-            ""
-        )
+        for item in items:
 
 
-        if compatibility:
-
-            bullets.append(
-                compatibility
-            )
-
-
-
-        # ==========================
-        # Bullet 3 - Usage
-        # ==========================
-
-        usage = data.get(
-            "usage",
-            ""
-        )
-
-
-        if usage:
-
-            bullets.append(
-                "Designed for "
-                +
-                usage
-            )
-
-
-
-        # ==========================
-        # Bullet 4 - Attributes
-        # ==========================
-
-
-        attributes = data.get(
-            "attributes",
-            []
-        )
-
-
-        for item in attributes:
-
-            name = item.get(
-                "name",
-                ""
-            )
-
-            value = item.get(
-                "value",
+            h_type = item.get(
+                "type",
                 ""
             )
 
 
-            if not value:
+            text = item.get(
+                "text",
+                ""
+            )
+
+
+            if not text:
+
                 continue
 
 
-            # ==========================
-            # Fact Protection
-            # ==========================
 
-            # 材质必须来自事实字段
-            if name.lower() in [
-                "material",
-                "materials",
-                "材质"
-            ]:
+            # =====================
+            # Function
+            # =====================
 
-                facts = profile.get(
-                    "fact_lock",
-                    {}
+            if h_type == "function":
+
+
+                bullets.append(
+
+                    "Designed to "
+                    +
+                    BulletGenerator.clean(
+                        text
+                    )
+
                 )
 
-                real_material = facts.get(
-                    "material",
-                    ""
+                function_added = True
+
+
+
+            # =====================
+            # Compatibility
+            # =====================
+
+            elif h_type == "compatibility":
+
+
+                bullets.append(
+
+                    BulletGenerator.clean(
+                        text
+                    )
+
+                )
+
+                compatibility_added = True
+
+
+
+            # =====================
+            # Replacement
+            # =====================
+
+            elif h_type == "replacement":
+
+
+                bullets.append(
+
+                    BulletGenerator.clean(
+                        text
+                    )
+
+                )
+
+                replacement_added = True
+
+
+
+            # =====================
+            # Usage
+            # =====================
+
+            elif h_type == "usage":
+
+
+                bullets.append(
+
+                    "Suitable for "
+                    +
+                    BulletGenerator.clean(
+                        text
+                    )
+
                 )
 
 
-                if not real_material:
-                    continue
+
+            # =====================
+            # Other facts
+            # =====================
+
+            else:
 
 
-            bullets.append(
-                f"{name}: {value}"
-            )
+                bullets.append(
 
+                    BulletGenerator.clean(
+                        text
+                    )
 
-
-        # ==========================
-        # Bullet 5 - Keywords
-        # ==========================
-
-        keywords = data.get(
-            "keywords",
-            []
-        )
-
-
-        if keywords:
-
-            bullets.append(
-                ", ".join(
-                    keywords[:3]
                 )
-            )
 
 
 
-        # remove empty
+        # =========================
+        # Remove duplicate
+        # =========================
 
-        bullets = [
-
-            x.strip()
-
-            for x in bullets
-
-            if x.strip()
-
-        ]
+        result = []
 
 
+        for item in bullets:
 
-        # limit 5 bullets
 
-        bullets = bullets[:5]
+            if item not in result:
+
+                result.append(
+                    item
+                )
+
+
+        bullets = result[:5]
 
 
 
         return {
 
 
-            "bullets": bullets,
+            "bullets":
+
+            bullets,
 
 
-            "validation": {
+            "validation":
 
+            {
 
                 "compliance_ok":
 
@@ -255,7 +242,6 @@ class BulletGenerator:
 
 
 
-
     @staticmethod
     def clean(text):
 
@@ -280,9 +266,7 @@ class BulletGenerator:
 
 
     @staticmethod
-    def check_blocked_words(
-        text
-    ):
+    def check_blocked_words(text):
 
 
         found = []
@@ -294,13 +278,9 @@ class BulletGenerator:
             if re.search(
 
                 r"\b"
-
                 +
-
                 re.escape(word)
-
                 +
-
                 r"\b",
 
                 text,
