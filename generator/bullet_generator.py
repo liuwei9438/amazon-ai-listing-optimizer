@@ -1,11 +1,27 @@
 from __future__ import annotations
 
+
 import re
+
 
 
 class BulletGenerator:
 
+
+    """
+    Generate Amazon bullet points from verified highlights.
+
+    Rules:
+    - Facts only
+    - No invented features
+    - No marketing words
+    - Compatible wording protected
+    """
+
+
+
     BLOCKED_WORDS = [
+
         "best",
         "best seller",
         "#1",
@@ -14,235 +30,263 @@ class BulletGenerator:
         "genuine",
         "official",
         "authentic",
-        "hot sale",
         "discount",
         "promotion",
-        "top quality",
         "perfect",
-        "high quality",
+        "top quality"
+
     ]
 
 
+
     @staticmethod
-    def generate(profile: dict) -> list:
-        """
-        Fact-driven Amazon bullet generator
+    def generate(
+        profile: dict,
+        highlights: dict
+    ) -> dict:
 
-        Only uses confirmed product facts.
-        Does not invent:
-        - material
-        - durability
-        - installation
-        - performance
-        """
 
-        basic = profile.get(
-            "basic_info",
+
+        data = highlights.get(
+            "highlights",
             {}
         )
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
-
-        attributes = profile.get(
-            "attributes",
-            {}
-        )
-
-        usage = profile.get(
-            "usage_scenarios",
-            []
-        )
-
-
-        product_type = BulletGenerator.clean_text(
-            basic.get("product_type", "")
-        )
-
-        main_function = BulletGenerator.clean_text(
-            basic.get("main_function", "")
-        )
-
-
-        brands = compatibility.get(
-            "brands",
-            []
-        )
-
-        models = compatibility.get(
-            "models",
-            []
-        )
 
 
         bullets = []
 
 
-        # 1. Product function
 
-        if main_function:
+        # ==========================
+        # Bullet 1 - Core Function
+        # ==========================
+
+        core = data.get(
+            "core_function",
+            ""
+        )
+
+
+        if core:
 
             bullets.append(
-                f"{BulletGenerator.title(main_function)}. "
-                f"Designed as a compatible replacement component for "
-                f"{product_type.lower() if product_type else 'appliance parts'}."
+                BulletGenerator.clean(
+                    core
+                )
             )
 
 
-        # 2. Compatibility
 
-        if brands or models:
+        # ==========================
+        # Bullet 2 - Compatibility
+        # ==========================
 
-            brand_text = ""
+        compatibility = data.get(
+            "compatibility",
+            ""
+        )
 
-            if brands:
-                brand_text = "Compatible with " + ", ".join(brands)
 
-            model_text = ""
-
-            if models:
-                model_text = " models " + ", ".join(models)
+        if compatibility:
 
             bullets.append(
-                f"{brand_text}{model_text}. "
-                f"Please confirm your appliance model before purchase."
+                compatibility
             )
 
 
-        # 3. Usage scenario
+
+        # ==========================
+        # Bullet 3 - Usage
+        # ==========================
+
+        usage = data.get(
+            "usage",
+            ""
+        )
+
 
         if usage:
 
-            usage_text = ", ".join(
-                [
-                    BulletGenerator.clean_text(x)
-                    for x in usage
-                    if x
-                ]
+            bullets.append(
+                "Designed for "
+                +
+                usage
             )
 
-            if usage_text:
+
+
+        # ==========================
+        # Bullet 4 - Attributes
+        # ==========================
+
+
+        attributes = data.get(
+            "attributes",
+            []
+        )
+
+
+        for item in attributes:
+
+
+            name = item.get(
+                "name",
+                ""
+            )
+
+
+            value = item.get(
+                "value",
+                ""
+            )
+
+
+            if value:
 
                 bullets.append(
-                    f"Suitable for {usage_text} when replacement is required."
+                    f"{name}: {value}"
                 )
 
 
-        # 4. Confirmed attributes only
 
-        attribute_parts = []
+        # ==========================
+        # Bullet 5 - Keywords
+        # ==========================
 
-
-        material = attributes.get(
-            "material",
-            ""
-        )
-
-        color = attributes.get(
-            "color",
-            ""
-        )
-
-        quantity = attributes.get(
-            "quantity",
-            ""
+        keywords = data.get(
+            "keywords",
+            []
         )
 
 
-        if material:
-
-            attribute_parts.append(
-                f"Material: {material}"
-            )
-
-
-        if color:
-
-            attribute_parts.append(
-                f"Color: {color}"
-            )
-
-
-        if quantity:
-
-            attribute_parts.append(
-                f"Quantity: {quantity}"
-            )
-
-
-        if attribute_parts:
+        if keywords:
 
             bullets.append(
-                ". ".join(attribute_parts) + "."
-            )
-
-
-        # 5. Final verification
-
-        bullets.append(
-            "Please check the appliance model, part number and product details "
-            "before ordering to ensure compatibility."
-        )
-
-
-        # Clean + remove duplicate
-
-        result = []
-
-        for bullet in bullets:
-
-            bullet = BulletGenerator.clean(
-                bullet
-            )
-
-            if bullet and bullet not in result:
-
-                result.append(
-                    bullet
+                ", ".join(
+                    keywords[:3]
                 )
+            )
 
 
-        # Amazon maximum 5 bullets
 
-        return result[:5]
+        # remove empty
+
+        bullets = [
+
+            x.strip()
+
+            for x in bullets
+
+            if x.strip()
+
+        ]
 
 
-    @staticmethod
-    def title(text):
 
-        return text[:1].upper() + text[1:]
+        # limit 5 bullets
+
+        bullets = bullets[:5]
 
 
-    @staticmethod
-    def clean_text(text):
 
-        if not text:
+        return {
 
-            return ""
 
-        return str(text).strip()
+            "bullets": bullets,
+
+
+            "validation": {
+
+
+                "compliance_ok":
+
+                len(
+
+                    BulletGenerator.check_blocked_words(
+
+                        str(bullets)
+
+                    )
+
+                ) == 0
+
+
+            },
+
+
+            "blocked_words":
+
+            BulletGenerator.check_blocked_words(
+
+                str(bullets)
+
+            )
+
+
+        }
+
+
+
 
 
     @staticmethod
     def clean(text):
 
-        for word in BulletGenerator.BLOCKED_WORDS:
 
-            text = re.sub(
-                r"\b" + re.escape(word) + r"\b",
-                "",
-                text,
-                flags=re.I
-            )
+        text = str(text)
 
 
         text = re.sub(
+
             r"\s+",
+
             " ",
+
             text
+
         )
 
 
         return text.strip()
+
+
+
+
+    @staticmethod
+    def check_blocked_words(
+        text
+    ):
+
+
+        found = []
+
+
+        for word in BulletGenerator.BLOCKED_WORDS:
+
+
+            if re.search(
+
+                r"\b"
+
+                +
+
+                re.escape(word)
+
+                +
+
+                r"\b",
+
+                text,
+
+                flags=re.I
+
+            ):
+
+
+                found.append(
+                    word
+                )
+
+
+        return found
