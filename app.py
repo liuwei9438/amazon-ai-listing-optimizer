@@ -217,37 +217,36 @@ if uploaded is not None:
                         # ======================
                         # AI 商品亮点
                         # ======================
+    if "highlight_result" in profile:
 
-                        if "highlight_result" in profile:
-
-                           st.subheader("AI商品亮点")
-
-
-                           highlight_data = profile[
-                               "highlight_result"
-                          ].get(
-                               "highlights",
-                               {}
-                          )
+       st.subheader("AI商品亮点")
 
 
-                          for key, value in highlight_data.items():
+       highlight_data = profile[
+           "highlight_result"
+       ].get(
+           "highlights",
+           {}
+       )
 
-                              if value:
 
-                                 if isinstance(value, list):
+       for key, value in highlight_data.items():
 
-                                    for item in value:
+           if value:
 
-                                        st.write(
-                                            "• " + str(item)
-                                        )
+               if isinstance(value, list):
 
-                                    else:
+                   for item in value:
 
-                                        st.write(
-                                            "• " + str(value)
-                                        )
+                       st.write(
+                           "• " + str(item)
+                       )
+
+               else:
+
+                   st.write(
+                      "• " + str(value)
+                   )
                         # ======================
                         # AI 五点描述
                         # ======================
