@@ -12,6 +12,7 @@ from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
 from generator.title_generator import TitleGenerator
+from services.listing_exporter import ListingExporter
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
@@ -363,7 +364,10 @@ if uploaded is not None:
         st.subheader("原始数据预览")
         st.dataframe(envelope.dataframe.head(10), use_container_width=True)
 
-    exported = export_unchanged(envelope)
+    exported = ListingExporter.export(
+        envelope["dataframe"],
+        profiles
+    )
     integrity = integrity_report(envelope, exported)
     st.subheader("导出完整性")
     if integrity["byte_identical"]:
