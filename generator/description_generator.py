@@ -51,11 +51,10 @@ class DescriptionGenerator:
         )
 
 
-        items = highlights.get(
+        highlight_data = highlights.get(
             "highlights",
-            []
+            {}
         )
-
 
 
         paragraphs = []
@@ -74,7 +73,6 @@ class DescriptionGenerator:
 
         if product_type:
 
-
             paragraphs.append(
 
                 DescriptionGenerator.clean(
@@ -88,94 +86,172 @@ class DescriptionGenerator:
 
 
         # ==========================
-        # Highlight details
+        # Core Function
         # ==========================
 
-        for item in items:
+        core_function = highlight_data.get(
+            "core_function",
+            ""
+        )
 
 
-            text = item.get(
-                "text",
-                ""
+        if core_function:
+
+            paragraphs.append(
+
+                DescriptionGenerator.clean(
+
+                    "Function: "
+                    +
+                    str(core_function)
+                    +
+                    "."
+
+                )
+
             )
 
 
-            h_type = item.get(
-                "type",
-                ""
+
+        # ==========================
+        # Compatibility
+        # ==========================
+
+        compatibility = highlight_data.get(
+            "compatibility",
+            ""
+        )
+
+
+        if compatibility:
+
+            paragraphs.append(
+
+                DescriptionGenerator.clean(
+
+                    str(compatibility)
+                    +
+                    "."
+
+                )
+
             )
 
 
-            if not text:
 
-                continue
+        # ==========================
+        # Usage
+        # ==========================
 
-
-
-            if h_type == "compatibility":
-
-
-                paragraphs.append(
-
-                    DescriptionGenerator.clean(
-
-                        text + "."
-
-                    )
-
-                )
+        usage = highlight_data.get(
+            "usage",
+            ""
+        )
 
 
-            elif h_type == "function":
+        if usage:
 
+            paragraphs.append(
 
-                paragraphs.append(
+                DescriptionGenerator.clean(
 
-                    DescriptionGenerator.clean(
-
-                        "Function: "
-                        +
-                        text
-                        +
-                        "."
-
-                    )
+                    "Application: "
+                    +
+                    str(usage)
+                    +
+                    "."
 
                 )
 
+            )
 
-            elif h_type == "usage":
 
 
-                paragraphs.append(
+        # ==========================
+        # Attributes
+        # ==========================
 
-                    DescriptionGenerator.clean(
+        attributes = highlight_data.get(
+            "attributes",
+            []
+        )
 
-                        "Application: "
-                        +
-                        text
-                        +
-                        "."
+
+        if isinstance(attributes, list):
+
+            for item in attributes:
+
+
+                if isinstance(item, dict):
+
+
+                    name = item.get(
+                        "name",
+                        ""
+                    )
+
+
+                    value = item.get(
+                        "value",
+                        ""
+                    )
+
+
+                    if value:
+
+                        paragraphs.append(
+
+                            DescriptionGenerator.clean(
+
+                                f"{name}: {value}."
+
+                            )
+
+                        )
+
+
+                else:
+
+                    paragraphs.append(
+
+                        DescriptionGenerator.clean(
+
+                            str(item)
+
+                        )
 
                     )
 
-                )
 
 
-            else:
+        # ==========================
+        # Keywords (only if useful)
+        # ==========================
+
+        keywords = highlight_data.get(
+            "keywords",
+            []
+        )
 
 
-                paragraphs.append(
+        if isinstance(keywords, list) and keywords:
 
-                    DescriptionGenerator.clean(
 
-                        text
-                        +
-                        "."
+            paragraphs.append(
 
+                DescriptionGenerator.clean(
+
+                    "Keywords: "
+                    +
+                    ", ".join(
+                        keywords[:5]
                     )
+                    +
+                    "."
 
                 )
+
+            )
 
 
 
@@ -183,14 +259,13 @@ class DescriptionGenerator:
         # Remove duplicate
         # ==========================
 
-
         result = []
 
 
         for p in paragraphs:
 
 
-            if p not in result:
+            if p and p not in result:
 
                 result.append(
                     p
