@@ -496,9 +496,13 @@ if uploaded is not None:
                         f"分析失败：{exc}"
                     )
                 except Exception as exc:
+                    import traceback
                     st.error(
-                        f"{record.sku or '第' + str(i + 1) + '个产品'} "
-                        f"处理失败：{exc}"
+                        f"{record.sku or '第' + str(i + 1) + '个产品'}"
+                        f"处理失败: {exc}"
+                    )
+                    st.code(
+                        traceback.format_exc()
                     )
 
                 progress.progress((i + 1) / len(target_records))
