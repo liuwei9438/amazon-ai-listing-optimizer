@@ -65,12 +65,12 @@ def display_generated_content(profile: dict) -> None:
         st.write(title_result["title"])
     if "short_title_result" in profile:
 
-    st.write("### AI短标题")
+        st.write("### AI短标题")
 
-    short_title = profile["short_title_result"].get(
-        "short_title",
-        ""
-    )
+        short_title = profile["short_title_result"].get(
+             "short_title",
+             ""
+        )
 
     if short_title:
 
