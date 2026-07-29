@@ -1,23 +1,27 @@
 from __future__ import annotations
 
+
 import re
+
 
 
 class HighlightGenerator:
 
+
     """
     Generate Amazon product highlights.
 
-    Rules:
-    - Facts only
-    - No invented attributes
-    - No assumed materials
+    Principles:
+    - Fact based
+    - No invented features
     - No marketing claims
-    - Used by bullet and description generators
+    - Used by bullet and description generator
     """
 
 
+
     BLOCKED_WORDS = [
+
         "best",
         "best seller",
         "#1",
@@ -29,12 +33,14 @@ class HighlightGenerator:
         "discount",
         "promotion",
         "perfect",
-        "top quality",
+        "top quality"
+
     ]
 
 
+
     @staticmethod
-    def generate(profile: dict) -> dict:
+    def generate(profile: dict):
 
 
         basic = profile.get(
@@ -42,23 +48,42 @@ class HighlightGenerator:
             {}
         )
 
+
         compatibility = profile.get(
             "compatibility",
             {}
         )
 
-        seo = profile.get(
-            "seo",
+
+        attributes = profile.get(
+            "attributes",
             {}
         )
 
 
-        highlights = []
+
+        highlights = {
+
+
+            "core_function": "",
+
+
+            "compatibility": "",
+
+
+            "usage": "",
+
+
+            "product_facts": []
+
+        }
+
 
 
         # =========================
-        # 1. Core Function
+        # Core Function
         # =========================
+
 
         main_function = basic.get(
             "main_function",
@@ -74,41 +99,45 @@ class HighlightGenerator:
 
         if main_function:
 
-            highlights.append({
 
-                "type": "function",
+            highlights["core_function"] = (
 
-                "text":
+                "Replacement component designed to "
+
+                +
                 HighlightGenerator.clean(
                     main_function
                 )
 
-            })
+            )
 
 
         elif product_type:
 
-            highlights.append({
 
-                "type": "product",
+            highlights["core_function"] = (
 
-                "text":
+                "Replacement component for "
+
+                +
                 HighlightGenerator.clean(
                     product_type
                 )
 
-            })
+            )
 
 
 
         # =========================
-        # 2. Compatibility
+        # Compatibility
         # =========================
+
 
         brands = compatibility.get(
             "brands",
             []
         )
+
 
         models = compatibility.get(
             "models",
@@ -116,64 +145,46 @@ class HighlightGenerator:
         )
 
 
-        if brands or models:
+        if brands and models:
 
 
-            text = "Compatible with"
+            highlights["compatibility"] = (
+
+                "Compatible with "
+
+                +
+                ", ".join(brands)
+
+                +
+
+                " models "
+
+                +
+
+                ", ".join(models)
+
+            )
 
 
-            if brands:
-
-                text += " "
-
-                text += ", ".join(
-                    brands
-                )
+        elif models:
 
 
-            if models:
+            highlights["compatibility"] = (
 
-                text += " models "
+                "Compatible with models "
 
-                text += ", ".join(
-                    models[:5]
-                )
+                +
 
+                ", ".join(models)
 
-            highlights.append({
-
-                "type":
-                "compatibility",
-
-                "text":
-                text
-
-            })
-
-
-
-        # =========================
-        # 3. Replacement Purpose
-        # =========================
-
-        if product_type:
-
-
-            highlights.append({
-
-                "type":
-                "replacement",
-
-                "text":
-                f"Replacement part for {HighlightGenerator.clean(product_type)}"
-
-            })
+            )
 
 
 
         # =========================
-        # 4. Usage Scenario
+        # Usage
         # =========================
+
 
         usage = profile.get(
             "usage_scenarios",
@@ -181,58 +192,76 @@ class HighlightGenerator:
         )
 
 
-        for item in usage[:2]:
-
-            if item:
-
-                highlights.append({
-
-                    "type":
-                    "usage",
-
-                    "text":
-                    HighlightGenerator.clean(
-                        item
-                    )
-
-                })
+        if usage:
 
 
+            highlights["usage"] = (
 
-        # =========================
-        # 5. SEO Keywords
-        # =========================
+                "Suitable for "
 
-        keywords = []
+                +
 
+                ", ".join(
 
-        for item in seo.get(
-            "primary_keywords",
-            []
-        ):
+                    [
 
-            item = HighlightGenerator.clean(
-                item
+                        HighlightGenerator.clean(x)
+
+                        for x in usage
+
+                    ]
+
+                )
+
             )
 
-            if item:
 
-                keywords.append(
-                    item
+
+        # =========================
+        # Facts only
+        # =========================
+
+
+        for key in [
+
+            "quantity",
+
+            "material",
+
+            "color",
+
+            "voltage",
+
+            "power"
+
+        ]:
+
+
+            value = attributes.get(
+                key,
+                ""
+            )
+
+
+            if value:
+
+
+                highlights["product_facts"].append(
+
+                    f"{key}: {value}"
+
                 )
+
 
 
         return {
 
 
-            "highlights":
-
-            highlights,
+            "highlights": highlights,
 
 
-            "validation":
+            "validation": {
 
-            {
 
                 "compliance_ok":
 
@@ -245,6 +274,7 @@ class HighlightGenerator:
                     )
 
                 ) == 0
+
 
             },
 
@@ -269,20 +299,13 @@ class HighlightGenerator:
 
             return ""
 
-        return re.sub(
-
-            r"\s+",
-
-            " ",
-
-            str(text)
-
-        ).strip()
+        return str(text).strip()
 
 
 
     @staticmethod
     def check_blocked_words(text):
+
 
         found = []
 
@@ -293,9 +316,13 @@ class HighlightGenerator:
             if re.search(
 
                 r"\b"
+
                 +
+
                 re.escape(word)
+
                 +
+
                 r"\b",
 
                 text,
@@ -304,9 +331,9 @@ class HighlightGenerator:
 
             ):
 
-                found.append(
-                    word
-                )
+
+                found.append(word)
+
 
 
         return found
