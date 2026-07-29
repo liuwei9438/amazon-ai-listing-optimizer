@@ -144,9 +144,11 @@ class BulletGenerator:
 
                 BulletGenerator.clean(
 
-                    "Replacement component designed for "
+                    "Replacement "
                     +
                     extracted["function"]
+                    +
+                    " component for restoring washing machine button operation"
 
                 )
 
@@ -232,24 +234,7 @@ class BulletGenerator:
         # Bullet 5 Product Type
         # ==========================
 
-        product_type = profile.get(
-            "basic_info",
-            {}
-        ).get(
-            "product_type",
-            ""
-        )
-
-
-        if product_type:
-
-            bullets.append(
-
-                "Replacement component for "
-                +
-                product_type
-
-            )
+    
 
 
 
