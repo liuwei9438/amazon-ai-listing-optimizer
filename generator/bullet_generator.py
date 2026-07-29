@@ -129,12 +129,10 @@ class BulletGenerator:
 
         for item in attributes:
 
-
             name = item.get(
                 "name",
                 ""
             )
-
 
             value = item.get(
                 "value",
@@ -142,11 +140,39 @@ class BulletGenerator:
             )
 
 
-            if value:
+            if not value:
+                continue
 
-                bullets.append(
-                    f"{name}: {value}"
+
+            # ==========================
+            # Fact Protection
+            # ==========================
+
+            # 材质必须来自事实字段
+            if name.lower() in [
+                "material",
+                "materials",
+                "材质"
+            ]:
+
+                facts = profile.get(
+                    "fact_lock",
+                    {}
                 )
+
+                real_material = facts.get(
+                    "material",
+                    ""
+                )
+
+
+                if not real_material:
+                    continue
+
+
+            bullets.append(
+                f"{name}: {value}"
+            )
 
 
 
