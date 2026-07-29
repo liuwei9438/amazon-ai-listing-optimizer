@@ -10,6 +10,7 @@ from analyzer.product_understanding import (
     ProductUnderstandingEngine,
     UnderstandingError,
 )
+from analyzer.model_protection import ModelProtection
 from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
@@ -302,6 +303,9 @@ if uploaded is not None:
                     title_result = TitleGenerator.generate(profile)
                     short_title_result = ShortTitleGenerator.generate(profile)
                     highlight_result = HighlightGenerator.generate(profile)
+                    models = ModelProtection.extract_models(
+                        profile
+                    )
 
                     bullet_result = BulletGenerator.generate(
                         profile,
@@ -313,11 +317,34 @@ if uploaded is not None:
                         highlight_result,
                     )
 
-                    profile["generated_title"] = title_result
-                    profile["short_title_result"] = short_title_result
-                    profile["highlight_result"] = highlight_result
-                    profile["bullet_result"] = bullet_result
-                    profile["description_result"] = description_result
+                    profile["generated_title"] = ModelProtection.protect_result(
+                        title_result,
+                        models
+                    )
+
+
+                    profile["short_title_result"] = ModelProtection.protect_result(
+                        short_title_result,
+                        models
+                    )
+
+
+                    profile["highlight_result"] = ModelProtection.protect_result(
+                        highlight_result,
+                        models
+                    )
+
+
+                    profile["bullet_result"] = ModelProtection.protect_result(
+                        bullet_result,
+                        models
+                    )
+
+
+                    profile["description_result"] = ModelProtection.protect_result(
+                        description_result,
+                        models
+                    )
 
                     profiles.append(profile)
 
