@@ -51,7 +51,10 @@ class HighlightGenerator:
             "attributes",
             {}
         )
-
+        fact_lock = profile.get(
+            "fact_lock",
+            {}
+        )
         seo = profile.get(
             "seo",
             {}
@@ -194,18 +197,44 @@ class HighlightGenerator:
                 ""
             )
 
+
             value = HighlightGenerator.clean(
                 value
             )
 
-            if value:
 
-                highlights["attributes"].append(
-                    {
-                        "name": key,
-                        "value": value
-                    }
+            if not value:
+                continue
+
+
+
+            # ======================
+            # Fact Protection
+            # ======================
+
+            # 材质必须来自事实锁定
+            if key == "material":
+
+                confirmed_material = HighlightGenerator.clean(
+                    fact_lock.get(
+                        "material",
+                        ""
+                    )
                 )
+
+
+                if not confirmed_material:
+
+                    continue
+
+
+
+            highlights["attributes"].append(
+                {
+                    "name": key,
+                    "value": value
+                }
+            )
 
 
 
