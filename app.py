@@ -286,6 +286,7 @@ if uploaded is not None:
                     )
 
                     title_result = TitleGenerator.generate(profile)
+                    short_title_result = ShortTitleGenerator.generate(profile)
                     highlight_result = HighlightGenerator.generate(profile)
 
                     bullet_result = BulletGenerator.generate(
@@ -299,6 +300,7 @@ if uploaded is not None:
                     )
 
                     profile["generated_title"] = title_result
+                    profile["short_title_result"] = short_title_result
                     profile["highlight_result"] = highlight_result
                     profile["bullet_result"] = bullet_result
                     profile["description_result"] = description_result
