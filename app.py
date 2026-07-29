@@ -13,7 +13,7 @@ from compliance.brand_protection import protect_text
 from services.config import get_openai_api_key
 from generator.title_generator import TitleGenerator
 from generator.bullet_generator import BulletGenerator
-
+from generator.description_generator import DescriptionGenerator
 from core import export_unchanged, integrity_report, read_workbook
 
 VERSION = "V2.3.0-Product-Understanding-SEO"
@@ -163,7 +163,11 @@ if uploaded is not None:
                         profile,
                         highlight_result
                     )
-
+                    description_result = DescriptionGenerator.generate(
+                        profile,
+                        highlight_result,
+                        bullet_result
+                    )
 
                     profile["generated_title"] = title_result
 
