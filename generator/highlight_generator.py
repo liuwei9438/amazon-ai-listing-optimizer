@@ -55,6 +55,10 @@ class HighlightGenerator:
             "fact_lock",
             {}
         )
+        fact_lock = profile.get(
+            "fact_lock",
+            {}
+        )
         seo = profile.get(
             "seo",
             {}
@@ -191,6 +195,42 @@ class HighlightGenerator:
             "voltage",
             "power",
         ]:
+
+            value = attributes.get(
+                key,
+                ""
+            )
+
+            value = HighlightGenerator.clean(
+                value
+            )
+
+
+            if not value:
+                continue
+
+
+            # Fact Lock Protection
+
+            if key == "material":
+
+                confirmed = HighlightGenerator.clean(
+                    fact_lock.get(
+                        "material",
+                        ""
+                    )
+                )
+
+                if not confirmed:
+                    continue
+
+
+            highlights["attributes"].append(
+                {
+                    "name": key,
+                    "value": value
+                }
+            )
 
             value = attributes.get(
                 key,
