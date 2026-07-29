@@ -128,7 +128,13 @@ if uploaded is not None:
             uploaded.getvalue(),
         )
     except Exception as exc:
-        st.error(f"读取失败：{exc}")
+        import traceback
+        st.error(
+            f"读取失败: {exc}"
+        )
+        st.code(
+            traceback.format_exc()
+        )
         st.stop()
 
     fields = envelope.fields
