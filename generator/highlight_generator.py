@@ -1,23 +1,23 @@
 from __future__ import annotations
 
-
 import re
-
 
 
 class HighlightGenerator:
 
-
     """
     Generate Amazon product highlights.
 
-    Principles:
-    - Fact based
-    - No invented features
-    - No marketing claims
-    - Used by bullet and description generator
-    """
+    Purpose:
+    - Create structured product highlights
+    - Used by BulletGenerator and DescriptionGenerator
 
+    Rules:
+    - Facts only
+    - No invented specifications
+    - No marketing claims
+    - No prohibited words
+    """
 
 
     BLOCKED_WORDS = [
@@ -38,12 +38,11 @@ class HighlightGenerator:
     ]
 
 
-
     @staticmethod
-    def generate(profile: dict):
+    def generate(profile: dict) -> dict:
 
 
-        basic = profile.get(
+        basic_info = profile.get(
             "basic_info",
             {}
         )
@@ -59,6 +58,34 @@ class HighlightGenerator:
             "attributes",
             {}
         )
+
+
+        #
+        # Compatibility compatibility fix
+        #
+
+        if isinstance(
+            compatibility,
+            str
+        ):
+
+            compatibility = {
+
+                "brands": [
+                    compatibility
+                ],
+
+                "models": []
+
+            }
+
+
+        if not isinstance(
+            compatibility,
+            dict
+        ):
+
+            compatibility = {}
 
 
 
@@ -85,16 +112,25 @@ class HighlightGenerator:
         # =========================
 
 
-        main_function = basic.get(
-            "main_function",
-            ""
+        main_function = HighlightGenerator.clean(
+
+            basic_info.get(
+                "main_function",
+                ""
+            )
+
         )
 
 
-        product_type = basic.get(
-            "product_type",
-            ""
+        product_type = HighlightGenerator.clean(
+
+            basic_info.get(
+                "product_type",
+                ""
+            )
+
         )
+
 
 
         if main_function:
@@ -105,9 +141,8 @@ class HighlightGenerator:
                 "Replacement component designed to "
 
                 +
-                HighlightGenerator.clean(
-                    main_function
-                )
+
+                main_function
 
             )
 
@@ -120,9 +155,8 @@ class HighlightGenerator:
                 "Replacement component for "
 
                 +
-                HighlightGenerator.clean(
-                    product_type
-                )
+
+                product_type
 
             )
 
@@ -134,15 +168,80 @@ class HighlightGenerator:
 
 
         brands = compatibility.get(
+
             "brands",
+
             []
+
         )
 
 
-        models = compatibility.get(
-            "models",
-            []
+        models = (
+
+            compatibility.get(
+
+                "models",
+
+                []
+
+            )
+
+            or
+
+            compatibility.get(
+
+                "compatible_models",
+
+                []
+
+            )
+
         )
+
+
+
+        if isinstance(
+            brands,
+            str
+        ):
+
+            brands = [
+                brands
+            ]
+
+
+        if isinstance(
+            models,
+            str
+        ):
+
+            models = [
+                models
+            ]
+
+
+
+        brands = [
+
+            HighlightGenerator.clean(x)
+
+            for x in brands
+
+            if x
+
+        ]
+
+
+        models = [
+
+            HighlightGenerator.clean(x)
+
+            for x in models
+
+            if x
+
+        ]
+
 
 
         if brands and models:
@@ -153,6 +252,7 @@ class HighlightGenerator:
                 "Compatible with "
 
                 +
+
                 ", ".join(brands)
 
                 +
@@ -180,16 +280,46 @@ class HighlightGenerator:
             )
 
 
+        elif brands:
+
+
+            highlights["compatibility"] = (
+
+                "Compatible with "
+
+                +
+
+                ", ".join(brands)
+
+            )
+
+
 
         # =========================
-        # Usage
+        # Usage Scenario
         # =========================
 
 
         usage = profile.get(
+
             "usage_scenarios",
+
             []
+
         )
+
+
+        if isinstance(
+            usage,
+            str
+        ):
+
+            usage = [
+
+                usage
+
+            ]
+
 
 
         if usage:
@@ -209,6 +339,8 @@ class HighlightGenerator:
 
                         for x in usage
 
+                        if x
+
                     ]
 
                 )
@@ -218,8 +350,17 @@ class HighlightGenerator:
 
 
         # =========================
-        # Facts only
+        # Product Facts
         # =========================
+
+
+        if not isinstance(
+            attributes,
+            dict
+        ):
+
+            attributes = {}
+
 
 
         for key in [
@@ -232,14 +373,26 @@ class HighlightGenerator:
 
             "voltage",
 
-            "power"
+            "power",
+
+            "dimensions"
 
         ]:
 
 
             value = attributes.get(
+
                 key,
+
                 ""
+
+            )
+
+
+            value = HighlightGenerator.clean(
+
+                value
+
             )
 
 
@@ -273,7 +426,11 @@ class HighlightGenerator:
 
                     )
 
-                ) == 0
+                )
+
+                ==
+
+                0
 
 
             },
@@ -295,9 +452,11 @@ class HighlightGenerator:
     @staticmethod
     def clean(text):
 
+
         if not text:
 
             return ""
+
 
         return str(text).strip()
 
@@ -330,7 +489,6 @@ class HighlightGenerator:
                 flags=re.I
 
             ):
-
 
                 found.append(word)
 
