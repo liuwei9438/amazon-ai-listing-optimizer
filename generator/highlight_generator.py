@@ -1,647 +1,160 @@
-from __future__ import annotations
-
-import re
+import json
 
 
 class HighlightGenerator:
 
-    """
-    Generate Amazon product highlights.
-
-    Output:
-    - short_title
-    - product_highlights
-    - core_function
-    - compatibility
-    - usage
-    - product_facts
-
-    Rules:
-    - Facts only
-    - No invented specifications
-    - No marketing exaggeration
-    - Compatible wording protected
-    """
-
-
-    BLOCKED_WORDS = [
-
-        "best",
-        "best seller",
-        "#1",
-        "premium",
-        "original",
-        "genuine",
-        "official",
-        "authentic",
-        "discount",
-        "promotion",
-        "perfect",
-        "top quality"
-
-    ]
-
-
     @staticmethod
-    def generate(profile: dict) -> dict:
+    def generate(profile):
+        """
+        Amazon 商品亮点生成器
 
+        目标：
+        - 生成购买决策信息
+        - 不生成标题
+        - 不堆关键词
+        - 不输出JSON结构
+        - 不输出空属性
+        """
 
-        basic_info = profile.get(
-            "basic_info",
-            {}
+        highlights = []
+
+        basic = profile.get("basic_info", {}) or {}
+        facts = profile.get("facts", {}) or {}
+        compatibility = profile.get("compatibility", {}) or {}
+
+        product_type = (
+            basic.get("product_type")
+            or "replacement component"
         )
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
+        core_function = (
+            profile.get("core_function")
+            or facts.get("function")
+            or ""
         )
 
-        attributes = profile.get(
-            "attributes",
-            {}
-        )
-
-
-        if not isinstance(basic_info, dict):
-            basic_info = {}
-
-
-        if not isinstance(compatibility, dict):
-            compatibility = {}
-
-
-        if not isinstance(attributes, dict):
-            attributes = {}
-
-
-
-        highlights = {
-
-            "short_title": "",
-
-            "product_highlights": [],
-
-            "core_function": "",
-
-            "compatibility": "",
-
-            "usage": "",
-
-            "product_facts": []
-
-        }
-
-
-
-        # =========================
-        # Basic Information
-        # =========================
-
-
-        product_type = HighlightGenerator.clean(
-
-            basic_info.get(
-                "product_type",
-                ""
+        # 1. 功能价值
+        if core_function:
+            highlights.append(
+                {
+                    "title": "Replacement Function",
+                    "content":
+                        f"Designed to replace {core_function.lower()}."
+                }
             )
 
-        )
-
-
-        main_function = HighlightGenerator.clean(
-
-            basic_info.get(
-                "main_function",
-                ""
-            )
-
-        )
-
-
-
-        # =========================
-        # Core Function
-        # =========================
-
-
-        if main_function:
-
-            highlights["core_function"] = (
-
-                "Designed to replace "
-
-                +
-
-                main_function
-
+        else:
+            highlights.append(
+                {
+                    "title": "Replacement Function",
+                    "content":
+                        f"Designed as a replacement component for {product_type.lower()}."
+                }
             )
 
 
-        elif product_type:
-
-            highlights["core_function"] = (
-
-                "Replacement component for "
-
-                +
-
-                product_type
-
-            )
-
-
-
-        # =========================
-        # Short Title
-        # =========================
-
-
-        short_parts = []
-
-
-        if product_type:
-
-            short_parts.append(
-                product_type
-            )
-
-
-        elif main_function:
-
-            short_parts.append(
-                main_function
-            )
-
-
-
-        if compatibility.get("brands"):
-
-            brand = compatibility.get(
-                "brands"
-            )
-
-
-            if isinstance(brand, list):
-
-                brand = brand[0]
-
-            short_parts.append(
-                "Compatible with " + str(brand)
-            )
-
-
-
-        if short_parts:
-
-            highlights["short_title"] = (
-
-                " ".join(short_parts)
-
-            )
-
-
-
-        # =========================
-        # Compatibility
-        # =========================
-
-
-        brands = compatibility.get(
-            "brands",
-            []
-        )
-
-
-        models = (
-
-            compatibility.get(
-                "models",
-                []
-            )
-
-            or
-
-            compatibility.get(
-                "compatible_models",
-                []
-            )
-
-        )
-
-
-
-        if isinstance(brands, str):
-
-            brands = [
-                brands
-            ]
-
-
-        if isinstance(models, str):
-
-            models = [
-                models
-            ]
-
-
-
-        brands = [
-
-            HighlightGenerator.clean(x)
-
-            for x in brands
-
-            if x
-
-        ]
-
-
-        models = [
-
-            HighlightGenerator.clean(x)
-
-            for x in models
-
-            if x
-
-        ]
-
-
+        # 2. 兼容信息
+        brands = compatibility.get("brands", []) or []
+        models = compatibility.get("models", []) or []
 
         if brands and models:
 
+            brand_text = brands[0]
 
-            highlights["compatibility"] = (
+            model_text = ", ".join(
+                models[:5]
+            )
 
-                "Compatible with "
-
-                +
-
-                ", ".join(brands)
-
-                +
-
-                " models "
-
-                +
-
-                ", ".join(models)
-
+            highlights.append(
+                {
+                    "title": "Compatibility",
+                    "content":
+                        f"Compatible with {brand_text} models {model_text}."
+                }
             )
 
 
-        elif models:
-
-
-            highlights["compatibility"] = (
-
-                "Compatible with models "
-
-                +
-
-                ", ".join(models)
-
-            )
-
-
-
-        elif brands:
-
-
-            highlights["compatibility"] = (
-
-                "Compatible with "
-
-                +
-
-                ", ".join(brands)
-
-            )
-
-
-
-        # =========================
-        # Usage
-        # =========================
-
-
-        usage = profile.get(
-            "usage_scenarios",
-            []
+        # 3. 材质
+        material = (
+            facts.get("material")
+            or ""
         )
 
+        if isinstance(material, dict):
+            material = material.get("value", "")
 
-        if isinstance(usage, str):
-
-            usage = [
-                usage
-            ]
-
-
-
-        if usage:
-
-            usage_text = ", ".join(
-
-                [
-
-                    HighlightGenerator.clean(x)
-
-                    for x in usage
-
-                    if x
-
-                ]
-
-            )
-
-
-            if usage_text:
-
-                highlights["usage"] = (
-
-                    "Suitable for "
-
-                    +
-
-                    usage_text
-
-                )
-
-
-
-        # =========================
-        # Product Highlights
-        # =========================
-
-
-        if highlights["core_function"]:
-
-            highlights["product_highlights"].append(
-
+        if material and material.lower() not in [
+            "unknown",
+            "none",
+            "null",
+            "[]",
+            "{}"
+        ]:
+            highlights.append(
                 {
-
-                    "title":
-                    "Replacement Function",
-
+                    "title": "Material",
                     "content":
-                    highlights["core_function"]
-
+                        f"Made of {material} material."
                 }
-
             )
 
 
-
-        if highlights["compatibility"]:
-
-            highlights["product_highlights"].append(
-
-                {
-
-                    "title":
-                    "Compatibility",
-
-                    "content":
-                    highlights["compatibility"]
-
-                }
-
-            )
-
-
-
-        if highlights["usage"]:
-
-            highlights["product_highlights"].append(
-
-                {
-
-                    "title":
-                    "Application",
-
-                    "content":
-                    highlights["usage"]
-
-                }
-
-            )
-
-
-
-        # =========================
-        # Product Facts
-        # =========================
-
-
-        fact_mapping = [
-
-            ("material", "Material"),
-
-            ("quantity", "Quantity"),
-
-            ("color", "Color"),
-
-            ("dimensions", "Dimensions"),
-
-            ("voltage", "Voltage"),
-
-            ("power", "Power")
-
-        ]
-
-
-
-        for key, title in fact_mapping:
-
-
-            value = attributes.get(
-                key,
-                ""
-            )
-
-
-            value = HighlightGenerator.extract_attribute(
-                value
-            )
-
-
-            value = HighlightGenerator.clean(
-                value
-            )
-
-
-            if value:
-
-
-                highlights["product_facts"].append(
-
-                    {
-
-                        "name":
-                        title,
-
-                        "value":
-                        value
-
-                    }
-
-                )
-
-
-                # 商品亮点只加入有价值事实
-
-                if key in [
-
-                    "material",
-                    "dimensions"
-
-                ]:
-
-
-                    highlights["product_highlights"].append(
-
-                        {
-
-                            "title":
-                            title,
-
-                            "content":
-                            f"Made of {value}."
-
-                        }
-
-                    )
-
-
-
-        # 最多保留5条商品亮点
-
-        highlights["product_highlights"] = (
-
-            highlights["product_highlights"][:5]
-
+        # 4. 使用场景
+        application = (
+            facts.get("application")
+            or ""
         )
 
-
-
-        return {
-
-
-            "highlights":
-
-            highlights,
-
-
-            "validation":
-
-            {
-
-                "compliance_ok":
-
-                len(
-
-                    HighlightGenerator.check_blocked_words(
-
-                        str(highlights)
-
-                    )
-
-                )
-
-                == 0
-
-            },
-
-
-            "blocked_words":
-
-            HighlightGenerator.check_blocked_words(
-
-                str(highlights)
-
-            )
-
-        }
-
-
-
-    @staticmethod
-    def extract_attribute(value):
-
-
-        if isinstance(value, dict):
-
-            return value.get(
-                "value",
-                ""
+        if application:
+            highlights.append(
+                {
+                    "title": "Application",
+                    "content": application
+                }
             )
 
 
-        if isinstance(value, list):
+        return HighlightGenerator.clean(highlights)
 
-            return ", ".join(
 
-                [
+    @staticmethod
+    def clean(items):
 
-                    str(x)
+        result = []
 
-                    for x in value
+        for item in items:
 
-                    if x
+            if not isinstance(item, dict):
+                continue
 
-                ]
+            title = item.get("title", "")
+            content = item.get("content", "")
 
+            if not content:
+                continue
+
+
+            # 清理异常字符
+            if isinstance(content, (dict, list)):
+                continue
+
+
+            text = str(content).strip()
+
+
+            if text in [
+                "",
+                "[]",
+                "{}",
+                "None",
+                "unknown"
+            ]:
+                continue
+
+
+            result.append(
+                f"{title}: {text}"
             )
 
 
-        return str(value)
-
-
-
-    @staticmethod
-    def clean(text):
-
-
-        if not text:
-
-            return ""
-
-
-        return str(text).strip()
-
-
-
-    @staticmethod
-    def check_blocked_words(text):
-
-
-        found = []
-
-
-        for word in HighlightGenerator.BLOCKED_WORDS:
-
-
-            if re.search(
-
-                r"\b"
-
-                +
-
-                re.escape(word)
-
-                +
-
-                r"\b",
-
-                text,
-
-                flags=re.I
-
-            ):
-
-                found.append(word)
-
-
-
-        return found
+        return result
