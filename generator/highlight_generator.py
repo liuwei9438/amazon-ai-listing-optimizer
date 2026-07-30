@@ -1,8 +1,24 @@
+from typing import Dict, List
+
+
 class HighlightGenerator:
+    """
+    Amazon Product Highlights Generator
+
+    作用：
+    从 Product Profile 提取产品核心卖点，
+    输出简洁 Amazon Highlights。
+
+    原则：
+    - 不扩展事实
+    - 不生成营销词
+    - 不生成不存在参数
+    - 不输出字段标签
+    """
 
 
     @staticmethod
-    def generate(profile):
+    def generate(profile: Dict) -> List[str]:
 
         highlights = []
 
@@ -10,81 +26,54 @@ class HighlightGenerator:
         basic = profile.get(
             "basic_info",
             {}
-        ) or {}
+        )
 
-        facts = profile.get(
-            "facts",
-            {}
-        ) or {}
 
         compatibility = profile.get(
             "compatibility",
             {}
-        ) or {}
+        )
 
 
-        product_type = (
-            basic.get("product_type")
-            or ""
-        ).lower()
+        facts = profile.get(
+            "facts",
+            {}
+        )
 
 
-        core_function = (
-            profile.get("core_function")
-            or facts.get("function")
+        # -----------------------
+        # 1. 产品功能
+        # -----------------------
+
+        function = (
+            basic.get("core_function")
+            or basic.get("function")
             or ""
         )
 
 
-        product_category = (
-            HighlightGenerator.detect_category(
-                product_type,
-                core_function
-            )
-        )
-
-
-        # =========================
-        # 1. 核心功能价值
-        # =========================
-
-        if core_function:
+        if function:
 
             highlights.append(
-                {
-                    "title": "Function",
-                    "content":
-                    HighlightGenerator.clean_text(
-                        f"Helps restore normal operation by replacing {core_function.lower()}."
-                    )
-                }
-            )
-
-        else:
-
-            highlights.append(
-                {
-                    "title": "Function",
-                    "content":
-                    f"Designed as a replacement component for {product_type}."
-                }
+                f"Replacement component designed for {function}."
             )
 
 
-        # =========================
-        # 2. 兼容信息
-        # =========================
+
+        # -----------------------
+        # 2. 兼容型号
+        # -----------------------
 
         brands = compatibility.get(
             "brands",
             []
-        ) or []
+        )
 
 
         models = compatibility.get(
             "models",
             []
-        ) or []
+        )
 
 
         if brands and models:
@@ -93,61 +82,44 @@ class HighlightGenerator:
                 models[:5]
             )
 
-
             highlights.append(
-                {
-                    "title": "Compatibility",
-                    "content":
-                    f"Compatible with {brands[0]} models {model_text}."
-                }
+                f"Compatible with {brands[0]} models {model_text}."
             )
 
 
-        # =========================
-        # 3. 根据产品类型生成购买价值
-        # =========================
+        elif models:
 
-
-        if product_category == "replacement":
-
-
-            highlights.append(
-                {
-                    "title":"Replacement",
-                    "content":
-                    "Direct replacement design helps replace worn or damaged components without modifying existing equipment."
-                }
+            model_text = ", ".join(
+                models[:5]
             )
 
-
-        elif product_category == "consumable":
-
-
             highlights.append(
-                {
-                    "title":"Replacement",
-                    "content":
-                    "Designed for regular replacement to help maintain product performance."
-                }
-            )
-
-
-        else:
-
-
-            highlights.append(
-                {
-                    "title":"Design",
-                    "content":
-                    "Designed for practical daily use and convenient operation."
-                }
+                f"Compatible with specified models {model_text}."
             )
 
 
 
-        # =========================
+        # -----------------------
+        # 3. 产品类型
+        # -----------------------
+
+        product_type = (
+            basic.get("product_type")
+            or ""
+        )
+
+
+        if product_type:
+
+            highlights.append(
+                f"Replacement part for {product_type} applications."
+            )
+
+
+
+        # -----------------------
         # 4. 材质
-        # =========================
+        # -----------------------
 
         material = facts.get(
             "material",
@@ -155,198 +127,66 @@ class HighlightGenerator:
         )
 
 
-        if isinstance(material, dict):
-
-            material = material.get(
-                "value",
-                ""
-            )
-
-
         if material:
 
             highlights.append(
-                {
-                    "title":"Material",
-                    "content":
-                    f"Made from {material} material."
-                }
-            )
-
-
-        # =========================
-        # 5. 包装数量
-        # =========================
-
-
-        quantity = facts.get(
-            "quantity",
-            ""
-        )
-
-
-        if quantity:
-
-            highlights.append(
-                {
-                    "title":"Package",
-                    "content":
-                    f"Package includes {quantity}."
-                }
+                f"Made of {material} material."
             )
 
 
 
-        return {
+        # -----------------------
+        # 清理
+        # -----------------------
 
-            "highlights":
-            HighlightGenerator.clean(
-                highlights
-            )[:5]
-
-        }
-
-
-
-    # =============================
-    # 产品分类判断
-    # =============================
-
-
-    @staticmethod
-    def detect_category(
-        product_type,
-        function
-    ):
-
-
-        text = (
-            product_type
-            +
-            " "
-            +
-            function
-        ).lower()
-
-
-
-        replacement_words = [
-
-            "replacement",
-            "part",
-            "button",
-            "cover",
-            "head",
-            "blade",
-            "component"
-
-        ]
-
-
-        consumable_words = [
-
-            "filter",
-            "pad",
-            "cartridge",
-            "bag"
-
-        ]
-
-
-
-        for word in consumable_words:
-
-            if word in text:
-
-                return "consumable"
-
-
-
-        for word in replacement_words:
-
-            if word in text:
-
-                return "replacement"
-
-
-
-        return "general"
-
-
-
-
-    # =============================
-    # 文本清理
-    # =============================
-
-
-    @staticmethod
-    def clean_text(text):
-
-        forbidden = [
+        banned_words = [
 
             "best",
             "premium",
+            "high quality",
+            "perfect",
+            "professional",
+            "easy",
+            "convenient",
+            "daily use",
+            "practical",
             "original",
             "genuine",
             "official",
-            "number one"
 
         ]
 
 
-        for word in forbidden:
-
-            text = text.replace(
-                word,
-                ""
-            )
+        result = []
 
 
-        return text.strip()
+        for item in highlights:
+
+            text = item.strip()
 
 
-
-    @staticmethod
-    def clean(items):
-
-        result=[]
-
-
-        for item in items:
-
-
-            if not isinstance(
-                item,
-                dict
-            ):
-
+            if not text:
                 continue
 
 
-
-            title = item.get(
-                "title",
-                ""
-            )
+            lower = text.lower()
 
 
-            content = item.get(
-                "content",
-                ""
-            )
+            blocked = False
 
 
-            if not content:
+            for word in banned_words:
 
-                continue
+                if word in lower:
+                    blocked = True
+                    break
 
 
+            if not blocked:
 
-            result.append(
-                f"{title}: {content}"
-            )
+                result.append(text)
 
 
 
-        return result
+        # 最大3条
+        return result[:3]
