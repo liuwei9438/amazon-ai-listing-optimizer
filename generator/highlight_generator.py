@@ -6,7 +6,7 @@ import re
 class HighlightGenerator:
 
     """
-    Generate Amazon product highlight structure.
+    Generate Amazon product highlights.
 
     Output:
     - short_title
@@ -22,7 +22,6 @@ class HighlightGenerator:
     - No marketing exaggeration
     - Compatible wording protected
     """
-
 
 
     BLOCKED_WORDS = [
@@ -43,7 +42,6 @@ class HighlightGenerator:
     ]
 
 
-
     @staticmethod
     def generate(profile: dict) -> dict:
 
@@ -53,12 +51,10 @@ class HighlightGenerator:
             {}
         )
 
-
         compatibility = profile.get(
             "compatibility",
             {}
         )
-
 
         attributes = profile.get(
             "attributes",
@@ -66,41 +62,30 @@ class HighlightGenerator:
         )
 
 
-        if not isinstance(
-            compatibility,
-            dict
-        ):
+        if not isinstance(basic_info, dict):
+            basic_info = {}
 
+
+        if not isinstance(compatibility, dict):
             compatibility = {}
 
 
-
-        if not isinstance(
-            attributes,
-            dict
-        ):
-
+        if not isinstance(attributes, dict):
             attributes = {}
 
 
 
         highlights = {
 
-
             "short_title": "",
-
 
             "product_highlights": [],
 
-
             "core_function": "",
-
 
             "compatibility": "",
 
-
             "usage": "",
-
 
             "product_facts": []
 
@@ -109,7 +94,7 @@ class HighlightGenerator:
 
 
         # =========================
-        # Basic information
+        # Basic Information
         # =========================
 
 
@@ -141,10 +126,9 @@ class HighlightGenerator:
 
         if main_function:
 
-
             highlights["core_function"] = (
 
-                "Replacement component designed to "
+                "Designed to replace "
 
                 +
 
@@ -154,7 +138,6 @@ class HighlightGenerator:
 
 
         elif product_type:
-
 
             highlights["core_function"] = (
 
@@ -176,35 +159,43 @@ class HighlightGenerator:
         short_parts = []
 
 
-        if main_function:
+        if product_type:
 
             short_parts.append(
-
-                main_function
-
+                product_type
             )
 
 
-        elif product_type:
+        elif main_function:
 
             short_parts.append(
+                main_function
+            )
 
-                product_type
 
+
+        if compatibility.get("brands"):
+
+            brand = compatibility.get(
+                "brands"
+            )
+
+
+            if isinstance(brand, list):
+
+                brand = brand[0]
+
+            short_parts.append(
+                "Compatible with " + str(brand)
             )
 
 
 
         if short_parts:
 
-
             highlights["short_title"] = (
 
                 " ".join(short_parts)
-
-                +
-
-                " Replacement"
 
             )
 
@@ -216,53 +207,37 @@ class HighlightGenerator:
 
 
         brands = compatibility.get(
-
             "brands",
-
             []
-
         )
 
 
         models = (
 
             compatibility.get(
-
                 "models",
-
                 []
-
             )
 
             or
 
             compatibility.get(
-
                 "compatible_models",
-
                 []
-
             )
 
         )
 
 
 
-        if isinstance(
-            brands,
-            str
-        ):
+        if isinstance(brands, str):
 
             brands = [
                 brands
             ]
 
 
-
-        if isinstance(
-            models,
-            str
-        ):
+        if isinstance(models, str):
 
             models = [
                 models
@@ -279,7 +254,6 @@ class HighlightGenerator:
             if x
 
         ]
-
 
 
         models = [
@@ -352,19 +326,12 @@ class HighlightGenerator:
 
 
         usage = profile.get(
-
             "usage_scenarios",
-
             []
-
         )
 
 
-
-        if isinstance(
-            usage,
-            str
-        ):
+        if isinstance(usage, str):
 
             usage = [
                 usage
@@ -374,28 +341,32 @@ class HighlightGenerator:
 
         if usage:
 
+            usage_text = ", ".join(
 
-            highlights["usage"] = (
+                [
 
-                "Suitable for "
+                    HighlightGenerator.clean(x)
 
-                +
+                    for x in usage
 
-                ", ".join(
+                    if x
 
-                    [
-
-                        HighlightGenerator.clean(x)
-
-                        for x in usage
-
-                        if x
-
-                    ]
-
-                )
+                ]
 
             )
+
+
+            if usage_text:
+
+                highlights["usage"] = (
+
+                    "Suitable for "
+
+                    +
+
+                    usage_text
+
+                )
 
 
 
@@ -406,22 +377,23 @@ class HighlightGenerator:
 
         if highlights["core_function"]:
 
-
             highlights["product_highlights"].append(
+
                 {
+
                     "title":
                     "Replacement Function",
+
                     "content":
-                    "Designed to replace "
-                    +
-                    main_function
+                    highlights["core_function"]
+
                 }
+
             )
 
 
 
         if highlights["compatibility"]:
-
 
             highlights["product_highlights"].append(
 
@@ -429,7 +401,6 @@ class HighlightGenerator:
 
                     "title":
                     "Compatibility",
-
 
                     "content":
                     highlights["compatibility"]
@@ -442,14 +413,12 @@ class HighlightGenerator:
 
         if highlights["usage"]:
 
-
             highlights["product_highlights"].append(
 
                 {
 
                     "title":
                     "Application",
-
 
                     "content":
                     highlights["usage"]
@@ -465,33 +434,40 @@ class HighlightGenerator:
         # =========================
 
 
-        for key in [
+        fact_mapping = [
 
-            "quantity",
-            "material",
-            "color",
-            "voltage",
-            "power",
-            "dimensions"
+            ("material", "Material"),
 
-        ]:
+            ("quantity", "Quantity"),
+
+            ("color", "Color"),
+
+            ("dimensions", "Dimensions"),
+
+            ("voltage", "Voltage"),
+
+            ("power", "Power")
+
+        ]
+
+
+
+        for key, title in fact_mapping:
 
 
             value = attributes.get(
-
                 key,
-
                 ""
-
             )
+
+
             value = HighlightGenerator.extract_attribute(
                 value
             )
 
+
             value = HighlightGenerator.clean(
-
                 value
-
             )
 
 
@@ -503,8 +479,7 @@ class HighlightGenerator:
                     {
 
                         "name":
-                        key,
-
+                        title,
 
                         "value":
                         value
@@ -512,6 +487,41 @@ class HighlightGenerator:
                     }
 
                 )
+
+
+                # 商品亮点只加入有价值事实
+
+                if key in [
+
+                    "material",
+                    "dimensions"
+
+                ]:
+
+
+                    highlights["product_highlights"].append(
+
+                        {
+
+                            "title":
+                            title,
+
+                            "content":
+                            f"Made of {value}."
+
+                        }
+
+                    )
+
+
+
+        # 最多保留5条商品亮点
+
+        highlights["product_highlights"] = (
+
+            highlights["product_highlights"][:5]
+
+        )
 
 
 
@@ -556,6 +566,38 @@ class HighlightGenerator:
 
 
 
+    @staticmethod
+    def extract_attribute(value):
+
+
+        if isinstance(value, dict):
+
+            return value.get(
+                "value",
+                ""
+            )
+
+
+        if isinstance(value, list):
+
+            return ", ".join(
+
+                [
+
+                    str(x)
+
+                    for x in value
+
+                    if x
+
+                ]
+
+            )
+
+
+        return str(value)
+
+
 
     @staticmethod
     def clean(text):
@@ -567,14 +609,7 @@ class HighlightGenerator:
 
 
         return str(text).strip()
-    @staticmethod
-    def extract_attribute(value):
-        if isinstance(value, dict):
-            return value.get(
-                "value",
-                ""
-            )
-        return str(value)
+
 
 
     @staticmethod
