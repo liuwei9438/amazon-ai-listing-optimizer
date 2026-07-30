@@ -129,6 +129,62 @@ def display_generated_content(profile: dict) -> None:
     if highlight_result:
         st.write("### AI商品亮点")
         display_highlights(highlight_result)
+            seo_result = profile.get("seo", {})
+
+    if seo_result:
+
+        st.write("### SEO Keywords")
+
+        st.write(
+            "**Primary Keywords**"
+        )
+
+        for k in seo_result.get(
+            "primary_keywords",
+            []
+        ):
+            st.write(
+                "• " + k
+            )
+
+
+        st.write(
+            "**Secondary Keywords**"
+        )
+
+        for k in seo_result.get(
+            "secondary_keywords",
+            []
+        ):
+            st.write(
+                "• " + k
+            )
+
+
+        st.write(
+            "**Model Keywords**"
+        )
+
+        for k in seo_result.get(
+            "model_keywords",
+            []
+        ):
+            st.write(
+                "• " + k
+            )
+
+
+        st.write(
+            "**Backend Search Terms**"
+        )
+
+        for k in seo_result.get(
+            "backend_search_terms",
+            []
+        ):
+            st.write(
+                "• " + k
+            )
 
     bullet_result = profile.get("bullet_result", {})
     bullets = bullet_result.get("bullets", [])
