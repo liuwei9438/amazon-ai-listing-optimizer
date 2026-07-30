@@ -70,9 +70,12 @@ class HighlightGenerator:
         if function:
 
             if product_type:
-
+                clean_function = function.replace(
+                    "for washing machine",
+                    ""
+                ).strip()
                 highlights.append(
-                    f"Replacement {product_type.lower()} for {function}."
+                    f"Replacement {product_type.lower()} for {clean_function}."
                 )
 
             else:
