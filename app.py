@@ -27,36 +27,82 @@ from services.listing_exporter import ListingExporter
 VERSION = "V2.4.0-Highlight-Pipeline"
 
 
-def display_highlights(highlight_result: dict) -> None:
-    """Display highlights while supporting both current and older data structures."""
-    highlights = highlight_result.get("highlights", [])
+def display_highlights(highlight_result) -> None:
+    """
+    Display Amazon product highlights.
+    Supports new list format and old dict format.
+    """
 
-    if isinstance(highlights, list):
-        for item in highlights:
-            if isinstance(item, dict):
-                text = str(item.get("text", "")).strip()
-            else:
-                text = str(item).strip()
+    if not highlight_result:
+        return
 
-            if text:
-                st.write("• " + text)
 
-    elif isinstance(highlights, dict):
-        for value in highlights.values():
-            if isinstance(value, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        text = str(item.get("text", item.get("value", ""))).strip()
-                    else:
-                        text = str(item).strip()
+    # 新版 HighlightGenerator 返回 list
+    if isinstance(highlight_result, list):
 
-                    if text:
-                        st.write("• " + text)
+        for item in highlight_result:
 
-            else:
-                text = str(value).strip()
+            if isinstance(item, str):
+
+                text = item.strip()
+
                 if text:
                     st.write("• " + text)
+
+
+            elif isinstance(item, dict):
+
+                title = item.get(
+                    "title",
+                    ""
+                )
+
+                content = item.get(
+                    "content",
+                    ""
+                )
+
+                if content:
+
+                    if title:
+                        st.write(
+                            f"• {title}: {content}"
+                        )
+                    else:
+                        st.write(
+                            "• " + content
+                        )
+
+
+    # 兼容旧版本 dict
+    elif isinstance(highlight_result, dict):
+
+        highlights = highlight_result.get(
+            "highlights",
+            []
+        )
+
+        for item in highlights:
+
+            if isinstance(item, dict):
+
+                text = (
+                    item.get("text")
+                    or item.get("content")
+                    or ""
+                )
+
+            else:
+
+                text = str(item)
+
+
+            text = str(text).strip()
+
+            if text:
+                st.write(
+                    "• " + text
+                )
 
 
 def display_generated_content(profile: dict) -> None:
