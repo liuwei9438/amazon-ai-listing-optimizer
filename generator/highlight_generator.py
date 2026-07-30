@@ -48,6 +48,9 @@ class HighlightGenerator:
         function = (
             basic.get("core_function")
             or basic.get("function")
+            or basic.get("main_function")
+            or basic.get("key_function")
+            or profile.get("core_function", "")
             or ""
         )
 
