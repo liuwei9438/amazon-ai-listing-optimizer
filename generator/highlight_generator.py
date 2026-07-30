@@ -1,216 +1,251 @@
-from typing import Dict, List
+from __future__ import annotations
+
+import json
+import re
 
 
 class HighlightGenerator:
-    """
-    Amazon Product Highlights Generator
-
-    作用：
-    从 Product Profile 提取产品核心卖点，
-    输出简洁 Amazon Highlights。
-
-    原则：
-    - 不扩展事实
-    - 不生成营销词
-    - 不生成不存在参数
-    - 不输出字段标签
-    - 优先展示购买决策相关信息
-    """
 
 
-    @staticmethod
-    def generate(profile: Dict) -> List[str]:
+    def __init__(self, client=None, model="gpt-4.1-mini"):
+        self.client = client
+        self.model = model
 
-        highlights = []
 
 
-        basic = profile.get(
-            "basic_info",
-            {}
+    def generate(self, profile: dict):
+
+        prompt = f"""
+You are an Amazon listing optimization expert.
+
+Generate Amazon Product Highlights from the product profile.
+
+The highlights are for Amazon listing display.
+
+Follow this structure:
+
+1. Product Identity
+Explain what the product is and what component/item it replaces.
+
+2. Compatibility
+Use:
+Compatible with + brand + models
+
+3. Core Function
+Explain the main function based only on provided information.
+
+4. Replacement Value
+Explain replacement purpose or restoring function.
+
+5. Package / Specification
+Only include when information exists.
+
+
+Rules:
+
+- Generate 3-5 bullet points.
+- Keep each bullet concise.
+- Do not use marketing language.
+
+Forbidden words:
+
+best
+premium
+original
+genuine
+official
+top
+number one
+guaranteed
+sale
+discount
+
+Do not invent:
+- material
+- performance
+- durability
+- lifespan
+- certification
+- warranty
+
+Do not change:
+- quantity
+- models
+- colors
+- dimensions
+
+Brand rules:
+
+If brand appears, always use:
+Compatible with [brand]
+
+Return JSON only:
+
+{{
+"highlights":[
+"bullet 1",
+"bullet 2",
+"bullet 3"
+]
+}}
+
+Product Profile:
+
+{json.dumps(profile,ensure_ascii=False)}
+"""
+
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role":"system",
+                    "content":
+                    "You generate compliant Amazon product highlights."
+                },
+                {
+                    "role":"user",
+                    "content":prompt
+                }
+            ],
+            temperature=0.2
         )
 
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
+        content=response.choices[0].message.content.strip()
 
 
-        facts = profile.get(
-            "facts",
-            {}
-        )
-
-
-        # -----------------------
-        # 基础信息
-        # -----------------------
-
-        product_type = (
-            basic.get("product_type")
-            or ""
-        )
-
-
-        function = (
-            basic.get("core_function")
-            or basic.get("function")
-            or basic.get("main_function")
-            or basic.get("key_function")
-            or profile.get("core_function", "")
-            or ""
-        )
+        return self.clean_result(content)
 
 
 
-        # -----------------------
-        # 1. 产品功能亮点
-        # -----------------------
+    def clean_result(self, content):
 
-        if function:
+        """
+        兼容:
+        1.JSON
+        2.list
+        3.普通文本
+        """
 
-            if product_type:
-                clean_function = function.replace(
-                    "for washing machine",
-                    ""
+        highlights=[]
+
+
+        # -------- JSON --------
+
+        try:
+
+            data=json.loads(content)
+
+
+            if isinstance(data,dict):
+
+                value=data.get(
+                    "highlights",
+                    []
+                )
+
+                if isinstance(value,list):
+                    highlights=value
+
+
+            elif isinstance(data,list):
+
+                highlights=data
+
+
+        except Exception:
+            pass
+
+
+
+        # -------- 普通文本 --------
+
+        if not highlights:
+
+
+            lines=content.split("\n")
+
+
+            for line in lines:
+
+                line=line.strip()
+
+
+                line=re.sub(
+                    r"^[\-\•\d\.\)]*",
+                    "",
+                    line
                 ).strip()
-                highlights.append(
-                    f"Replacement {product_type.lower()} for {clean_function}."
-                )
 
-            else:
 
-                highlights.append(
-                    f"Replacement component for {function}."
-                )
+                if line:
+                    highlights.append(line)
 
 
 
-        # -----------------------
-        # 2. 兼容型号
-        # -----------------------
-
-        brands = compatibility.get(
-            "brands",
-            []
-        )
-
-
-        models = compatibility.get(
-            "models",
-            []
-        )
-
-
-        if models:
-
-
-            model_text = ", ".join(
-                models[:5]
-            )
-
-
-            if brands:
-
-                highlights.append(
-                    f"Compatible with {brands[0]} models {model_text}."
-                )
-
-
-            else:
-
-                highlights.append(
-                    f"Compatible with models {model_text}."
-                )
+        return self.filter_highlights(highlights)
 
 
 
-        # -----------------------
-        # 3. 替换价值
-        # -----------------------
-
-        highlights.append(
-            "Direct replacement component for replacing worn or damaged parts."
-        )
+    def filter_highlights(self, highlights):
 
 
-
-        # -----------------------
-        # 4. 材质信息
-        # -----------------------
-
-        material = facts.get(
-            "material",
-            ""
-        )
-
-
-        if material:
-
-            highlights.append(
-                f"Made of {material} material."
-            )
-
-
-
-        # -----------------------
-        # 合规过滤
-        # -----------------------
-
-        banned_words = [
+        banned_words=[
 
             "best",
             "premium",
-            "high quality",
-            "perfect",
-            "professional",
-            "easy",
-            "convenient",
-            "daily use",
-            "practical",
             "original",
             "genuine",
             "official",
+            "#1",
+            "number one",
             "guaranteed",
-            "top",
+            "sale",
+            "discount"
 
         ]
 
 
-        result = []
+        result=[]
 
 
         for item in highlights:
 
 
-            text = str(item).strip()
+            if not isinstance(item,str):
+                continue
+
+
+            text=item.strip()
 
 
             if not text:
                 continue
 
 
-            lower = text.lower()
+
+            lower=text.lower()
 
 
-            blocked = False
+            blocked=False
 
 
             for word in banned_words:
 
                 if word in lower:
-
-                    blocked = True
+                    blocked=True
                     break
 
 
-            if not blocked:
 
-                if text not in result:
-
-                    result.append(text)
+            if blocked:
+                continue
 
 
 
-        # Amazon 商品亮点最多3条
-        return result[:3]
+            result.append(text)
+
+
+
+        return result[:5]
