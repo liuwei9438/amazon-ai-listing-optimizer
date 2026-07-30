@@ -114,7 +114,9 @@ class HighlightGenerator:
             )
 
 
-        return HighlightGenerator.clean(highlights)
+        return {
+            "highlights": HighlightGenerator.clean(highlights)
+        }
 
 
     @staticmethod
