@@ -111,11 +111,8 @@ class DescriptionGenerator:
 
 
         for p in paragraphs:
-
-            p=self.clean(p)
-
+            p = DescriptionGenerator.clean(p)
             if p and p not in result:
-
                 result.append(p)
 
 
