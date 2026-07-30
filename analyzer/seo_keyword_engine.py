@@ -17,6 +17,7 @@ class SEOKeywordEngine:
         "sale",
         "discount",
         "oem",
+        "#1",
     ]
 
 
@@ -31,7 +32,7 @@ class SEOKeywordEngine:
 
 
     @staticmethod
-    def clean_keyword(keyword: str) -> str:
+    def clean_keyword(keyword: str):
 
         if not keyword:
             return ""
@@ -58,13 +59,15 @@ class SEOKeywordEngine:
 
         for item in items:
 
-            item = SEOKeywordEngine.clean_keyword(
-                item
-            )
+            item = SEOKeywordEngine.clean_keyword(item)
 
-            if item and item not in result:
+
+            if item and item.lower() not in [
+                x.lower() for x in result
+            ]:
 
                 result.append(item)
+
 
         return result
 
@@ -75,22 +78,23 @@ class SEOKeywordEngine:
 
         result = []
 
+
         for item in items:
 
             lower = item.lower()
 
-            blocked = False
+            has_brand = False
 
 
             for brand in SEOKeywordEngine.BRAND_BLACKLIST:
 
                 if brand in lower:
 
-                    blocked = True
+                    has_brand = True
                     break
 
 
-            if not blocked:
+            if not has_brand:
 
                 result.append(item)
 
@@ -119,6 +123,7 @@ class SEOKeywordEngine:
             return "replacement part"
 
 
+
         if any(
             x in text
             for x in [
@@ -132,7 +137,9 @@ class SEOKeywordEngine:
             return "replacement consumable"
 
 
+
         return "replacement accessory"
+
 
 
 
@@ -158,10 +165,12 @@ class SEOKeywordEngine:
         )
 
 
+
         primary = seo_intent.get(
             "primary_search",
             []
         ) or []
+
 
 
         primary_keyword = (
@@ -169,6 +178,7 @@ class SEOKeywordEngine:
             if primary
             else ""
         )
+
 
 
         product_type = str(
@@ -183,13 +193,17 @@ class SEOKeywordEngine:
         secondary = []
 
 
+        feature_keywords = []
+
+
+
         if primary_keyword:
 
 
             secondary.extend(
                 [
                     f"{primary_keyword} replacement",
-                    f"{primary_keyword} repair part",
+                    f"{primary_keyword} replacement part",
                 ]
             )
 
@@ -197,38 +211,69 @@ class SEOKeywordEngine:
             text = primary_keyword.lower()
 
 
-            if "button" in text:
+
+            # button 产品
+            if "start button" in text:
 
                 secondary.extend(
                     [
                         "start button replacement",
-                        "power button replacement",
-                        "washer button switch",
+                        "washer start button",
                     ]
                 )
 
+
+
+            # filter 产品
 
             if "filter" in text:
 
                 secondary.extend(
                     [
                         "replacement filter",
-                        "filter cartridge",
                         "filter replacement part",
+                        "filter cartridge replacement",
                     ]
                 )
 
 
-            if "blade" in text:
+
+            # blade 产品
+
+            if "blade" in text or "head" in text:
 
                 secondary.extend(
                     [
                         "replacement blade",
-                        "shaver replacement head",
+                        "replacement head",
                     ]
                 )
 
 
+
+        # -----------------------
+        # 功能关键词提取
+        # -----------------------
+
+        attributes = profile.get(
+            "attributes",
+            {}
+        )
+
+
+        for key,value in attributes.items():
+
+            if value:
+
+                feature_keywords.append(
+                    str(value)
+                )
+
+
+
+        # -----------------------
+        # 型号关键词
+        # -----------------------
 
         models = compatibility.get(
             "models",
@@ -250,6 +295,10 @@ class SEOKeywordEngine:
 
 
 
+        # -----------------------
+        # 后台搜索词
+        # -----------------------
+
         backend = []
 
 
@@ -261,15 +310,22 @@ class SEOKeywordEngine:
         backend.extend(
             [
                 "replacement component",
-                "repair accessory",
-                "appliance replacement part"
+                "appliance replacement part",
             ]
         )
+
+
+
+        backend.extend(
+            feature_keywords
+        )
+
 
 
         backend = SEOKeywordEngine.remove_brands(
             backend
         )
+
 
 
         return {
@@ -281,10 +337,12 @@ class SEOKeywordEngine:
             ),
 
 
+
             "secondary_keywords":
             SEOKeywordEngine.unique(
                 secondary
             ),
+
 
 
             "model_keywords":
@@ -293,10 +351,19 @@ class SEOKeywordEngine:
             ),
 
 
+
+            "feature_keywords":
+            SEOKeywordEngine.unique(
+                feature_keywords
+            ),
+
+
+
             "backend_search_terms":
             SEOKeywordEngine.unique(
                 backend
             ),
+
 
 
             "search_intent":
