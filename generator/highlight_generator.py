@@ -14,6 +14,7 @@ class HighlightGenerator:
     - 不生成营销词
     - 不生成不存在参数
     - 不输出字段标签
+    - 优先展示购买决策相关信息
     """
 
 
@@ -42,8 +43,14 @@ class HighlightGenerator:
 
 
         # -----------------------
-        # 1. 产品功能
+        # 基础信息
         # -----------------------
+
+        product_type = (
+            basic.get("product_type")
+            or ""
+        )
+
 
         function = (
             basic.get("core_function")
@@ -55,11 +62,24 @@ class HighlightGenerator:
         )
 
 
+
+        # -----------------------
+        # 1. 产品功能亮点
+        # -----------------------
+
         if function:
 
-            highlights.append(
-                f"Replacement component designed for {function}."
-            )
+            if product_type:
+
+                highlights.append(
+                    f"Replacement {product_type.lower()} for {function}."
+                )
+
+            else:
+
+                highlights.append(
+                    f"Replacement component for {function}."
+                )
 
 
 
@@ -79,49 +99,41 @@ class HighlightGenerator:
         )
 
 
-        if brands and models:
+        if models:
+
 
             model_text = ", ".join(
                 models[:5]
             )
 
-            highlights.append(
-                f"Compatible with {brands[0]} models {model_text}."
-            )
+
+            if brands:
+
+                highlights.append(
+                    f"Compatible with {brands[0]} models {model_text}."
+                )
 
 
-        elif models:
+            else:
 
-            model_text = ", ".join(
-                models[:5]
-            )
-
-            highlights.append(
-                f"Compatible with specified models {model_text}."
-            )
+                highlights.append(
+                    f"Compatible with models {model_text}."
+                )
 
 
 
         # -----------------------
-        # 3. 产品类型
+        # 3. 替换价值
         # -----------------------
 
-        product_type = (
-            basic.get("product_type")
-            or ""
+        highlights.append(
+            "Direct replacement component for replacing worn or damaged parts."
         )
 
 
-        if product_type:
-
-            highlights.append(
-                f"Replacement part for {product_type} applications."
-            )
-
-
 
         # -----------------------
-        # 4. 材质
+        # 4. 材质信息
         # -----------------------
 
         material = facts.get(
@@ -139,7 +151,7 @@ class HighlightGenerator:
 
 
         # -----------------------
-        # 清理
+        # 合规过滤
         # -----------------------
 
         banned_words = [
@@ -156,6 +168,8 @@ class HighlightGenerator:
             "original",
             "genuine",
             "official",
+            "guaranteed",
+            "top",
 
         ]
 
@@ -165,7 +179,8 @@ class HighlightGenerator:
 
         for item in highlights:
 
-            text = item.strip()
+
+            text = str(item).strip()
 
 
             if not text:
@@ -181,15 +196,18 @@ class HighlightGenerator:
             for word in banned_words:
 
                 if word in lower:
+
                     blocked = True
                     break
 
 
             if not blocked:
 
-                result.append(text)
+                if text not in result:
+
+                    result.append(text)
 
 
 
-        # 最大3条
+        # Amazon 商品亮点最多3条
         return result[:3]
