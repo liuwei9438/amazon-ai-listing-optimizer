@@ -129,7 +129,7 @@ def display_generated_content(profile: dict) -> None:
     if highlight_result:
         st.write("### AI商品亮点")
         display_highlights(highlight_result)
-            seo_result = profile.get("seo", {})
+    seo_result = profile.get("seo", {})
 
     if seo_result:
 
