@@ -286,11 +286,8 @@ class SEOKeywordEngine:
 
         for model in models[:10]:
 
-            model_keywords.extend(
-                [
-                    f"{model} replacement",
-                    f"{model} {product_type}".strip()
-                ]
+            model_keywords.append(
+                f"{model} replacement"
             )
 
 
@@ -314,11 +311,6 @@ class SEOKeywordEngine:
             ]
         )
 
-
-
-        backend.extend(
-            feature_keywords
-        )
 
 
 
