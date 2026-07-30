@@ -408,18 +408,14 @@ class HighlightGenerator:
 
 
             highlights["product_highlights"].append(
-
                 {
-
                     "title":
-                    "Functional Replacement",
-
-
+                    "Replacement Function",
                     "content":
-                    highlights["core_function"]
-
+                    "Designed to replace "
+                    +
+                    main_function
                 }
-
             )
 
 
@@ -488,7 +484,9 @@ class HighlightGenerator:
                 ""
 
             )
-
+            value = HighlightGenerator.extract_attribute(
+                value
+            )
 
             value = HighlightGenerator.clean(
 
@@ -569,7 +567,14 @@ class HighlightGenerator:
 
 
         return str(text).strip()
-
+    @staticmethod
+    def extract_attribute(value):
+        if isinstance(value, dict):
+            return value.get(
+                "value",
+                ""
+            )
+        return str(value)
 
 
     @staticmethod
