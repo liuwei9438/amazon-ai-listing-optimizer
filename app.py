@@ -384,14 +384,34 @@ if uploaded is not None:
             for i, record in enumerate(target_records):
                 try:
                     profile = engine.analyze(record)
+                    # =========================
+                    # SEO Intent
+                    # =========================
+                    seo_intent = generate_primary_search(
+                        profile
+                    )
+                    profile["seo_intent"] = seo_intent
+                    # =========================
+                    # SEO Keywords
+                    # =========================
+                    seo_keywords = SEOKeywordEngine.generate(
+                        profile
+                    )
+                    profile["seo"] = seo_keywords
+                    # =========================
+                    # Product Core
+                    # =========================
                     product_core = ProductCoreBuilder.build(
                         profile
                     )
                     profile["product_core"] = product_core
-                    product_core = ProductCoreBuilder.build(
+                    # =========================
+                    # Product Knowledge
+                    # =========================
+                    product_knowledge = ProductKnowledgeBuilder.build(
                         profile
                     )
-                    profile["product_core"] = product_core
+                    profile["product_knowledge"] = product_knowledge
 
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
