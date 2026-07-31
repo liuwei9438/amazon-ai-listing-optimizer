@@ -382,6 +382,7 @@ if uploaded is not None:
             for i, record in enumerate(target_records):
                 try:
                     profile = engine.analyze(record)
+                    from core.product_core import ProductCoreBuilder
 
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
