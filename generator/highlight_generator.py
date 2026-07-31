@@ -44,26 +44,22 @@ class HighlightGenerator:
     CATEGORY_BONUS = {
 
         "accessory": {
-
             "identity": 100,
-            "compatibility": 30,
-            "function": 15,
-            "specification": 8,
-            "material": 5,
-            "feature": 5,
-
+            "compatibility": 40,
+            "function": 20,
+            "feature": 15,
+            "specification": 10,
+            "material": 8,
         },
 
 
         "consumable": {
-
             "identity": 100,
-            "feature": 30,
-            "compatibility": 20,
+            "feature": 35,
+            "compatibility": 25,
             "package": 15,
             "specification": 10,
             "material": 5,
-
         },
 
 
@@ -883,7 +879,19 @@ class HighlightGenerator:
 
             if not text:
                 continue
-
+                LOW_VALUE_WORDS = [
+                    "replacement",
+                    "component",
+                    "part",
+                    "accessory",
+                ]
+                words = text.lower().split()
+                if len(words) <= 2:
+                    if all(
+                        word in LOW_VALUE_WORDS
+                        for word in words
+                    ):
+                        continue
 
 
             lower=text.lower()
@@ -1147,4 +1155,4 @@ class HighlightGenerator:
         ) / min(
             len(a),
             len(b)
-        ) >= 0.7
+        ) >= 0.55
