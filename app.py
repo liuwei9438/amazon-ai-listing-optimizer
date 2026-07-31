@@ -15,6 +15,7 @@ from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from core import export_unchanged, integrity_report, read_workbook
+from core.product_core import ProductCoreBuilder
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
@@ -386,6 +387,10 @@ if uploaded is not None:
                         profile
                     )
                     profile["product_core"] = product_core
+                    product_core = ProductCoreBuilder.build(
+                        profile
+                    )
+                    profile["product_core"] = product_core
                     from core.product_core import ProductCoreBuilder
                     
 
@@ -591,6 +596,13 @@ if uploaded is not None:
                         st.write(
                             "**事实锁：**",
                             profile.get("fact_lock", {}),
+                        )
+                        st.write("### AI Product Core")
+                        st.json(
+                            profile.get(
+                                "product_core",
+                                {}
+                            )
                         )
                         st.write("### AI Product Core")
                         st.json(
