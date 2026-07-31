@@ -390,14 +390,7 @@ if uploaded is not None:
                     product_core = ProductCoreBuilder.build(
                         profile
                     )
-                    product_core = ProductCoreBuilder.build(
-                        profile
-                    )
                     profile["product_core"] = product_core
-                    from core import export_unchanged, integrity_report, read_workbook
-                    from core.product_core import ProductCoreBuilder
-                    from core.product_knowledge import ProductKnowledgeBuilder
-                    
 
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
