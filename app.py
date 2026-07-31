@@ -382,7 +382,12 @@ if uploaded is not None:
             for i, record in enumerate(target_records):
                 try:
                     profile = engine.analyze(record)
+                    product_core = ProductCoreBuilder.build(
+                        profile
+                    )
+                    profile["product_core"] = product_core
                     from core.product_core import ProductCoreBuilder
+                    
 
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
@@ -587,7 +592,13 @@ if uploaded is not None:
                             "**事实锁：**",
                             profile.get("fact_lock", {}),
                         )
-
+                        st.write("### AI Product Core")
+                        st.json(
+                            profile.get(
+                                "product_core",
+                                {}
+                            )
+                        )
                         display_generated_content(profile)
 
                         with st.expander("查看完整 Product Profile JSON"):
