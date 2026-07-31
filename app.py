@@ -16,6 +16,7 @@ from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from core import export_unchanged, integrity_report, read_workbook
 from core.product_core import ProductCoreBuilder
+from core.product_knowledge import ProductKnowledgeBuilder
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
@@ -609,13 +610,7 @@ if uploaded is not None:
                                 {}
                             )
                         )
-                        st.write("### AI Product Core")
-                        st.json(
-                            profile.get(
-                                "product_core",
-                                {}
-                            )
-                        )
+                    
                         display_generated_content(profile)
 
                         with st.expander("查看完整 Product Profile JSON"):
