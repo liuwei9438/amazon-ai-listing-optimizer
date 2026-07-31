@@ -1,0 +1,673 @@
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+
+class ProductKnowledgeBuilder:
+    """
+    Product Knowledge Builder
+
+    将现有 Product Profile 整理成统一的商品知识对象。
+
+    设计原则：
+    1. 不再次调用 AI。
+    2. 不新增原始资料中不存在的事实。
+    3. 不修改数量、型号、材质、尺寸等事实。
+    4. 不生成营销文案。
+    5. Product Profile 与 Product Knowledge 并存。
+    """
+
+    DEFAULT_BLOCKED_CLAIMS = [
+        "original",
+        "genuine",
+        "official",
+        "authentic",
+        "best",
+        "best seller",
+        "premium",
+        "#1",
+        "oem",
+    ]
+
+    @staticmethod
+    def build(profile: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(profile, dict):
+            profile = {}
+
+        basic_info = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("basic_info")
+        )
+        brand_info = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("brand_info")
+        )
+        compatibility = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("compatibility")
+        )
+        facts = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("facts")
+        )
+        attributes = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("attributes")
+        )
+        fact_lock = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("fact_lock")
+        )
+        seo = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("seo")
+        )
+        seo_intent = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("seo_intent")
+        )
+        compliance = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("compliance")
+        )
+        compliance_result = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("compliance_result")
+        )
+
+        identity = ProductKnowledgeBuilder.build_identity(
+            basic_info=basic_info,
+            seo=seo,
+            seo_intent=seo_intent,
+        )
+
+        purpose = ProductKnowledgeBuilder.build_purpose(
+            profile=profile,
+            basic_info=basic_info,
+        )
+
+        relationship = ProductKnowledgeBuilder.build_relationship(
+            brand_info=brand_info,
+            compatibility=compatibility,
+        )
+
+        knowledge_facts = ProductKnowledgeBuilder.build_facts(
+            facts=facts,
+            attributes=attributes,
+            fact_lock=fact_lock,
+        )
+
+        features = ProductKnowledgeBuilder.build_features(
+            profile=profile,
+            basic_info=basic_info,
+        )
+
+        seo_knowledge = ProductKnowledgeBuilder.build_seo(
+            seo=seo,
+            seo_intent=seo_intent,
+        )
+
+        compliance_knowledge = ProductKnowledgeBuilder.build_compliance(
+            brand_info=brand_info,
+            compliance=compliance,
+            compliance_result=compliance_result,
+            relationship=relationship,
+        )
+
+        content_guidance = (
+            ProductKnowledgeBuilder.build_content_guidance(
+                identity=identity,
+                purpose=purpose,
+                relationship=relationship,
+                facts=knowledge_facts,
+                features=features,
+                compliance=compliance_knowledge,
+            )
+        )
+
+        return {
+            "schema_version": "3.0",
+            "identity": identity,
+            "purpose": purpose,
+            "relationship": relationship,
+            "facts": knowledge_facts,
+            "features": features,
+            "seo": seo_knowledge,
+            "compliance": compliance_knowledge,
+            "content_guidance": content_guidance,
+            "source": {
+                "generated_from": "Product Profile",
+                "ai_reanalysis_used": False,
+                "facts_invented": False,
+            },
+        }
+
+    # =========================================================
+    # Identity
+    # =========================================================
+
+    @staticmethod
+    def build_identity(
+        basic_info: Dict[str, Any],
+        seo: Dict[str, Any],
+        seo_intent: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        product_type = ProductKnowledgeBuilder.clean_text(
+            basic_info.get("product_type")
+        )
+
+        product_name = ProductKnowledgeBuilder.first_text(
+            basic_info.get("product_name"),
+            basic_info.get("normalized_product_name"),
+        )
+
+        primary_keywords = ProductKnowledgeBuilder.clean_list(
+            seo.get("primary_keywords")
+        )
+
+        primary_search = ProductKnowledgeBuilder.clean_list(
+            seo_intent.get("primary_search")
+        )
+
+        # 只在已有字段中选择名称，不创造新的商品名称。
+        object_name = ProductKnowledgeBuilder.first_text(
+            product_name,
+            primary_keywords[0] if primary_keywords else "",
+            primary_search[0] if primary_search else "",
+            product_type,
+        )
+
+        category = ProductKnowledgeBuilder.first_text(
+            basic_info.get("category"),
+            basic_info.get("product_category"),
+        )
+
+        parent_product = ProductKnowledgeBuilder.first_text(
+            basic_info.get("parent_product"),
+            basic_info.get("device_type"),
+            basic_info.get("application_device"),
+        )
+
+        return {
+            "object_name": object_name,
+            "product_name": product_name,
+            "product_type": product_type,
+            "category": category,
+            "parent_product": parent_product,
+        }
+
+    # =========================================================
+    # Purpose
+    # =========================================================
+
+    @staticmethod
+    def build_purpose(
+        profile: Dict[str, Any],
+        basic_info: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        primary_function = ProductKnowledgeBuilder.first_text(
+            basic_info.get("main_function"),
+            basic_info.get("core_function"),
+            basic_info.get("function"),
+            basic_info.get("key_function"),
+            profile.get("core_function"),
+        )
+
+        primary_use = ProductKnowledgeBuilder.first_text(
+            basic_info.get("primary_use"),
+            profile.get("primary_use"),
+            profile.get("usage"),
+            profile.get("application"),
+        )
+
+        replacement_target = ProductKnowledgeBuilder.first_text(
+            basic_info.get("replacement_target"),
+            profile.get("replacement_target"),
+        )
+
+        problem_solved = ProductKnowledgeBuilder.first_text(
+            basic_info.get("problem_solved"),
+            profile.get("problem_solved"),
+        )
+
+        operation = ProductKnowledgeBuilder.first_text(
+            basic_info.get("operation"),
+            profile.get("operation"),
+        )
+
+        return {
+            "primary_function": primary_function,
+            "primary_use": primary_use,
+            "replacement_target": replacement_target,
+            "problem_solved": problem_solved,
+            "operation": operation,
+        }
+
+    # =========================================================
+    # Relationship / Compatibility
+    # =========================================================
+
+    @staticmethod
+    def build_relationship(
+        brand_info: Dict[str, Any],
+        compatibility: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        brands = ProductKnowledgeBuilder.clean_list(
+            compatibility.get("brands")
+        )
+
+        if not brands:
+            brands = ProductKnowledgeBuilder.clean_list(
+                brand_info.get("detected_brands")
+            )
+
+        models = ProductKnowledgeBuilder.clean_list(
+            compatibility.get("models")
+        )
+
+        if not models:
+            models = ProductKnowledgeBuilder.clean_list(
+                compatibility.get("compatible_models")
+            )
+
+        series = ProductKnowledgeBuilder.clean_list(
+            compatibility.get("series")
+        )
+
+        part_numbers = ProductKnowledgeBuilder.clean_list(
+            compatibility.get("part_numbers")
+        )
+
+        relationship = ProductKnowledgeBuilder.first_text(
+            brand_info.get("relationship"),
+            compatibility.get("relationship"),
+        )
+
+        # 仅在已经检测到兼容品牌，而关系字段为空时使用安全默认值。
+        if not relationship and brands:
+            relationship = "unbranded_compatible"
+
+        compatibility_phrase = ""
+
+        if brands:
+            compatibility_phrase = (
+                "Compatible with " + ", ".join(brands)
+            )
+
+        return {
+            "brand_relationship": relationship,
+            "compatibility_phrase": compatibility_phrase,
+            "brands": brands,
+            "models": models,
+            "series": series,
+            "part_numbers": part_numbers,
+        }
+
+    # =========================================================
+    # Facts
+    # =========================================================
+
+    @staticmethod
+    def build_facts(
+        facts: Dict[str, Any],
+        attributes: Dict[str, Any],
+        fact_lock: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        def get_fact(*keys: str) -> Any:
+            for key in keys:
+                for source in (fact_lock, attributes, facts):
+                    if key in source:
+                        value = ProductKnowledgeBuilder.extract_value(
+                            source.get(key)
+                        )
+                        if ProductKnowledgeBuilder.has_value(value):
+                            return value
+            return ""
+
+        compatible_models = get_fact(
+            "compatible_models",
+            "models",
+        )
+
+        if isinstance(compatible_models, str):
+            compatible_models = (
+                ProductKnowledgeBuilder.split_possible_list(
+                    compatible_models
+                )
+            )
+
+        package_contents = get_fact("package_contents")
+
+        if isinstance(package_contents, str):
+            package_contents = (
+                ProductKnowledgeBuilder.split_possible_list(
+                    package_contents
+                )
+            )
+
+        part_numbers = get_fact("part_numbers")
+
+        if isinstance(part_numbers, str):
+            part_numbers = (
+                ProductKnowledgeBuilder.split_possible_list(
+                    part_numbers
+                )
+            )
+
+        return {
+            "quantity": get_fact("quantity"),
+            "material": get_fact("material"),
+            "color": get_fact("color"),
+            "dimensions": get_fact("dimensions"),
+            "voltage": get_fact("voltage"),
+            "power": get_fact("power"),
+            "weight": get_fact("weight"),
+            "compatible_models": compatible_models or [],
+            "part_numbers": part_numbers or [],
+            "package_contents": package_contents or [],
+            "installation": get_fact("installation"),
+        }
+
+    # =========================================================
+    # Features
+    # =========================================================
+
+    @staticmethod
+    def build_features(
+        profile: Dict[str, Any],
+        basic_info: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        raw_features: List[Any] = []
+
+        possible_feature_fields = [
+            profile.get("features"),
+            profile.get("feature_list"),
+            profile.get("key_features"),
+            basic_info.get("features"),
+            basic_info.get("key_features"),
+        ]
+
+        for value in possible_feature_fields:
+            if isinstance(value, list):
+                raw_features.extend(value)
+            elif isinstance(value, str) and value.strip():
+                raw_features.append(value)
+
+        features = ProductKnowledgeBuilder.clean_list(
+            raw_features
+        )
+
+        return {
+            "features": features,
+            "feature_count": len(features),
+        }
+
+    # =========================================================
+    # SEO
+    # =========================================================
+
+    @staticmethod
+    def build_seo(
+        seo: Dict[str, Any],
+        seo_intent: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        return {
+            "primary_keywords":
+            ProductKnowledgeBuilder.clean_list(
+                seo.get("primary_keywords")
+            ),
+
+            "secondary_keywords":
+            ProductKnowledgeBuilder.clean_list(
+                seo.get("secondary_keywords")
+            ),
+
+            "model_keywords":
+            ProductKnowledgeBuilder.clean_list(
+                seo.get("model_keywords")
+            ),
+
+            "feature_keywords":
+            ProductKnowledgeBuilder.clean_list(
+                seo.get("feature_keywords")
+            ),
+
+            "backend_search_terms":
+            ProductKnowledgeBuilder.clean_list(
+                seo.get("backend_search_terms")
+            ),
+
+            "primary_search":
+            ProductKnowledgeBuilder.clean_list(
+                seo_intent.get("primary_search")
+            ),
+
+            "search_intent":
+            ProductKnowledgeBuilder.first_text(
+                seo.get("search_intent"),
+                seo_intent.get("search_intent"),
+            ),
+        }
+
+    # =========================================================
+    # Compliance
+    # =========================================================
+
+    @staticmethod
+    def build_compliance(
+        brand_info: Dict[str, Any],
+        compliance: Dict[str, Any],
+        compliance_result: Dict[str, Any],
+        relationship: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        risk_level = ProductKnowledgeBuilder.first_text(
+            compliance.get("risk_level"),
+            compliance_result.get("risk"),
+            brand_info.get("risk_level"),
+        )
+
+        rewrite = ProductKnowledgeBuilder.first_text(
+            brand_info.get("rewrite"),
+            compliance.get("rewrite"),
+        )
+
+        blocked_claims = ProductKnowledgeBuilder.clean_list(
+            compliance.get("blocked_claims")
+        )
+
+        if not blocked_claims:
+            blocked_claims = list(
+                ProductKnowledgeBuilder.DEFAULT_BLOCKED_CLAIMS
+            )
+
+        return {
+            "risk_level": risk_level,
+            "brand_relationship":
+            relationship.get("brand_relationship", ""),
+
+            "brand_usage_rule":
+            relationship.get("compatibility_phrase", ""),
+
+            "rewrite_rule": rewrite,
+            "blocked_claims": blocked_claims,
+        }
+
+    # =========================================================
+    # Content Guidance
+    # =========================================================
+
+    @staticmethod
+    def build_content_guidance(
+        identity: Dict[str, Any],
+        purpose: Dict[str, Any],
+        relationship: Dict[str, Any],
+        facts: Dict[str, Any],
+        features: Dict[str, Any],
+        compliance: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        emphasis: List[str] = []
+
+        if identity.get("object_name"):
+            emphasis.append("Product identity")
+
+        if purpose.get("primary_function"):
+            emphasis.append("Core function")
+
+        if relationship.get("brands") or relationship.get("models"):
+            emphasis.append("Compatibility")
+
+        if features.get("features"):
+            emphasis.append("Confirmed product features")
+
+        if any(
+            ProductKnowledgeBuilder.has_value(
+                facts.get(key)
+            )
+            for key in (
+                "material",
+                "quantity",
+                "dimensions",
+                "voltage",
+                "power",
+                "package_contents",
+            )
+        ):
+            emphasis.append("Confirmed specifications")
+
+        avoid_points = [
+            "Do not invent unsupported product facts",
+            "Do not change compatible models",
+            "Do not change quantity, material, size or package contents",
+        ]
+
+        if relationship.get("brands"):
+            avoid_points.append(
+                "Use Compatible with before third-party brand names"
+            )
+
+        for claim in compliance.get("blocked_claims", []):
+            avoid_points.append(
+                f"Do not use claim: {claim}"
+            )
+
+        return {
+            "emphasis": ProductKnowledgeBuilder.clean_list(
+                emphasis
+            ),
+            "avoid_points": ProductKnowledgeBuilder.clean_list(
+                avoid_points
+            ),
+        }
+
+    # =========================================================
+    # Utilities
+    # =========================================================
+
+    @staticmethod
+    def ensure_dict(value: Any) -> Dict[str, Any]:
+        return value if isinstance(value, dict) else {}
+
+    @staticmethod
+    def clean_text(value: Any) -> str:
+        if value is None:
+            return ""
+
+        if isinstance(value, str):
+            text = value.strip()
+        else:
+            text = str(value).strip()
+
+        if text.lower() in {
+            "",
+            "none",
+            "null",
+            "unknown",
+            "n/a",
+            "[]",
+            "{}",
+        }:
+            return ""
+
+        return text
+
+    @staticmethod
+    def first_text(*values: Any) -> str:
+        for value in values:
+            text = ProductKnowledgeBuilder.clean_text(value)
+            if text:
+                return text
+
+        return ""
+
+    @staticmethod
+    def clean_list(values: Any) -> List[str]:
+        if values is None:
+            return []
+
+        if isinstance(values, str):
+            values = [values]
+
+        if not isinstance(values, (list, tuple, set)):
+            values = [values]
+
+        result: List[str] = []
+        seen = set()
+
+        for value in values:
+            text = ProductKnowledgeBuilder.clean_text(value)
+
+            if not text:
+                continue
+
+            key = text.casefold()
+
+            if key in seen:
+                continue
+
+            seen.add(key)
+            result.append(text)
+
+        return result
+
+    @staticmethod
+    def extract_value(value: Any) -> Any:
+        if value is None:
+            return ""
+
+        if isinstance(value, dict):
+            main_value = ProductKnowledgeBuilder.clean_text(
+                value.get("value")
+            )
+            unit = ProductKnowledgeBuilder.clean_text(
+                value.get("unit")
+            )
+
+            if main_value and unit:
+                return f"{main_value} {unit}".strip()
+
+            return main_value
+
+        if isinstance(value, list):
+            return ProductKnowledgeBuilder.clean_list(value)
+
+        return ProductKnowledgeBuilder.clean_text(value)
+
+    @staticmethod
+    def has_value(value: Any) -> bool:
+        if isinstance(value, list):
+            return bool(value)
+
+        if isinstance(value, dict):
+            return any(
+                ProductKnowledgeBuilder.has_value(item)
+                for item in value.values()
+            )
+
+        return bool(
+            ProductKnowledgeBuilder.clean_text(value)
+        )
+
+    @staticmethod
+    def split_possible_list(value: str) -> List[str]:
+        text = ProductKnowledgeBuilder.clean_text(value)
+
+        if not text:
+            return []
+
+        for separator in (";", "|", "\n"):
+            text = text.replace(separator, ",")
+
+        return ProductKnowledgeBuilder.clean_list(
+            part.strip()
+            for part in text.split(",")
+        )
