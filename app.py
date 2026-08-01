@@ -550,13 +550,13 @@ if uploaded is not None:
                         )
                 except Exception as exc:
                     import traceback
-                st.error(
+                    st.error(
                         f"{record.sku or '第' + str(i + 1) + '个产品'}"
                         f"处理失败: {exc}"
                     )
-                st.code(
+                    st.code(
                     traceback.format_exc()
-                )
+                    )
                     failed_profile = {
                         "sku": record.sku,
                         "status": "failed",
