@@ -530,127 +530,15 @@ if uploaded is not None:
                         expander_title,
                         expanded=i == 0,
                     ):
-                        a, b, c = st.columns(3)
-    
-                        a.write("**产品类型**")
-                        a.write(product_type)
-    
-                        b.write("**品牌关系**")
-                        b.write(
-                            profile.get("brand_info", {}).get(
-                                "relationship",
-                                "Unknown",
-                            )
-                        )
-    
-                        c.write("**风险等级**")
-                        c.write(
-                            profile.get("compliance", {}).get(
-                                "risk_level",
-                                "Unknown",
-                            )
-                        )
-    
-                        compatible_brands = profile.get(
-                            "compatibility",
-                            {},
-                        ).get("brands", [])
-    
-                        compatible_models = profile.get(
-                            "compatibility",
-                            {},
-                        ).get("models", [])
-    
                         st.write(
-                            "**兼容品牌：**",
-                            "、".join(compatible_brands) or "Unknown",
+                            "产品类型：",
+                            product_type
                         )
-                        st.write(
-                            "**兼容型号：**",
-                            "、".join(compatible_models) or "Unknown",
-                        )
-                        st.write(
-                            "**核心功能：**",
-                            profile.get("basic_info", {}).get(
-                                "main_function",
-                                "",
-                            )
-                            or "Unknown",
-                        )
-                        st.write(
-                            "**主要关键词：**",
-                            "、".join(
-                                profile.get("seo", {}).get(
-                                    "primary_keywords",
-                                    [],
-                                )
-                            )
-                            or "Unknown",
-                        )
-                        st.write(
-                            "**搜索意图：**",
-                            profile.get("seo", {}).get(
-                                "search_intent",
-                                "",
-                            )
-                            or "Unknown",
-                        )
-    
-                        st.write("### SEO Intent")
-                        st.write(
-                            "**Primary Search：**",
-                            "、".join(primary_search) or "Unknown",
-                        )
-    
-                        compliance_result = profile.get(
-                            "compliance_result",
-                            {},
-                        )
-    
-                        st.write("### Compliance Check")
-                        st.write(
-                            "**Protected Text：**",
-                            compliance_result.get("text", ""),
-                        )
-                        st.write(
-                            "**Detected Brands：**",
-                            "、".join(
-                                compliance_result.get(
-                                    "detected_brands",
-                                    [],
-                                )
-                            )
-                            or "None",
-                        )
-                        st.write(
-                            "**Risk：**",
-                            compliance_result.get("risk", ""),
-                        )
-    
-                        st.write(
-                            "**事实锁：**",
-                            profile.get("fact_lock", {}),
-                        )
-                        st.write("### AI Product Core")
-                        st.json(
-                            profile.get(
-                                "product_core",
-                                {}
-                            )
-                        )
-                        st.write("### AI Product Knowledge")
-                        st.json(
-                            profile.get(
-                                "product_knowledge",
-                                {}
-                            )
-                        )
-                    
                         display_generated_content(profile)
-    
-                        with st.expander("查看完整 Product Profile JSON"):
+                        with st.expander(
+                            "查看完整 Product Profile JSON"
+                        ):
                             st.json(profile)
-
     except UnderstandingError as exc:
         st.error(
             f"{record.sku or '第' + str(i + 1) + '个产品'} "
