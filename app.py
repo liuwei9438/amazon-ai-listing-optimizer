@@ -557,21 +557,21 @@ if uploaded is not None:
                 st.code(
                     traceback.format_exc()
                 )
-    failed_profile = {
-        "sku": record.sku,
-        "status": "failed",
-        "error": "AI processing failed",
-        "title": record.title,
-    }
-    profiles.append(
-            failed_profile
-        )
-
-    progress.progress((i + 1) / len(target_records))
-
-    st.session_state["profiles"] = profiles
-
-    profiles = st.session_state.get("profiles", [])
+                    failed_profile = {
+                        "sku": record.sku,
+                        "status": "failed",
+                        "error": "AI processing failed",
+                        "title": record.title,
+                    }
+                    profiles.append(
+                            failed_profile
+                        )
+                
+                    progress.progress((i + 1) / len(target_records))
+                
+                    st.session_state["profiles"] = profiles
+                
+                    profiles = st.session_state.get("profiles", [])
 
     if profiles:
         success_profiles = [
