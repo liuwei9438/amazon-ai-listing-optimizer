@@ -526,39 +526,39 @@ if uploaded is not None:
                         f"｜{product_type}"
                     )
     
-                 try:
-                     profile = engine.analyze(record)
-                     # 这里保留：
-                     # SEO
-                     # Title
-                     # Highlight
-                     # Bullet
-                     # Description
-
-                     OptimizationCache.set(
-                         st.session_state["optimization_cache"],
-                         cache_key,
-                         profile
-                     )
-                     profiles.append(profile)
-
-
-                 except UnderstandingError as exc:
-
-                    st.error(
-                        f"{record.sku or '第' + str(i + 1) + '个产品'} "
-                        f"分析失败：{exc}"
-                    )
-
-
-                 except Exception as exc:
-                
-                    import traceback
-                
-                    st.error(
-                        f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                        f"处理失败: {exc}"
-                    )
+                    try:
+                         profile = engine.analyze(record)
+                         # 这里保留：
+                         # SEO
+                         # Title
+                         # Highlight
+                         # Bullet
+                         # Description
+        
+                         OptimizationCache.set(
+                             st.session_state["optimization_cache"],
+                             cache_key,
+                             profile
+                         )
+                         profiles.append(profile)
+        
+        
+                    except UnderstandingError as exc:
+        
+                        st.error(
+                            f"{record.sku or '第' + str(i + 1) + '个产品'} "
+                            f"分析失败：{exc}"
+                        )
+        
+        
+                    except Exception as exc:
+                    
+                        import traceback
+                    
+                        st.error(
+                            f"{record.sku or '第' + str(i + 1) + '个产品'}"
+                            f"处理失败: {exc}"
+                        )
     except UnderstandingError as exc:
         st.error(
             f"{record.sku or '第' + str(i + 1) + '个产品'} "
