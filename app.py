@@ -368,6 +368,7 @@ if uploaded is not None:
     )
 
     if st.button("开始 AI 商品理解", type="primary"):
+        st.write("按钮已触发")
         if not api_key.strip():
             st.error("请先填写 OpenAI API Key。")
         else:
