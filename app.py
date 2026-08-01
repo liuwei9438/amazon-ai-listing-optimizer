@@ -541,7 +541,29 @@ if uploaded is not None:
                             f"{record.sku or '第' + str(i + 1) + '个产品'} "
                             f"分析失败：{exc}"
                         )
-        
+                with st.expander(
+                    expander_title,
+                    expanded=i == 0,
+                ):
+
+                    st.write(
+                        "**产品类型：**",
+                        product_type,
+                    )
+
+
+                    display_generated_content(
+                        profile
+                    )
+
+
+                    with st.expander(
+                        "查看完整 Product Profile JSON"
+                    ):
+                
+                        st.json(
+                            profile
+                        )
         
                 except Exception as exc:
                     
