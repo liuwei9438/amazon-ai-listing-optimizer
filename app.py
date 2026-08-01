@@ -399,6 +399,7 @@ if uploaded is not None:
                         continue
                 try:
                     profile = engine.analyze(record)
+                    st.write("✅ 商品理解完成")
                     # =========================
                     # SEO Intent
                     # =========================
@@ -420,6 +421,7 @@ if uploaded is not None:
                         profile
                     )
                     profile["product_core"] = product_core
+                    st.write("✅ Product Core 完成")
                     # =========================
                     # Product Knowledge
                     # =========================
@@ -427,6 +429,7 @@ if uploaded is not None:
                         profile
                     )
                     profile["product_knowledge"] = product_knowledge
+                    st.write("✅ Product Knowledge 完成")
     
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
@@ -456,6 +459,7 @@ if uploaded is not None:
                     title_result = TitleGenerator.generate(profile)
                     short_title_result = ShortTitleGenerator.generate(profile)
                     highlight_result = HighlightGenerator.generate(profile)
+                    st.write("✅ Title/Highlight 完成")
                    
                     models = ModelProtection.extract_models(
                         profile
@@ -510,7 +514,7 @@ if uploaded is not None:
                         description_result,
                         models
                     )
-                    
+                    st.write("✅ Description 完成")
                     OptimizationCache.set(
                         st.session_state["optimization_cache"],
                         cache_key,
