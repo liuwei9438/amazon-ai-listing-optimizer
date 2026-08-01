@@ -395,262 +395,262 @@ if uploaded is not None:
                 )
                 continue
             try:
-                    profile = engine.analyze(record)
-                    # =========================
-                    # SEO Intent
-                    # =========================
-                    seo_intent = generate_primary_search(
-                        profile
-                    )
-                    profile["seo_intent"] = seo_intent
-                    # =========================
-                    # SEO Keywords
-                    # =========================
-                    seo_keywords = SEOKeywordEngine.generate(
-                        profile
-                    )
-                    profile["seo"] = seo_keywords
-                    # =========================
-                    # Product Core
-                    # =========================
-                    product_core = ProductCoreBuilder.build(
-                        profile
-                    )
-                    profile["product_core"] = product_core
-                    # =========================
-                    # Product Knowledge
-                    # =========================
-                    product_knowledge = ProductKnowledgeBuilder.build(
-                        profile
-                    )
-                    profile["product_knowledge"] = product_knowledge
+                profile = engine.analyze(record)
+                # =========================
+                # SEO Intent
+                # =========================
+                seo_intent = generate_primary_search(
+                    profile
+                )
+                profile["seo_intent"] = seo_intent
+                # =========================
+                # SEO Keywords
+                # =========================
+                seo_keywords = SEOKeywordEngine.generate(
+                    profile
+                )
+                profile["seo"] = seo_keywords
+                # =========================
+                # Product Core
+                # =========================
+                product_core = ProductCoreBuilder.build(
+                    profile
+                )
+                profile["product_core"] = product_core
+                # =========================
+                # Product Knowledge
+                # =========================
+                product_knowledge = ProductKnowledgeBuilder.build(
+                    profile
+                )
+                profile["product_knowledge"] = product_knowledge
 
-                    seo_intent = generate_primary_search(profile)
-                    profile["seo_intent"] = seo_intent
+                seo_intent = generate_primary_search(profile)
+                profile["seo_intent"] = seo_intent
 
-                    seo_keywords = SEOKeywordEngine.generate(profile)
-                    profile["seo"] = seo_keywords
+                seo_keywords = SEOKeywordEngine.generate(profile)
+                profile["seo"] = seo_keywords
 
-                    primary_search = seo_intent.get("primary_search", [])
-                    primary_text = primary_search[0] if primary_search else ""
+                primary_search = seo_intent.get("primary_search", [])
+                primary_text = primary_search[0] if primary_search else ""
 
-                    detected_brands = (
+                detected_brands = (
+                    profile.get("brand_info", {}).get(
+                        "detected_brands",
+                        [],
+                    )
+                    or profile.get("compatibility", {}).get(
+                        "brands",
+                        [],
+                    )
+                )
+
+                profile["compliance_result"] = protect_text(
+                    primary_text,
+                    detected_brands=detected_brands,
+                )
+
+                title_result = TitleGenerator.generate(profile)
+                short_title_result = ShortTitleGenerator.generate(profile)
+                highlight_result = HighlightGenerator.generate(profile)
+               
+                models = ModelProtection.extract_models(
+                    profile
+                )
+                
+                title_result = ModelProtection.protect_result(
+                    title_result,
+                    models,
+                )
+                short_title_result = ModelProtection.protect_result(
+                    short_title_result,
+                    models,
+                )
+                highlight_result = ModelProtection.protect_result(
+                    highlight_result,
+                    models,
+                )
+                bullet_result = BulletGenerator.generate(
+                    profile,
+                    highlight_result,
+                )
+                description_result = DescriptionGenerator.generate(
+                    profile,
+                    highlight_result,
+                )
+
+                profile["generated_title"] = ModelProtection.protect_result(
+                    title_result,
+                    models
+                )
+
+
+                profile["short_title_result"] = ModelProtection.protect_result(
+                    short_title_result,
+                    models
+                )
+
+
+                profile["highlight_result"] = ModelProtection.protect_result(
+                    highlight_result,
+                    models
+                )
+
+
+                profile["bullet_result"] = ModelProtection.protect_result(
+                    bullet_result,
+                    models
+                )
+
+
+                profile["description_result"] = ModelProtection.protect_result(
+                    description_result,
+                    models
+                )
+                
+                OptimizationCache.set(
+                    st.session_state["optimization_cache"],
+                    cache_key,
+                    profile
+                )
+                profiles.append(profile)
+                product_type = (
+                    profile.get("basic_info", {}).get(
+                        "product_type",
+                        "",
+                    )
+                    or "未识别产品类型"
+                )
+
+                expander_title = (
+                    f"{record.sku or '第' + str(i + 1) + '个产品'}"
+                    f"｜{product_type}"
+                )
+
+                with st.expander(
+                    expander_title,
+                    expanded=i == 0,
+                ):
+                    a, b, c = st.columns(3)
+
+                    a.write("**产品类型**")
+                    a.write(product_type)
+
+                    b.write("**品牌关系**")
+                    b.write(
                         profile.get("brand_info", {}).get(
-                            "detected_brands",
-                            [],
-                        )
-                        or profile.get("compatibility", {}).get(
-                            "brands",
-                            [],
+                            "relationship",
+                            "Unknown",
                         )
                     )
 
-                    profile["compliance_result"] = protect_text(
-                        primary_text,
-                        detected_brands=detected_brands,
+                    c.write("**风险等级**")
+                    c.write(
+                        profile.get("compliance", {}).get(
+                            "risk_level",
+                            "Unknown",
+                        )
                     )
 
-                    title_result = TitleGenerator.generate(profile)
-                    short_title_result = ShortTitleGenerator.generate(profile)
-                    highlight_result = HighlightGenerator.generate(profile)
-                   
-                    models = ModelProtection.extract_models(
-                        profile
-                    )
-                    
-                    title_result = ModelProtection.protect_result(
-                        title_result,
-                        models,
-                    )
-                    short_title_result = ModelProtection.protect_result(
-                        short_title_result,
-                        models,
-                    )
-                    highlight_result = ModelProtection.protect_result(
-                        highlight_result,
-                        models,
-                    )
-                    bullet_result = BulletGenerator.generate(
-                        profile,
-                        highlight_result,
-                    )
-                    description_result = DescriptionGenerator.generate(
-                        profile,
-                        highlight_result,
-                    )
+                    compatible_brands = profile.get(
+                        "compatibility",
+                        {},
+                    ).get("brands", [])
 
-                    profile["generated_title"] = ModelProtection.protect_result(
-                        title_result,
-                        models
+                    compatible_models = profile.get(
+                        "compatibility",
+                        {},
+                    ).get("models", [])
+
+                    st.write(
+                        "**兼容品牌：**",
+                        "、".join(compatible_brands) or "Unknown",
                     )
-
-
-                    profile["short_title_result"] = ModelProtection.protect_result(
-                        short_title_result,
-                        models
+                    st.write(
+                        "**兼容型号：**",
+                        "、".join(compatible_models) or "Unknown",
                     )
-
-
-                    profile["highlight_result"] = ModelProtection.protect_result(
-                        highlight_result,
-                        models
-                    )
-
-
-                    profile["bullet_result"] = ModelProtection.protect_result(
-                        bullet_result,
-                        models
-                    )
-
-
-                    profile["description_result"] = ModelProtection.protect_result(
-                        description_result,
-                        models
-                    )
-                    
-                    OptimizationCache.set(
-                        st.session_state["optimization_cache"],
-                        cache_key,
-                        profile
-                    )
-                    profiles.append(profile)
-                    product_type = (
+                    st.write(
+                        "**核心功能：**",
                         profile.get("basic_info", {}).get(
-                            "product_type",
+                            "main_function",
                             "",
                         )
-                        or "未识别产品类型"
+                        or "Unknown",
                     )
-
-                    expander_title = (
-                        f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                        f"｜{product_type}"
-                    )
-
-                    with st.expander(
-                        expander_title,
-                        expanded=i == 0,
-                    ):
-                        a, b, c = st.columns(3)
-
-                        a.write("**产品类型**")
-                        a.write(product_type)
-
-                        b.write("**品牌关系**")
-                        b.write(
-                            profile.get("brand_info", {}).get(
-                                "relationship",
-                                "Unknown",
-                            )
-                        )
-
-                        c.write("**风险等级**")
-                        c.write(
-                            profile.get("compliance", {}).get(
-                                "risk_level",
-                                "Unknown",
-                            )
-                        )
-
-                        compatible_brands = profile.get(
-                            "compatibility",
-                            {},
-                        ).get("brands", [])
-
-                        compatible_models = profile.get(
-                            "compatibility",
-                            {},
-                        ).get("models", [])
-
-                        st.write(
-                            "**兼容品牌：**",
-                            "、".join(compatible_brands) or "Unknown",
-                        )
-                        st.write(
-                            "**兼容型号：**",
-                            "、".join(compatible_models) or "Unknown",
-                        )
-                        st.write(
-                            "**核心功能：**",
-                            profile.get("basic_info", {}).get(
-                                "main_function",
-                                "",
-                            )
-                            or "Unknown",
-                        )
-                        st.write(
-                            "**主要关键词：**",
-                            "、".join(
-                                profile.get("seo", {}).get(
-                                    "primary_keywords",
-                                    [],
-                                )
-                            )
-                            or "Unknown",
-                        )
-                        st.write(
-                            "**搜索意图：**",
+                    st.write(
+                        "**主要关键词：**",
+                        "、".join(
                             profile.get("seo", {}).get(
-                                "search_intent",
-                                "",
-                            )
-                            or "Unknown",
-                        )
-
-                        st.write("### SEO Intent")
-                        st.write(
-                            "**Primary Search：**",
-                            "、".join(primary_search) or "Unknown",
-                        )
-
-                        compliance_result = profile.get(
-                            "compliance_result",
-                            {},
-                        )
-
-                        st.write("### Compliance Check")
-                        st.write(
-                            "**Protected Text：**",
-                            compliance_result.get("text", ""),
-                        )
-                        st.write(
-                            "**Detected Brands：**",
-                            "、".join(
-                                compliance_result.get(
-                                    "detected_brands",
-                                    [],
-                                )
-                            )
-                            or "None",
-                        )
-                        st.write(
-                            "**Risk：**",
-                            compliance_result.get("risk", ""),
-                        )
-
-                        st.write(
-                            "**事实锁：**",
-                            profile.get("fact_lock", {}),
-                        )
-                        st.write("### AI Product Core")
-                        st.json(
-                            profile.get(
-                                "product_core",
-                                {}
+                                "primary_keywords",
+                                [],
                             )
                         )
-                        st.write("### AI Product Knowledge")
-                        st.json(
-                            profile.get(
-                                "product_knowledge",
-                                {}
+                        or "Unknown",
+                    )
+                    st.write(
+                        "**搜索意图：**",
+                        profile.get("seo", {}).get(
+                            "search_intent",
+                            "",
+                        )
+                        or "Unknown",
+                    )
+
+                    st.write("### SEO Intent")
+                    st.write(
+                        "**Primary Search：**",
+                        "、".join(primary_search) or "Unknown",
+                    )
+
+                    compliance_result = profile.get(
+                        "compliance_result",
+                        {},
+                    )
+
+                    st.write("### Compliance Check")
+                    st.write(
+                        "**Protected Text：**",
+                        compliance_result.get("text", ""),
+                    )
+                    st.write(
+                        "**Detected Brands：**",
+                        "、".join(
+                            compliance_result.get(
+                                "detected_brands",
+                                [],
                             )
                         )
-                    
-                        display_generated_content(profile)
+                        or "None",
+                    )
+                    st.write(
+                        "**Risk：**",
+                        compliance_result.get("risk", ""),
+                    )
 
-                        with st.expander("查看完整 Product Profile JSON"):
-                            st.json(profile)
+                    st.write(
+                        "**事实锁：**",
+                        profile.get("fact_lock", {}),
+                    )
+                    st.write("### AI Product Core")
+                    st.json(
+                        profile.get(
+                            "product_core",
+                            {}
+                        )
+                    )
+                    st.write("### AI Product Knowledge")
+                    st.json(
+                        profile.get(
+                            "product_knowledge",
+                            {}
+                        )
+                    )
+                
+                    display_generated_content(profile)
+
+                    with st.expander("查看完整 Product Profile JSON"):
+                        st.json(profile)
 
                 except UnderstandingError as exc:
                     st.error(
