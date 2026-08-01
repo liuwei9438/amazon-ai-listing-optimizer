@@ -397,7 +397,7 @@ if uploaded is not None:
                     cached
                 )
                 continue
-                try:
+            try:
                     profile = engine.analyze(record)
                     # =========================
                     # SEO Intent
