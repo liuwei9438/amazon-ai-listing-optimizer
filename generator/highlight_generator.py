@@ -7,96 +7,157 @@ from typing import Any, Dict, List
 class HighlightGenerator:
     """
     Amazon AI Listing Optimizer
-    Highlight Generator V2.4 Stable
 
-    功能:
-    1. 提取真实商品卖点
-    2. 生成 Amazon 风格 Highlights
-    3. 避免标题重复
-    4. 避免营销违规词
-    5. 保留事实保护
+    Highlight Generator V2.4.1 Stable
+
+    优化：
+    - Amazon 转化型卖点
+    - 产品用途优先
+    - 兼容信息降权
+    - Short Highlight独立生成
+    - 事实保护
     """
 
-    # Amazon 禁止营销词
+
     BANNED_WORDS = [
+
         "best",
         "best seller",
         "bestseller",
         "#1",
         "number one",
+
         "premium",
         "original",
         "genuine",
         "official",
-        "professional",
+
         "perfect",
         "amazing",
+        "professional",
+
         "top quality",
         "high quality",
-        "hot sale",
-        "promotion",
-        "discount",
+
         "sale",
+        "discount",
+        "promotion"
+
     ]
 
 
-    # 功能关键词
+    PRODUCT_TYPE_RULES = {
+
+
+        "replacement_part": [
+
+            "button",
+            "switch",
+            "cover",
+            "replacement",
+            "part",
+            "handle",
+            "housing"
+
+        ],
+
+
+        "filter": [
+
+            "filter",
+            "hepa",
+            "filtration"
+
+        ],
+
+
+        "electronic": [
+
+            "battery",
+            "charging",
+            "display",
+            "wireless",
+            "electric"
+
+        ],
+
+
+        "grooming": [
+
+            "shaver",
+            "trimmer",
+            "razor"
+
+        ]
+
+    }
+
+
+
     FEATURE_RULES = {
 
+
         "waterproof": [
+
             "waterproof",
             "water resistant",
-            "ipx",
+            "ipx"
+
         ],
+
 
         "rechargeable": [
+
             "rechargeable",
-            "charging",
             "battery",
-            "usb",
+            "usb charging"
+
         ],
+
 
         "wireless": [
+
             "wireless",
-            "cordless",
+            "cordless"
+
         ],
+
 
         "display": [
+
             "led display",
-            "lcd",
-            "display",
+            "lcd display",
+            "display"
+
         ],
 
-        "portable": [
-            "portable",
-            "compact",
-            "travel",
-        ],
-
-        "washable": [
-            "washable",
-            "washable filter",
-        ],
-
-        "compatible": [
-            "compatible",
-            "replacement",
-            "for ",
-        ],
 
         "multifunction": [
+
             "multi-function",
             "multifunction",
             "6 in 1",
             "5 in 1",
-            "4 in 1",
+            "4 in 1"
+
         ],
+
+
+        "portable": [
+
+            "portable",
+            "compact",
+            "travel"
+
+        ]
+
     }
 
 
-    # -------------------------
+
+    # ==========================
     # 主入口
-    # -------------------------
+    # ==========================
 
     @classmethod
     def generate(
@@ -104,37 +165,61 @@ class HighlightGenerator:
         profile: Dict[str, Any]
     ) -> Dict[str, Any]:
 
-        title = cls._get_title(profile)
 
-        raw_text = cls._collect_text(
+        text = cls.collect_text(
             profile
         )
 
 
-        features = cls._extract_features(
-            raw_text
+        product_type = cls.detect_product_type(
+            text
+        )
+
+
+        features = cls.extract_features(
+            text
         )
 
 
         highlights = []
 
 
-        for feature in features:
-
-            text = cls._format_feature(
-                feature,
-                raw_text
-            )
-
-            if text:
-                highlights.append(text)
-
-
-
-        # 添加兼容信息
-        compatibility = cls._generate_compatibility(
+        # 1. 产品用途卖点
+        usage = cls.generate_usage(
+            product_type,
             profile
         )
+
+
+        if usage:
+
+            highlights.append(
+                usage
+            )
+
+
+        # 2. 功能卖点
+
+        for feature in features:
+
+            item = cls.feature_text(
+                feature
+            )
+
+
+            if item:
+
+                highlights.append(
+                    item
+                )
+
+
+        # 3. 兼容信息最后加入
+
+        compatibility = cls.generate_compatibility(
+            profile
+        )
+
 
         if compatibility:
 
@@ -143,115 +228,104 @@ class HighlightGenerator:
             )
 
 
-
-        # 去重
-        highlights = cls._remove_duplicate(
+        highlights = cls.clean_list(
             highlights
         )
 
 
-        # 删除标题重复
-        highlights = cls._remove_title_duplicate(
-            highlights,
-            title
+        highlights = cls.limit_highlights(
+            highlights
         )
 
 
-        # 数量控制
-        highlights = highlights[:5]
+        short_highlights = cls.generate_short(
+            features,
+            product_type
+        )
 
 
         return {
 
+
             "highlights": highlights,
 
-            "short_highlights": [
-                x for x in highlights[:3]
-            ],
 
-            "keywords": cls._extract_keywords(
+            "short_highlights": short_highlights,
+
+
+            "keywords": cls.extract_keywords(
                 highlights
             )
 
         }
+            # ==========================
+    # 产品类型判断
+    # ==========================
+
+    @classmethod
+    def detect_product_type(
+        cls,
+        text: str
+    ) -> str:
 
 
-    # -------------------------
-    # 获取标题
-    # -------------------------
+        text_lower = text.lower()
+
+
+        for product_type, words in cls.PRODUCT_TYPE_RULES.items():
+
+            for word in words:
+
+                if word in text_lower:
+
+                    return product_type
+
+
+        return "general"
+
+
+
+    # ==========================
+    # 收集产品文本
+    # ==========================
 
     @staticmethod
-    def _get_title(profile):
+    def collect_text(
+        profile
+    ) -> str:
 
-        title = (
-            profile.get(
-                "title",
-                ""
-            )
-            or profile.get(
-                "original_title",
-                ""
-            )
-        )
-
-        return str(title)
-
-
-
-    # -------------------------
-    # 收集文本
-    # -------------------------
-
-    @staticmethod
-    def _collect_text(profile):
 
         texts = []
 
 
-        basic = profile.get(
+        # 基础信息
+
+        basic_info = profile.get(
             "basic_info",
             {}
         )
 
-        for value in basic.values():
 
-            if value:
-                texts.append(
-                    str(value)
-                )
+        if isinstance(
+            basic_info,
+            dict
+        ):
 
+            for value in basic_info.values():
 
+                if value:
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
-
-        for key in [
-            "brands",
-            "models"
-        ]:
-
-            value = compatibility.get(
-                key,
-                []
-            )
-
-            if isinstance(value,list):
-
-                texts.extend(
-                    [
-                        str(x)
-                        for x in value
-                    ]
-                )
+                    texts.append(
+                        str(value)
+                    )
 
 
+
+        # 标题
 
         for key in [
-            "features",
-            "description",
-            "bullets",
+            "title",
+            "original_title"
         ]:
 
             value = profile.get(
@@ -259,16 +333,7 @@ class HighlightGenerator:
                 ""
             )
 
-            if isinstance(value,list):
-
-                texts.extend(
-                    [
-                        str(x)
-                        for x in value
-                    ]
-                )
-
-            elif value:
+            if value:
 
                 texts.append(
                     str(value)
@@ -276,25 +341,122 @@ class HighlightGenerator:
 
 
 
-        return " ".join(texts)
-            # -------------------------
-    # 提取功能
-    # -------------------------
+        # Features
+
+        features = profile.get(
+            "features",
+            []
+        )
+
+
+        if isinstance(
+            features,
+            list
+        ):
+
+            texts.extend(
+                [
+                    str(x)
+                    for x in features
+                ]
+            )
+
+        elif features:
+
+            texts.append(
+                str(features)
+            )
+
+
+
+        # Bullet
+
+        bullets = profile.get(
+            "bullets",
+            []
+        )
+
+
+        if isinstance(
+            bullets,
+            list
+        ):
+
+            texts.extend(
+                [
+                    str(x)
+                    for x in bullets
+                ]
+            )
+
+
+
+        # Compatibility
+
+        compatibility = profile.get(
+            "compatibility",
+            {}
+        )
+
+
+        if isinstance(
+            compatibility,
+            dict
+        ):
+
+            for key in [
+                "brands",
+                "models"
+            ]:
+
+                values = compatibility.get(
+                    key,
+                    []
+                )
+
+
+                if isinstance(
+                    values,
+                    list
+                ):
+
+                    texts.extend(
+                        [
+                            str(x)
+                            for x in values
+                        ]
+                    )
+
+
+
+        return " ".join(
+            texts
+        )
+
+
+
+    # ==========================
+    # 功能提取
+    # ==========================
 
     @classmethod
-    def _extract_features(
+    def extract_features(
         cls,
-        text: str
+        text
     ) -> List[str]:
 
-        result = []
+
+        result=[]
+
 
         text_lower = text.lower()
 
 
         for name, keywords in cls.FEATURE_RULES.items():
 
+
             for keyword in keywords:
+
 
                 if keyword in text_lower:
 
@@ -305,34 +467,82 @@ class HighlightGenerator:
                     break
 
 
+
         return result
 
 
 
-    # -------------------------
-    # 格式化卖点
-    # -------------------------
+    # ==========================
+    # 产品用途生成
+    # ==========================
 
     @classmethod
-    def _format_feature(
+    def generate_usage(
         cls,
-        feature: str,
-        text: str
-    ) -> str:
+        product_type,
+        profile
+    ):
 
 
-        text_lower = text.lower()
+        if product_type == "replacement_part":
+
+
+            return (
+                "Replacement part designed "
+                "to restore normal device operation"
+            )
+
+
+        if product_type == "filter":
+
+
+            return (
+                "Replacement filter designed "
+                "for regular maintenance"
+            )
+
+
+        if product_type == "grooming":
+
+
+            return (
+                "Designed for convenient "
+                "daily grooming needs"
+            )
+
+
+        if product_type == "electronic":
+
+
+            return (
+                "Designed for convenient "
+                "daily use"
+            )
+
+
+        return ""
+
+
+
+    # ==========================
+    # 功能描述
+    # ==========================
+
+    @staticmethod
+    def feature_text(
+        feature
+    ):
 
 
         mapping = {
 
 
             "waterproof":
-                "Waterproof design for wet and dry use",
+                "Waterproof design supports wet and dry use",
 
 
             "rechargeable":
-                "Rechargeable design for convenient use",
+                "Rechargeable design for convenient operation",
 
 
             "wireless":
@@ -343,86 +553,46 @@ class HighlightGenerator:
                 "LED display for easy status checking",
 
 
-            "portable":
-                "Compact design suitable for travel use",
-
-
-            "washable":
-                "Washable design for easy maintenance",
-
-
-            "compatible":
-                "Compatible replacement design",
-
-
             "multifunction":
                 "Multiple functions for different usage needs",
+
+
+            "portable":
+                "Compact design suitable for travel use"
 
         }
 
 
-        result = mapping.get(
+        return mapping.get(
             feature,
             ""
         )
 
 
-        # 事实检查
-        if feature == "waterproof":
 
-            if (
-                "ipx" not in text_lower
-                and
-                "waterproof" not in text_lower
-                and
-                "water resistant" not in text_lower
-            ):
-                return ""
-
-
-        if feature == "rechargeable":
-
-            if (
-                "battery" not in text_lower
-                and
-                "charge" not in text_lower
-                and
-                "usb" not in text_lower
-            ):
-                return ""
-
-
-        if feature == "display":
-
-            if (
-                "display" not in text_lower
-                and
-                "led" not in text_lower
-                and
-                "lcd" not in text_lower
-            ):
-                return ""
-
-
-        return cls._clean_text(
-            result
-        )
-
-
-
-    # -------------------------
-    # 兼容信息生成
-    # -------------------------
+    # ==========================
+    # 兼容信息
+    # ==========================
 
     @staticmethod
-    def _generate_compatibility(
+    def generate_compatibility(
         profile
     ):
+
 
         compatibility = profile.get(
             "compatibility",
             {}
         )
+
+
+        if not isinstance(
+            compatibility,
+            dict
+        ):
+
+            return ""
+
 
 
         brands = compatibility.get(
@@ -442,50 +612,183 @@ class HighlightGenerator:
             return ""
 
 
-        brand_text = ", ".join(
-            brands[:3]
-        )
+
+        brand = brands[0]
 
 
-        if models:
 
-            model_text = " ".join(
-                models[:4]
+        if len(models) > 3:
+
+
+            model_text = (
+                " ".join(
+                    models[:2]
+                )
+                +
+                " and more models"
             )
 
+
+        else:
+
+
+            model_text = " ".join(
+                models
+            )
+
+
+
+        if model_text:
+
+
             return (
-                f"Compatible with {brand_text} "
+                f"Compatible with {brand} "
                 f"{model_text}"
             )
 
 
         return (
-            f"Compatible with {brand_text}"
+            f"Compatible with {brand}"
         )
-
-
-
-    # -------------------------
-    # 删除标题重复
-    # -------------------------
+            # ==========================
+    # Highlight数量控制
+    # ==========================
 
     @staticmethod
-    def _remove_title_duplicate(
-        items,
-        title
+    def limit_highlights(
+        highlights
     ):
 
-        if not title:
 
-            return items
+        result=[]
 
 
-        title_words = set(
-            re.findall(
-                r"[a-zA-Z0-9]+",
-                title.lower()
+        for item in highlights:
+
+
+            if not item:
+                continue
+
+
+            if item not in result:
+
+                result.append(
+                    item
+                )
+
+
+            if len(result) >= 5:
+
+                break
+
+
+
+        return result
+
+
+
+    # ==========================
+    # Short Highlights生成
+    # ==========================
+
+    @classmethod
+    def generate_short(
+        cls,
+        features,
+        product_type
+    ):
+
+
+        result=[]
+
+
+        mapping={
+
+
+            "waterproof":
+                "Waterproof Design",
+
+
+            "rechargeable":
+                "Rechargeable",
+
+
+            "wireless":
+                "Cordless Operation",
+
+
+            "display":
+                "LED Display",
+
+
+            "multifunction":
+                "Multi Function",
+
+
+            "portable":
+                "Portable Design"
+
+        }
+
+
+
+        for feature in features:
+
+
+            value = mapping.get(
+                feature,
+                ""
             )
-        )
+
+
+            if value:
+
+                result.append(
+                    value
+                )
+
+
+
+        # 如果没有功能关键词
+        # 根据产品类型补充
+
+        if not result:
+
+
+            if product_type == "replacement_part":
+
+                result.append(
+                    "Replacement Part"
+                )
+
+
+            elif product_type == "filter":
+
+                result.append(
+                    "Replacement Filter"
+                )
+
+
+            elif product_type == "grooming":
+
+                result.append(
+                    "Daily Grooming"
+                )
+
+
+        return result[:5]
+
+
+
+    # ==========================
+    # 文本清理
+    # ==========================
+
+    @classmethod
+    def clean_list(
+        cls,
+        items
+    ):
 
 
         result=[]
@@ -493,59 +796,51 @@ class HighlightGenerator:
 
         for item in items:
 
-            item_words=set(
-                re.findall(
-                    r"[a-zA-Z0-9]+",
-                    item.lower()
-                )
+
+            item = cls.clean_text(
+                item
             )
 
 
-            overlap = len(
-                title_words.intersection(
-                    item_words
-                )
-            )
+            if not item:
 
-
-            # 重复超过60%，删除
-            if (
-                len(item_words)>0
-                and
-                overlap / len(item_words)
-                > 0.6
-            ):
                 continue
 
 
-            result.append(
-                item
-            )
+            if item.lower() not in [
+                x.lower()
+                for x in result
+            ]:
+
+                result.append(
+                    item
+                )
+
 
 
         return result
 
 
 
-    # -------------------------
-    # 文本清理
-    # -------------------------
-
     @classmethod
-    def _clean_text(
+    def clean_text(
         cls,
         text
     ):
+
 
         if not text:
 
             return ""
 
 
-        result = text
+
+        result = str(text)
+
 
 
         for word in cls.BANNED_WORDS:
+
 
             result = re.sub(
                 word,
@@ -555,6 +850,7 @@ class HighlightGenerator:
             )
 
 
+
         result = re.sub(
             r"\s+",
             " ",
@@ -562,59 +858,28 @@ class HighlightGenerator:
         )
 
 
+
         return result.strip()
 
 
 
-    # -------------------------
-    # 去重复
-    # -------------------------
-
-    @staticmethod
-    def _remove_duplicate(
-        items
-    ):
-
-        result=[]
-
-        seen=set()
-
-
-        for item in items:
-
-            key=item.lower().strip()
-
-
-            if key not in seen:
-
-                result.append(
-                    item
-                )
-
-                seen.add(
-                    key
-                )
-
-
-        return result
-
-
-
-    # -------------------------
+    # ==========================
     # SEO关键词
-    # -------------------------
+    # ==========================
 
     @staticmethod
-    def _extract_keywords(
+    def extract_keywords(
         highlights
     ):
+
 
         keywords=[]
 
 
         for item in highlights:
 
-            words=re.findall(
+
+            words = re.findall(
                 r"[a-zA-Z0-9]+",
                 item.lower()
             )
@@ -622,8 +887,9 @@ class HighlightGenerator:
 
             for word in words:
 
+
                 if (
-                    len(word)>=5
+                    len(word) >= 5
                     and
                     word not in keywords
                 ):
@@ -631,6 +897,7 @@ class HighlightGenerator:
                     keywords.append(
                         word
                     )
+
 
 
         return keywords[:10]
