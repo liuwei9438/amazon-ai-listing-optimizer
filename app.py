@@ -28,7 +28,6 @@ from services.optimization_cache import OptimizationCache
 
 VERSION = "V2.4.0-Highlight-Pipeline"
 
-
 def display_highlights(highlight_result) -> None:
     """
     Display Amazon product highlights.
@@ -105,7 +104,6 @@ def display_highlights(highlight_result) -> None:
                 st.write(
                     "• " + text
                 )
-
 
 def display_generated_content(profile: dict) -> None:
     title_result = profile.get("generated_title", {})
@@ -202,7 +200,6 @@ def display_generated_content(profile: dict) -> None:
     if description:
         st.write("### AI生成详情描述")
         st.write(description)
-
 
 st.set_page_config(
     page_title="Amazon AI Listing Optimizer",
