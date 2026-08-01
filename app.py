@@ -382,6 +382,9 @@ if uploaded is not None:
             target_records = envelope.records[: int(max_products)]
             
             for i, record in enumerate(target_records):
+                st.write(
+                    f"正在处理产品：{record.title}"
+                )
                 cache_key = OptimizationCache.create_key(
                     record
                 )
