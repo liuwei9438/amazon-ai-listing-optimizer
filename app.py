@@ -698,15 +698,215 @@ if uploaded is not None:
             st.warning(
                 f"发现 {len(failed_items)} 个失败产品"
             )
+            if st.button(
+                "重新优化失败产品"
+            ):
+                retry_engine = ProductUnderstandingEngine(
+                    api_key=api_key,
+                    model=model,
+                )
+                retry_success = []
+                retry_failed = []
+                progress_retry = st.progress(0)
+                for idx, failed in enumerate(
+                    failed_items
+                ):
+                    try:
+                        st.write(
+                            f"正在重新优化：{failed.get('sku','')}"
+                        )
+                        # 找回原始记录
+                        record = None
+                        for r in envelope.records:
+                            if r.sku == failed.get("sku"):
+                                record = r
+                                break
+                        if record is None:
+                            raise Exception(
+                                "找不到原始产品记录"
+                            )
 
 
-    if st.button(
-        "重新优化失败产品"
-    ):
+                        # 重新执行 AI 理解
 
-        st.session_state[
-            "retry_failed"
-        ] = True
+                        profile = retry_engine.analyze(
+                            record
+                        )
+                        # SEO
+
+                        seo_intent = generate_primary_search(
+                            profile
+                        )
+
+                        profile["seo_intent"] = seo_intent
+
+
+
+                        seo_keywords = SEOKeywordEngine.generate(
+                            profile
+                        )
+                        profile["seo"] = seo_keywords
+
+
+
+                        # Product Core
+
+                        profile["product_core"] = (
+                            ProductCoreBuilder.build(
+                                profile
+                            )
+                        )
+
+
+
+                        # 生成内容
+
+                        models = ModelProtection.extract_models(
+                            profile
+                        )
+
+
+                        title_result = TitleGenerator.generate(
+                           profile
+                        )
+
+
+                        short_title_result = (
+                            ShortTitleGenerator.generate(
+                                profile
+                            )
+                        )
+                        highlight_result = (
+                            HighlightGenerator.generate(
+                                profile
+                            )
+                        )
+
+
+                        bullet_result = (
+                            BulletGenerator.generate(
+                                profile,
+                                highlight_result,
+                            )
+                        )
+
+
+                        description_result = (
+                            DescriptionGenerator.generate(
+                                profile,
+                                highlight_result,
+                            )
+                        )
+
+
+
+                        profile["generated_title"] = (
+                            ModelProtection.protect_result(
+                                title_result,
+                                models
+                            )
+                        )
+                        profile["short_title_result"] = (
+                                ModelProtection.protect_result(
+                                        short_title_result,
+                                        models
+                                )
+                        )
+
+
+                        profile["highlight_result"] = (
+                                ModelProtection.protect_result(
+                                        highlight_result,
+                                        models
+                                )
+                        )
+
+
+                        profile["bullet_result"] = (
+                                ModelProtection.protect_result(
+                                        bullet_result,
+                                        models
+                                )
+                        )
+
+
+                        profile["description_result"] = (
+                                ModelProtection.protect_result(
+                                        description_result,
+                                        models
+                                )
+                        )
+
+
+                        retry_success.append(
+                                profile
+
+                        )
+
+
+                    except Exception as exc:
+
+                        retry_failed.append(
+                            {
+                                "sku":
+                                    failed.get("sku"),
+                                "status":
+                                    "failed",
+
+                                "error":
+                                    str(exc),
+
+                                "title":
+                                    failed.get("title"),
+                            }
+                        )
+
+
+                    progress_retry.progress(
+                        (idx + 1) / len(failed_items)
+                    )
+
+
+
+                # 更新结果
+
+                new_profiles = []
+
+
+                for p in profiles:
+
+
+                    if p.get("status") == "failed":
+
+                        continue
+
+
+                    new_profiles.append(
+                        p
+                    )
+
+
+                    new_profiles.extend(
+                        retry_success
+                    )
+
+
+                    new_profiles.extend(
+                         retry_failed
+                    )
+
+
+                    st.session_state["profiles"] = (
+                        new_profiles
+                    )
+
+
+                    st.success(
+                        f"重新优化完成：成功 {len(retry_success)} 个，失败 {len(retry_failed)} 个"
+                    )
+
+
+                    st.rerun()
         st.download_button(
             "下载 Product Profile JSON",
             data=json.dumps(
