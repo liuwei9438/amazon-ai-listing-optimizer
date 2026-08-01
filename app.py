@@ -526,22 +526,6 @@ if uploaded is not None:
                         f"｜{product_type}"
                     )
     
-                    try:
-                         profile = engine.analyze(record)
-                         # 这里保留：
-                         # SEO
-                         # Title
-                         # Highlight
-                         # Bullet
-                         # Description
-        
-                         OptimizationCache.set(
-                             st.session_state["optimization_cache"],
-                             cache_key,
-                             profile
-                         )
-                         profiles.append(profile)
-        
         
                     except UnderstandingError as exc:
         
