@@ -385,11 +385,11 @@ if uploaded is not None:
                 cache_key = OptimizationCache.create_key(
                     record
                 )
-                    cached = OptimizationCache.get(
+                cached = OptimizationCache.get(
                         st.session_state["optimization_cache"],
                         cache_key
                     )
-                if cached:
+            if cached:
                     profiles.append(
                         cached
                     )
