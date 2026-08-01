@@ -24,7 +24,7 @@ from generator.short_title_generator import ShortTitleGenerator
 from generator.title_generator import TitleGenerator
 from services.config import get_openai_api_key
 from services.listing_exporter import ListingExporter
-
+from services.optimization_cache import OptimizationCache
 
 VERSION = "V2.4.0-Highlight-Pipeline"
 
@@ -208,6 +208,8 @@ st.set_page_config(
     page_title="Amazon AI Listing Optimizer",
     layout="wide",
 )
+if "optimization_cache" not in st.session_state:
+    st.session_state["optimization_cache"]={}
 
 st.title("Amazon AI Listing Optimizer")
 st.caption(VERSION)
@@ -380,8 +382,21 @@ if uploaded is not None:
             profiles = []
             progress = st.progress(0)
             target_records = envelope.records[: int(max_products)]
-
+            from services.optimization_cache import OptimizationCache
+            
             for i, record in enumerate(target_records):
+                cache_key = OptimizationCache.create_key(
+                    record
+                )
+                cached = OptimizationCache.get(
+                    st.session_state["optimization_cache"],
+                    cache_key
+                )
+            if cached:
+                profiles.append(
+                    cached
+                )
+                continue
                 try:
                     profile = engine.analyze(record)
                     # =========================
@@ -495,9 +510,13 @@ if uploaded is not None:
                         description_result,
                         models
                     )
-
+                    
+                    OptimizationCache.set(
+                        st.session_state["optimization_cache"],
+                        cache_key,
+                        profile
+                    )
                     profiles.append(profile)
-
                     product_type = (
                         profile.get("basic_info", {}).get(
                             "product_type",
@@ -650,6 +669,15 @@ if uploaded is not None:
                     st.code(
                         traceback.format_exc()
                     )
+                    failed_profile = {
+                        "sku": record.sku,
+                        "status":"failed",
+                        "error":str(exc),
+                        "title": record.title
+                    }
+                    profiles.append(
+                        failed_profile
+                    )
 
                 progress.progress((i + 1) / len(target_records))
 
@@ -658,6 +686,27 @@ if uploaded is not None:
     profiles = st.session_state.get("profiles", [])
 
     if profiles:
+        success_profiles = [
+            p for p in profiles
+            if p.get("status") != "failed"
+        ]
+        failed_items = [
+            p for p in profiles
+            if p.get("status")=="failed"
+        ]
+        if failed_items:
+            st.warning(
+                f"发现 {len(failed_items)} 个失败产品"
+            )
+
+
+    if st.button(
+        "重新优化失败产品"
+    ):
+
+        st.session_state[
+            "retry_failed"
+        ] = True
         st.download_button(
             "下载 Product Profile JSON",
             data=json.dumps(
@@ -674,7 +723,7 @@ if uploaded is not None:
         try:
             optimized_export = ListingExporter.export(
                 envelope.dataframe,
-                profiles,
+                success_profiles,
             )
 
             if hasattr(optimized_export, "getvalue"):
