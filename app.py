@@ -558,11 +558,11 @@ if uploaded is not None:
                     traceback.format_exc()
                 )
     failed_profile = {
-            "sku": record.sku,
-            "status":"failed",
-            "error":str(exc),
-            "title": record.title
-        }
+        "sku": record.sku,
+        "status": "failed",
+        "error": "AI processing failed",
+        "title": record.title,
+    }
     profiles.append(
             failed_profile
         )
