@@ -1,204 +1,277 @@
 from __future__ import annotations
 
-import pandas as pd
+import json
 from io import BytesIO
+
+import pandas as pd
 
 
 class ListingExporter:
+    """
+    Amazon AI Listing Optimizer
 
+    Listing Exporter V2.4 Stable
+
+    功能:
+    - AI结果合并
+    - 保留原Excel结构
+    - 支持Highlight新版结构
+    - 稳定导出xlsx
+    """
+
+    # =========================
+    # 安全转换
+    # =========================
 
     @staticmethod
-    def export(
-        original_df,
-        profiles
-    ):
+    def safe_value(value):
 
-        rows = []
+        if value is None:
+            return ""
 
 
-        for index, profile in enumerate(profiles):
+        if isinstance(value, list):
 
-            row = {}
-
-
-            # =====================
-            # 原始字段
-            # =====================
-
-            basic = profile.get(
-                "basic_info",
-                {}
+            return "\n".join(
+                [
+                    str(x)
+                    for x in value
+                    if x
+                ]
             )
 
 
-            row["SKU"] = profile.get(
-                "sku",
-                ""
+        if isinstance(value, dict):
+
+            return json.dumps(
+                value,
+                ensure_ascii=False
             )
 
 
-            row["原标题"] = profile.get(
-                "original_title",
-                ""
-            )
+        return str(value)
 
 
-            # =====================
-            # AI标题
-            # =====================
 
-            title_result = profile.get(
-                "generated_title",
-                {}
-            )
+    # =========================
+    # 获取字段
+    # =========================
+
+    @staticmethod
+    def get_generated(profile):
 
 
-            row["AI标题"] = title_result.get(
+        title = (
+            profile
+            .get("generated_title", {})
+            .get(
                 "title",
                 ""
             )
+        )
 
 
-            # =====================
-            # 商品亮点
-            # =====================
-
-            highlight_result = profile.get(
-                "highlight_result",
+        short_title = (
+            profile
+            .get(
+                "short_title_result",
                 {}
             )
+            .get(
+                "short_title",
+                ""
+            )
+        )
 
 
-            highlights = highlight_result.get(
+        highlight = profile.get(
+            "highlight_result",
+            {}
+        )
+
+
+        # 新版
+        if isinstance(
+            highlight,
+            dict
+        ):
+
+            highlights = highlight.get(
                 "highlights",
-                {}
+                []
             )
 
-
-            highlight_text = []
-
-
-            if isinstance(highlights, list):
-
-               for item in highlights:
-
-                   if isinstance(item, dict):
-
-                      text = item.get(
-                          "text",
-                          ""
-                      )
-
-                      if text:
-                          highlight_text.append(
-                              text
-                          )
-
-                   else:
-
-                       if item:
-                           highlight_text.append(
-                               str(item)
-                           )
-
-
-            elif isinstance(highlights, dict):
-
-               for value in highlights.values():
-
-                   if isinstance(value, list):
-
-                       for item in value:
-
-                           if isinstance(item, dict):
-
-                              text = item.get(
-                                  "text",
-                                  item.get(
-                                      "value",
-                                      ""
-                                  )
-                              )
-
-                              if text:
-                                  highlight_text.append(
-                                      text
-                                  )
-
-                           elif item:
-
-                              highlight_text.append(
-                                  str(item)
-                              )
-
-                   elif value:
-
-                      highlight_text.append(
-                          str(value)
-                      )
-
-
-            row["商品亮点"] = "\n".join(
-                highlight_text
-            )
-
-
-            # =====================
-            # 五点描述
-            # =====================
-
-            bullet_result = profile.get(
-                "bullet_result",
-                {}
-            )
-
-
-            bullets = bullet_result.get(
-                "bullets",
+            short_highlights = highlight.get(
+                "short_highlights",
                 []
             )
 
 
-            for i in range(5):
+        # 兼容旧版
+        elif isinstance(
+            highlight,
+            list
+        ):
 
-                if i < len(bullets):
-
-                    row[
-                        f"AI五点{i+1}"
-                    ] = bullets[i]
-
-                else:
-
-                    row[
-                        f"AI五点{i+1}"
-                    ] = ""
+            highlights = highlight
+            short_highlights = highlight[:3]
 
 
-            # =====================
-            # 详情描述
-            # =====================
+        else:
 
-            description_result = profile.get(
+            highlights=[]
+            short_highlights=[]
+
+
+
+        bullets = (
+            profile
+            .get(
+                "bullet_result",
+                {}
+            )
+            .get(
+                "bullets",
+                []
+            )
+        )
+
+
+        description = (
+            profile
+            .get(
                 "description_result",
                 {}
             )
-
-
-            row["AI详情描述"] = description_result.get(
+            .get(
                 "description",
                 ""
             )
+        )
 
 
-            rows.append(
-                row
+        return {
+
+            "AI Title": title,
+
+            "AI Short Title": short_title,
+
+            "AI Highlights":
+                highlights,
+
+            "AI Short Highlights":
+                short_highlights,
+
+            "AI Bullet Points":
+                bullets,
+
+            "AI Description":
+                description,
+
+        }
+
+
+
+    # =========================
+    # 查找SKU
+    # =========================
+
+    @staticmethod
+    def find_sku(profile):
+
+        return (
+
+            profile.get(
+                "sku"
+            )
+
+            or
+
+            profile.get(
+                "product",
+                {}
+            )
+            .get(
+                "sku",
+                ""
+            )
+
+        )
+
+
+
+    # =========================
+    # 主导出
+    # =========================
+
+    @classmethod
+    def export(
+        cls,
+        dataframe,
+        profiles
+    ):
+
+
+        df = dataframe.copy()
+
+
+
+        export_rows=[]
+
+
+        for index, profile in enumerate(
+            profiles
+        ):
+
+            if not profile:
+                continue
+
+
+            generated = cls.get_generated(
+                profile
+            )
+
+
+            export_rows.append(
+                generated
             )
 
 
 
-        result_df = pd.DataFrame(
-            rows
+        if not export_rows:
+
+            raise ValueError(
+                "没有可导出的AI优化结果"
+            )
+
+
+
+        ai_df = pd.DataFrame(
+            [
+                {
+                    k: cls.safe_value(v)
+                    for k,v in row.items()
+                }
+
+                for row in export_rows
+            ]
         )
+
+
+
+        # 保留原数据
+
+        result = pd.concat(
+            [
+                df.reset_index(drop=True),
+
+                ai_df.reset_index(drop=True)
+
+            ],
+
+            axis=1
+        )
+
 
 
         output = BytesIO()
@@ -209,11 +282,12 @@ class ListingExporter:
             engine="openpyxl"
         ) as writer:
 
-            result_df.to_excel(
+            result.to_excel(
                 writer,
                 index=False,
-                sheet_name="AI优化结果"
+                sheet_name="AI Optimized"
             )
+
 
 
         output.seek(0)
