@@ -651,33 +651,33 @@ if uploaded is not None:
                         with st.expander("查看完整 Product Profile JSON"):
                             st.json(profile)
 
-        except UnderstandingError as exc:
-            st.error(
-                f"{record.sku or '第' + str(i + 1) + '个产品'} "
-                f"分析失败：{exc}"
-            )
-        except Exception as exc:
-            import traceback
-            st.error(
-                f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                f"处理失败: {exc}"
-            )
-            st.code(
-                traceback.format_exc()
-            )
-            failed_profile = {
-                "sku": record.sku,
-                "status":"failed",
-                "error":str(exc),
-                "title": record.title
-            }
-            profiles.append(
-                failed_profile
-            )
+    except UnderstandingError as exc:
+        st.error(
+            f"{record.sku or '第' + str(i + 1) + '个产品'} "
+            f"分析失败：{exc}"
+        )
+    except Exception as exc:
+        import traceback
+        st.error(
+            f"{record.sku or '第' + str(i + 1) + '个产品'}"
+            f"处理失败: {exc}"
+        )
+        st.code(
+            traceback.format_exc()
+        )
+        failed_profile = {
+            "sku": record.sku,
+            "status":"failed",
+            "error":str(exc),
+            "title": record.title
+        }
+        profiles.append(
+            failed_profile
+        )
 
-            progress.progress((i + 1) / len(target_records))
+        progress.progress((i + 1) / len(target_records))
 
-        st.session_state["profiles"] = profiles
+    st.session_state["profiles"] = profiles
 
     profiles = st.session_state.get("profiles", [])
 
