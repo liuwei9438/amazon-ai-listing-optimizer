@@ -179,12 +179,15 @@ class BulletGenerator:
         # =========================
         # 第二部分：Highlight
         # =========================
-
         highlight_items = (
             BulletGenerator.extract_highlights(
                 highlights
             )
         )
+
+
+        # 已存在的兼容信息
+        has_compatible = False
 
 
         for item in highlight_items:
@@ -199,17 +202,20 @@ class BulletGenerator:
                 continue
 
 
-            # 跳过重复的通用句
+            lower_item = item.lower()
 
-            if item.lower() in [
-                "replacement component designed for compatible device use.",
-                "designed for convenient daily use",
-            ]:
+
+
+            # 兼容信息单独处理
+            if "compatible with" in lower_item:
+
+                has_compatible = True
 
                 continue
 
 
-            # 跳过与第一条高度重复
+
+            # 避免与第一条重复
 
             duplicate = False
 
@@ -221,17 +227,18 @@ class BulletGenerator:
                 )
 
                 new_words = set(
-                    item.lower().split()
+                    lower_item.split()
                 )
 
 
                 if len(
                     old_words.intersection(new_words)
-                ) > 4:
+                ) >= 5:
 
                     duplicate = True
 
                     break
+
 
 
             if not duplicate:
@@ -241,6 +248,14 @@ class BulletGenerator:
                 )
 
 
+
+        # 如果有功能卖点，加入使用价值
+
+        if len(bullets) < 4:
+
+            bullets.append(
+                "Designed as a practical replacement solution for damaged or worn parts."
+            )
 
         # =========================
         # 兼容信息
