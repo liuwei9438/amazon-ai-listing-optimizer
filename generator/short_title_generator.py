@@ -5,38 +5,35 @@ import re
 
 class ShortTitleGenerator:
 
-
     """
-    Generate Amazon short title.
+    Amazon AI Listing Optimizer
 
-    Purpose:
-    - Compact product summary
-    - Keyword focused
-    - Human readable
+    Short Title Generator V2.5 Final
 
-    Rules:
-    - No invented features
-    - No marketing words
-    - Brand compatibility protected
+    规则:
+    - 基于 Highlight 生成短标题
+    - 只保留产品身份
+    - 可加入品牌
+    - 可加入规格型特点
+    - 不加入功能描述
     """
 
 
-    BLOCKED_WORDS = [
+    MAX_LENGTH = 80
 
-        "best",
-        "best seller",
-        "#1",
-        "premium",
-        "original",
-        "genuine",
-        "official",
-        "authentic",
-        "discount",
-        "promotion",
-        "perfect"
+
+    ALLOWED_SPEC_WORDS = [
+
+        "9d",
+        "6-in-1",
+        "ipx7",
+        "led",
+        "wireless",
+        "cordless",
+        "portable",
+        "mini",
 
     ]
-
 
 
     @staticmethod
@@ -45,91 +42,108 @@ class ShortTitleGenerator:
     ) -> dict:
 
 
-        basic = profile.get(
-            "basic_info",
-            {}
-        )
-
-        compatibility = profile.get(
-            "compatibility",
+        highlight_result = profile.get(
+            "highlight_result",
             {}
         )
 
 
-        product_type = basic.get(
-            "product_type",
-            ""
+        highlights = (
+            ShortTitleGenerator.extract_highlights(
+                highlight_result
+            )
         )
 
 
-        main_function = basic.get(
-            "main_function",
-            ""
-        )
+        product = ""
+
+        brand = ""
+
+        spec = ""
 
 
-        brands = compatibility.get(
-            "brands",
-            []
-        )
+
+        for item in highlights:
+
+            item_type = item.get(
+                "type",
+                ""
+            )
+
+
+            text = (
+                item.get(
+                    "text",
+                    ""
+                )
+                .strip()
+            )
+
+
+            if not text:
+
+                continue
+
+
+
+            if (
+                item_type == "product"
+                and not product
+            ):
+
+                product = text
+
+
+
+            elif (
+                item_type == "compatibility"
+            ):
+
+                brand = (
+                    ShortTitleGenerator.extract_brand(
+                        text
+                    )
+                )
+
+
+
+            elif (
+                item_type == "feature"
+                and not spec
+            ):
+
+                if (
+                    ShortTitleGenerator.is_spec_feature(
+                        text
+                    )
+                ):
+
+                    spec = text
+
 
 
         parts = []
 
 
-        # ======================
-        # Core Product
-        # ======================
 
-        if main_function:
+        if brand:
 
             parts.append(
-                ShortTitleGenerator.clean(
-                    main_function
-                )
+                brand
             )
 
 
-        elif product_type:
+        if spec:
 
             parts.append(
-                product_type
+                spec
             )
 
 
-
-        # ======================
-        # Replacement Keyword
-        # ======================
-
-        if product_type:
-
-            if "replacement" not in str(
-                product_type
-            ).lower():
-
-                parts.append(
-                    "Replacement"
-                )
-
-
-
-        # ======================
-        # Compatibility
-        # ======================
-
-        if brands:
-
-            brand_text = ", ".join(
-                brands[:2]
-            )
+        if product:
 
             parts.append(
-
-                "Compatible with "
-                +
-                brand_text
-
+                product
             )
 
 
@@ -139,109 +153,168 @@ class ShortTitleGenerator:
         )
 
 
-        title = ShortTitleGenerator.clean(
-            title
-        )
 
-
-        title = ShortTitleGenerator.remove_blocked_words(
-            title
+        title = (
+            ShortTitleGenerator.clean(
+                title
+            )
         )
 
 
         return {
 
-            "short_title": title,
-
-            "validation": {
-
-                "compliance_ok":
-
-                len(
-                    ShortTitleGenerator.check_blocked_words(
-                        title
-                    )
-                ) == 0
-
-            },
-
-            "blocked_words":
-
-            ShortTitleGenerator.check_blocked_words(
-                title
-            )
+            "short_title": title
 
         }
 
 
 
+    # =========================
+    # Highlight读取
+    # =========================
+
     @staticmethod
-    def clean(text):
+    def extract_highlights(
+        data
+    ):
 
-        text = str(text)
 
-        text = re.sub(
-            r"\s+",
-            " ",
+        if not isinstance(
+            data,
+            dict
+        ):
+
+            return []
+
+
+        highlights = data.get(
+            "highlights",
+            []
+        )
+
+
+        result = []
+
+
+        for item in highlights:
+
+            if isinstance(
+                item,
+                dict
+            ):
+
+                result.append(
+                    item
+                )
+
+
+        return result
+
+
+
+    # =========================
+    # 提取品牌
+    # =========================
+
+    @staticmethod
+    def extract_brand(
+        text
+    ):
+
+
+        text = str(
             text
         )
+
+
+        text = re.sub(
+            r"compatible with",
+            "",
+            text,
+            flags=re.I
+        )
+
+
+        text = re.sub(
+            r"models?",
+            "",
+            text,
+            flags=re.I
+        )
+
+
+        text = text.strip()
+
+
+
+        if "," in text:
+
+            text = (
+                text.split(",")[0]
+            )
+
 
         return text.strip()
 
 
 
+    # =========================
+    # 判断规格型特点
+    # =========================
+
     @staticmethod
-    def remove_blocked_words(
+    def is_spec_feature(
         text
     ):
 
-        for word in ShortTitleGenerator.BLOCKED_WORDS:
 
-            text = re.sub(
-
-                re.escape(word),
-
-                "",
-
-                text,
-
-                flags=re.I
-
-            )
-
-
-        return ShortTitleGenerator.clean(
+        lower = str(
             text
-        )
+        ).lower()
 
 
+
+        for word in ShortTitleGenerator.ALLOWED_SPEC_WORDS:
+
+            if word in lower:
+
+                return True
+
+
+
+        # 数字规格，例如:
+        # 1000W
+        # 5L
+        # 12V
+
+        if re.search(
+            r"\b\d+[a-zA-Z]+\b",
+            lower
+        ):
+
+            return True
+
+
+
+        return False
+
+
+
+    # =========================
+    # 清理
+    # =========================
 
     @staticmethod
-    def check_blocked_words(
+    def clean(
         text
     ):
 
-        found = []
 
-        for word in ShortTitleGenerator.BLOCKED_WORDS:
-
-            if re.search(
-
-                r"\b"
-                +
-                re.escape(word)
-                +
-                r"\b",
-
-                text,
-
-                flags=re.I
-
-            ):
-
-                found.append(
-                    word
-                )
+        text = re.sub(
+            r"\s+",
+            " ",
+            str(text)
+        ).strip()
 
 
-        return found
+        return text[:ShortTitleGenerator.MAX_LENGTH]
