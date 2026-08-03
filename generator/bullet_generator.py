@@ -69,10 +69,32 @@ class BulletGenerator:
                 ""
             )
             or profile.get(
+                "product_title",
+                ""
+            )
+            or profile.get(
+                "name",
+                ""
+            )
+            or profile.get(
                 "basic_info",
                 {}
             ).get(
                 "title",
+                ""
+            )
+            or profile.get(
+                "basic_info",
+                {}
+            ).get(
+                "product_name",
+                ""
+            )
+            or profile.get(
+                "product_core",
+                {}
+            ).get(
+                "product_name",
                 ""
             )
             or ""
@@ -94,7 +116,9 @@ class BulletGenerator:
             +
             product_type
         ).lower()
-
+        print("DEBUG TITLE:", title)
+        print("DEBUG PRODUCT TYPE:", product_type)
+        print("DEBUG TEXT:", text)
 
 
         # =========================
@@ -132,10 +156,17 @@ class BulletGenerator:
 
         else:
 
-            bullets.append(
-                "Replacement component designed for compatible device use."
-            )
-
+            if product_type:
+        
+                bullets.append(
+                    f"Replacement {product_type.lower()} designed for compatible device use."
+                )
+        
+            else:
+        
+                bullets.append(
+                    "Replacement component designed for compatible device use."
+                )
 
 
         # =========================
