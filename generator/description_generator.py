@@ -5,20 +5,42 @@ import re
 
 class DescriptionGenerator:
 
+    """
+    Amazon AI Listing Optimizer
+
+    Description Generator V2.4.1 Stable
+
+    功能:
+    - Amazon 风格详情描述生成
+    - 保留事实信息
+    - 提取产品用途
+    - 提取兼容信息
+    - 融合 Highlight
+    - 自动过滤违规营销词
+    """
+
     BLOCKED_WORDS = [
+
         "best",
         "best seller",
         "#1",
+        "number one",
+
         "premium",
         "original",
         "genuine",
         "official",
         "authentic",
+
         "discount",
         "promotion",
+
         "perfect",
+        "amazing",
+
         "top quality",
-        "durable",
+        "high quality",
+
     ]
 
 
@@ -35,140 +57,479 @@ class DescriptionGenerator:
         )
 
 
-        highlight_items = []
-
-
-        # =========================
-        # 新版 list 格式
-        # =========================
-
-        if isinstance(highlights, list):
-
-            for item in highlights:
-
-                if item:
-                    highlight_items.append(
-                        str(item)
-                    )
-
-
-        # =========================
-        # 兼容旧 dict 格式
-        # =========================
-
-        elif isinstance(highlights, dict):
-
-            data = highlights.get(
-                "highlights",
-                {}
-            )
-
-
-            if isinstance(data, dict):
-
-                for key,value in data.items():
-
-                    if isinstance(value,list):
-
-                        for x in value:
-                            highlight_items.append(
-                                str(x)
-                            )
-
-                    elif value:
-
-                        highlight_items.append(
-                            str(value)
-                        )
-
-
-        paragraphs=[]
-
-
-        product_type = basic.get(
-            "product_type",
-            ""
+        compatibility = profile.get(
+            "compatibility",
+            {}
         )
 
 
-        if product_type:
+        paragraphs = []
+
+
+
+        # =========================
+        # 产品定位
+        # =========================
+
+        product_intro = (
+            DescriptionGenerator.build_product_intro(
+                profile
+            )
+        )
+
+
+        if product_intro:
 
             paragraphs.append(
-                f"This product is a {product_type} replacement component."
+                product_intro
             )
 
+
+
+        # =========================
+        # Highlight卖点
+        # =========================
+
+        highlight_items = (
+            DescriptionGenerator.extract_highlights(
+                highlights
+            )
+        )
 
 
         for item in highlight_items:
 
+            if item:
+
+                paragraphs.append(
+                    item
+                )
+
+
+
+        # =========================
+        # 兼容信息
+        # =========================
+
+        compatibility_text = (
+            DescriptionGenerator.build_compatibility(
+                compatibility
+            )
+        )
+
+
+        if compatibility_text:
+
             paragraphs.append(
-                item
+                compatibility_text
             )
 
 
 
-        result=[]
+        # =========================
+        # 购买提示
+        # =========================
+
+        paragraphs.append(
+            "Please check your original part number and model before purchase to ensure compatibility."
+        )
 
 
-        for p in paragraphs:
-            p = DescriptionGenerator.clean(p)
-            if p and p not in result:
-                result.append(p)
+
+        result = []
+
+
+        for text in paragraphs:
+
+
+            cleaned = DescriptionGenerator.clean(
+                text
+            )
+
+
+            if (
+                cleaned
+                and
+                cleaned not in result
+            ):
+
+                result.append(
+                    cleaned
+                )
 
 
 
-        description="\n\n".join(result)
+        description = "\n\n".join(
+            result
+        )
 
+
+        blocked_words = (
+            DescriptionGenerator.check_blocked_words(
+                description
+            )
+        )
 
 
         return {
 
-            "description":description,
+            "description": description,
 
-            "validation":{
+            "validation": {
+
                 "compliance_ok":
-                len(
-                    DescriptionGenerator.check_blocked_words(
-                        description
-                    )
-                )==0
+                    len(blocked_words) == 0
+
             },
 
-            "blocked_words":
-            DescriptionGenerator.check_blocked_words(
-                description
-            )
+            "blocked_words": blocked_words
 
         }
 
 
 
-    @staticmethod
-    def clean(text):
+    # =========================
+    # 产品定位生成
+    # =========================
 
-        return re.sub(
+    @staticmethod
+    def build_product_intro(
+        profile: dict
+    ):
+
+
+        title = (
+            profile.get(
+                "title",
+                ""
+            )
+            or profile.get(
+                "original_title",
+                ""
+            )
+        )
+
+
+        product_type = (
+            profile.get(
+                "basic_info",
+                {}
+            ).get(
+                "product_type",
+                ""
+            )
+        )
+
+
+        text = (
+            title
+            or product_type
+        )
+
+
+        if not text:
+
+            return ""
+
+
+
+        lower = text.lower()
+
+
+
+        if (
+            "button" in lower
+            or "switch" in lower
+        ):
+
+            return (
+                "This compatible replacement part "
+                "is designed to help restore normal "
+                "device operation."
+            )
+
+
+        if "filter" in lower:
+
+            return (
+                "This replacement filter is designed "
+                "for regular maintenance and replacement use."
+            )
+
+
+        if (
+            "shaver" in lower
+            or "trimmer" in lower
+        ):
+
+            return (
+                "This grooming device is designed "
+                "for convenient daily personal care use."
+            )
+
+
+        return (
+            f"This product is a {product_type} "
+            "replacement component."
+            if product_type
+            else
+            "This product is designed for replacement use."
+        )
+            # =========================
+    # Highlight 提取
+    # =========================
+
+    @staticmethod
+    def extract_highlights(
+        highlights
+    ):
+
+        result = []
+
+
+        # 新版 dict
+
+        if isinstance(
+            highlights,
+            dict
+        ):
+
+            data = highlights.get(
+                "highlights",
+                []
+            )
+
+
+            if isinstance(
+                data,
+                list
+            ):
+
+                result.extend(
+                    [
+                        str(x)
+                        for x in data
+                        if x
+                    ]
+                )
+
+
+            elif isinstance(
+                data,
+                dict
+            ):
+
+                for value in data.values():
+
+                    if isinstance(
+                        value,
+                        list
+                    ):
+
+                        result.extend(
+                            [
+                                str(x)
+                                for x in value
+                                if x
+                            ]
+                        )
+
+                    elif value:
+
+                        result.append(
+                            str(value)
+                        )
+
+
+        # list格式
+
+        elif isinstance(
+            highlights,
+            list
+        ):
+
+            result.extend(
+                [
+                    str(x)
+                    for x in highlights
+                    if x
+                ]
+            )
+
+
+        return DescriptionGenerator.remove_duplicate(
+            result
+        )
+
+
+
+    # =========================
+    # 兼容信息生成
+    # =========================
+
+    @staticmethod
+    def build_compatibility(
+        compatibility
+    ):
+
+
+        if not isinstance(
+            compatibility,
+            dict
+        ):
+
+            return ""
+
+
+
+        brands = compatibility.get(
+            "brands",
+            []
+        )
+
+
+        models = compatibility.get(
+            "models",
+            []
+        )
+
+
+
+        if not brands:
+
+            return ""
+
+
+
+        brand_text = ", ".join(
+            [
+                str(x)
+                for x in brands[:3]
+            ]
+        )
+
+
+
+        if models:
+
+
+            if len(models) > 4:
+
+                model_text = (
+                    " ".join(
+                        [
+                            str(x)
+                            for x in models[:3]
+                        ]
+                    )
+                    +
+                    " and more models"
+                )
+
+
+            else:
+
+                model_text = " ".join(
+                    [
+                        str(x)
+                        for x in models
+                    ]
+                )
+
+
+
+            return (
+                f"Compatible with {brand_text} "
+                f"{model_text}."
+            )
+
+
+
+        return (
+            f"Compatible with {brand_text} models."
+        )
+
+
+
+    # =========================
+    # 去重复
+    # =========================
+
+    @staticmethod
+    def remove_duplicate(
+        items
+    ):
+
+        result = []
+
+        seen = set()
+
+
+        for item in items:
+
+            key = str(item).lower().strip()
+
+
+            if key not in seen:
+
+                result.append(
+                    item
+                )
+
+                seen.add(
+                    key
+                )
+
+
+        return result
+
+
+
+    # =========================
+    # 文本清理
+    # =========================
+
+    @staticmethod
+    def clean(
+        text
+    ):
+
+        text = re.sub(
             r"\s+",
             " ",
             str(text)
-        ).strip()
+        )
 
 
+        return text.strip()
+
+
+
+    # =========================
+    # 禁用词检查
+    # =========================
 
     @staticmethod
-    def check_blocked_words(text):
+    def check_blocked_words(
+        text
+    ):
 
-        found=[]
+        found = []
 
 
         for word in DescriptionGenerator.BLOCKED_WORDS:
 
+
             if re.search(
-                r"\b"+re.escape(word)+r"\b",
+                r"\b" + re.escape(word) + r"\b",
                 text,
-                flags=re.I
+                flags=re.I,
             ):
 
-                found.append(word)
+                found.append(
+                    word
+                )
 
 
         return found
+        
