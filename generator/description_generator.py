@@ -227,6 +227,17 @@ class DescriptionGenerator:
                 "original_title",
                 ""
             )
+            or profile.get(
+                "basic_info",
+                {}
+            ).get(
+                "title",
+                ""
+            )
+            or profile.get(
+                "product_title",
+                ""
+            )
             or ""
         )
     
