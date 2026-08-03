@@ -8,12 +8,15 @@ class BulletGenerator:
     """
     Amazon AI Listing Optimizer
 
-    Bullet Generator V2.4.1 Stable
+    Bullet Generator V2.4.2 Stable
 
     功能:
     - Amazon 五点描述生成
-    - 基于产品用途和卖点重组
+    - 基于真实产品功能生成
+    - 使用 main_function 识别产品
+    - Highlight 转换
     - 兼容信息保护
+    - 避免重复购买提示
     - 禁止营销词过滤
     """
 
@@ -38,7 +41,7 @@ class BulletGenerator:
         "amazing",
 
         "top quality",
-        "high quality"
+        "high quality",
 
     ]
 
@@ -58,6 +61,10 @@ class BulletGenerator:
             {}
         )
 
+
+        # =========================
+        # 产品信息读取
+        # =========================
 
         title = (
             profile.get(
@@ -97,13 +104,6 @@ class BulletGenerator:
                 "main_function",
                 ""
             )
-            or profile.get(
-                "product_core",
-                {}
-            ).get(
-                "product_name",
-                ""
-            )
             or ""
         )
 
@@ -116,16 +116,26 @@ class BulletGenerator:
         )
 
 
-        text = (
+        main_function = str(
+            basic.get(
+                "main_function",
+                ""
+            )
+        )
+
+
+        product_text = (
             title
             +
             " "
             +
             product_type
+            +
+            " "
+            +
+            main_function
         ).lower()
-        print("DEBUG TITLE:", title)
-        print("DEBUG PRODUCT TYPE:", product_type)
-        print("DEBUG TEXT:", text)
+
 
 
         # =========================
@@ -133,9 +143,9 @@ class BulletGenerator:
         # =========================
 
         if (
-            "button" in text
-            or "switch" in text
-            or "control" in text
+            "button" in product_text
+            or "switch" in product_text
+            or "control" in product_text
         ):
 
             bullets.append(
@@ -144,9 +154,18 @@ class BulletGenerator:
 
 
         elif (
-            "shaver" in text
-            or "razor" in text
-            or "trimmer" in text
+            "filter" in product_text
+        ):
+
+            bullets.append(
+                "Replacement filter designed for regular maintenance and replacement use."
+            )
+
+
+        elif (
+            "shaver" in product_text
+            or "razor" in product_text
+            or "trimmer" in product_text
         ):
 
             bullets.append(
@@ -154,40 +173,33 @@ class BulletGenerator:
             )
 
 
-        elif "filter" in text:
-
-            bullets.append(
-                "Replacement filter designed for regular maintenance and replacement use."
-            )
-
-
         else:
 
-            if product_type:
-        
+            if main_function:
+
                 bullets.append(
-                    f"Replacement {product_type.lower()} designed for compatible device use."
+                    f"Replacement component designed for {main_function.lower()}."
                 )
-        
+
             else:
-        
+
                 bullets.append(
                     "Replacement component designed for compatible device use."
                 )
 
 
+    # =========================
+    # 第二部分继续下一段
+    # =========================
+            # =========================
+        # Highlight处理
         # =========================
-        # 第二部分：Highlight
-        # =========================
+
         highlight_items = (
             BulletGenerator.extract_highlights(
                 highlights
             )
         )
-
-
-        # 已存在的兼容信息
-        has_compatible = False
 
 
         for item in highlight_items:
@@ -206,25 +218,29 @@ class BulletGenerator:
 
 
 
-            # 兼容信息单独处理
-            if "compatible with" in lower_item:
+            # 跳过兼容信息
+            # 兼容信息统一最后处理
 
-                has_compatible = True
+            if (
+                "compatible with" in lower_item
+            ):
 
                 continue
 
 
 
-            # 避免与第一条重复
+            # 跳过明显重复
 
             duplicate = False
 
 
             for old in bullets:
 
+
                 old_words = set(
                     old.lower().split()
                 )
+
 
                 new_words = set(
                     lower_item.split()
@@ -232,7 +248,9 @@ class BulletGenerator:
 
 
                 if len(
-                    old_words.intersection(new_words)
+                    old_words.intersection(
+                        new_words
+                    )
                 ) >= 5:
 
                     duplicate = True
@@ -249,13 +267,40 @@ class BulletGenerator:
 
 
 
-        # 如果有功能卖点，加入使用价值
+        # =========================
+        # 使用价值补充
+        # =========================
 
-        if len(bullets) < 4:
+        if len(bullets) < 3:
 
-            bullets.append(
-                "Designed as a practical replacement solution for damaged or worn parts."
-            )
+
+            if (
+                "button" in product_text
+                or "switch" in product_text
+            ):
+
+                bullets.append(
+                    "Designed as a practical replacement solution for damaged or worn washing machine parts."
+                )
+
+
+            elif (
+                "shaver" in product_text
+                or "razor" in product_text
+            ):
+
+                bullets.append(
+                    "Suitable for daily grooming use with convenient operation."
+                )
+
+
+            else:
+
+                bullets.append(
+                    "Designed as a practical replacement solution for compatible devices."
+                )
+
+
 
         # =========================
         # 兼容信息
@@ -274,41 +319,68 @@ class BulletGenerator:
         )
 
 
-    
+        if compatibility_text:
+
+
+            has_compatible = any(
+                "compatible with" in x.lower()
+                for x in bullets
+            )
+
+
+            if not has_compatible:
+
+                bullets.append(
+                    compatibility_text
+                )
+
 
 
         # =========================
         # 购买提示
-        # 仅兼容产品添加
+        # 只针对兼容产品
         # =========================
 
         if compatibility_text:
 
+
             has_purchase_note = any(
+
                 (
-                    "please check" in x.lower()
+                    "before purchase" in x.lower()
                     or
                     "confirm your model" in x.lower()
                     or
-                    "before purchase" in x.lower()
+                    "check the original part number" in x.lower()
                 )
+
                 for x in bullets
+
             )
-        
-        
+
+
             if not has_purchase_note:
-        
+
                 bullets.append(
                     "Please check the original part number and model information before purchase."
                 )
 
 
+
+        # =========================
+        # 清理
+        # =========================
+
         bullets = [
+
             BulletGenerator.clean(
                 x
             )
+
             for x in bullets
+
             if x
+
         ]
 
 
@@ -334,6 +406,7 @@ class BulletGenerator:
 
             "bullets": bullets,
 
+
             "validation": {
 
                 "compliance_ok":
@@ -341,64 +414,11 @@ class BulletGenerator:
 
             },
 
+
             "blocked_words": blocked_words
 
         }
-
     # =========================
-    # 产品用途
-    # =========================
-
-    @staticmethod
-    def build_intro(
-        title,
-        product_type
-    ):
-
-        text = (
-            str(title)
-            +
-            " "
-            +
-            str(product_type)
-        ).lower()
-
-
-
-        if (
-            "button" in text
-            or "switch" in text
-        ):
-
-            return (
-                "Replacement button designed "
-                "to help restore normal device control operation."
-            )
-
-
-        if "filter" in text:
-
-            return (
-                "Replacement filter designed "
-                "for regular maintenance and replacement use."
-            )
-
-
-        if (
-            "shaver" in text
-            or "trimmer" in text
-        ):
-
-            return (
-                "Designed for convenient daily grooming use."
-            )
-
-
-        return (
-            "Replacement component designed "
-            "for compatible device use."
-        )
-            # =========================
     # Highlight提取
     # =========================
 
@@ -491,6 +511,7 @@ class BulletGenerator:
         compatibility
     ):
 
+
         if not isinstance(
             compatibility,
             dict
@@ -542,6 +563,7 @@ class BulletGenerator:
                     " and more models"
                 )
 
+
             else:
 
                 model_text = " ".join(
@@ -581,7 +603,11 @@ class BulletGenerator:
 
         for item in items:
 
-            key = str(item).lower().strip()
+            key = (
+                str(item)
+                .lower()
+                .strip()
+            )
 
 
             if key not in seen:
