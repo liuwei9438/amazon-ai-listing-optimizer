@@ -439,7 +439,7 @@ class BulletGenerator:
 
             return (
                 "LED display provides convenient "
-                usage information during operation."
+                "usage information during operation."
             )
 
 
