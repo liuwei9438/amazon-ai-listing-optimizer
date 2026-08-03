@@ -8,16 +8,15 @@ class BulletGenerator:
     """
     Amazon AI Listing Optimizer
 
-    Bullet Generator V2.4.2 Stable
+    Bullet Generator V2.4.3 Stable
 
     功能:
-    - Amazon 五点描述生成
-    - 基于真实产品功能生成
-    - 使用 main_function 识别产品
-    - Highlight 转换
-    - 兼容信息保护
-    - 避免重复购买提示
-    - 禁止营销词过滤
+    - 基于 Highlight 展开五点描述
+    - Highlight负责核心特征
+    - Bullet负责购买价值解释
+    - 保留事实信息
+    - 避免关键词堆积
+    - 合规过滤
     """
 
 
@@ -46,6 +45,7 @@ class BulletGenerator:
     ]
 
 
+
     @staticmethod
     def generate(
         profile: dict,
@@ -62,57 +62,9 @@ class BulletGenerator:
         )
 
 
-        # =========================
-        # 产品信息读取
-        # =========================
-
-        title = (
-            profile.get(
-                "title",
-                ""
-            )
-            or profile.get(
-                "original_title",
-                ""
-            )
-            or profile.get(
-                "product_title",
-                ""
-            )
-            or profile.get(
-                "name",
-                ""
-            )
-            or profile.get(
-                "basic_info",
-                {}
-            ).get(
-                "title",
-                ""
-            )
-            or profile.get(
-                "basic_info",
-                {}
-            ).get(
-                "product_name",
-                ""
-            )
-            or profile.get(
-                "basic_info",
-                {}
-            ).get(
-                "main_function",
-                ""
-            )
-            or ""
-        )
-
-
-        product_type = str(
-            basic.get(
-                "product_type",
-                ""
-            )
+        compatibility = profile.get(
+            "compatibility",
+            {}
         )
 
 
@@ -124,76 +76,13 @@ class BulletGenerator:
         )
 
 
-        product_text = (
-            title
-            +
-            " "
-            +
-            product_type
-            +
-            " "
-            +
-            main_function
-        ).lower()
-
-
-
-        # =========================
-        # 第一条：产品定位
-        # =========================
-
-        if (
-            "button" in product_text
-            or "switch" in product_text
-            or "control" in product_text
-        ):
-
-            bullets.append(
-                "Compatible replacement button designed to help restore normal washing machine control operation."
+        product_type = str(
+            basic.get(
+                "product_type",
+                ""
             )
+        )
 
-
-        elif (
-            "filter" in product_text
-        ):
-
-            bullets.append(
-                "Replacement filter designed for regular maintenance and replacement use."
-            )
-
-
-        elif (
-            "shaver" in product_text
-            or "razor" in product_text
-            or "trimmer" in product_text
-        ):
-
-            bullets.append(
-                "Designed for convenient daily grooming with practical shaving and trimming functions."
-            )
-
-
-        else:
-
-            if main_function:
-
-                bullets.append(
-                    f"Replacement component designed for {main_function.lower()}."
-                )
-
-            else:
-
-                bullets.append(
-                    "Replacement component designed for compatible device use."
-                )
-
-
-    # =========================
-    # 第二部分继续下一段
-    # =========================
-            # =========================
-        # Highlight处理
-        # =========================
 
         highlight_items = (
             BulletGenerator.extract_highlights(
@@ -202,184 +91,122 @@ class BulletGenerator:
         )
 
 
-        for item in highlight_items:
+        highlight_text = " ".join(
+            highlight_items
+        ).lower()
 
-            item = BulletGenerator.clean(
-                item
+
+
+        # =========================
+        # 第一条：产品定义 + 功能
+        # =========================
+
+        identity_bullet = (
+            BulletGenerator.build_identity_bullet(
+                product_type,
+                main_function,
+                highlight_items
+            )
+        )
+
+
+        if identity_bullet:
+
+            bullets.append(
+                identity_bullet
             )
 
 
-            if not item:
 
-                continue
+        # =========================
+        # 第二条：功能价值
+        # =========================
 
-
-            lower_item = item.lower()
-
-
-
-            # 跳过兼容信息
-            # 兼容信息统一最后处理
-
-            if (
-                "compatible with" in lower_item
-            ):
-
-                continue
+        function_bullet = (
+            BulletGenerator.build_function_bullet(
+                highlight_items,
+                main_function
+            )
+        )
 
 
+        if function_bullet:
 
-            # 跳过明显重复
-
-            duplicate = False
-
-
-            for old in bullets:
-
-
-                old_words = set(
-                    old.lower().split()
-                )
-
-
-                new_words = set(
-                    lower_item.split()
-                )
-
-
-                if len(
-                    old_words.intersection(
-                        new_words
-                    )
-                ) >= 5:
-
-                    duplicate = True
-
-                    break
+            bullets.append(
+                function_bullet
+            )
 
 
 
-            if not duplicate:
+        # =========================
+        # 第三条：特点展开
+        # =========================
+
+        feature_bullets = (
+            BulletGenerator.build_feature_bullets(
+                highlight_items
+            )
+        )
+
+
+        for item in feature_bullets:
+
+            if item:
 
                 bullets.append(
                     item
                 )
-
-
-
-        # =========================
-        # 使用价值补充
-        # =========================
-
-        if len(bullets) < 3:
-
-
-            if (
-                "button" in product_text
-                or "switch" in product_text
-            ):
-
-                bullets.append(
-                    "Designed as a practical replacement solution for damaged or worn washing machine parts."
-                )
-
-
-            elif (
-                "shaver" in product_text
-                or "razor" in product_text
-            ):
-
-                bullets.append(
-                    "Suitable for daily grooming use with convenient operation."
-                )
-
-
-            else:
-
-                bullets.append(
-                    "Designed as a practical replacement solution for compatible devices."
-                )
-
-
-
-        # =========================
+                        # =========================
         # 兼容信息
         # =========================
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
-
-
-        compatibility_text = (
-            BulletGenerator.build_compatibility(
+        compatibility_bullet = (
+            BulletGenerator.build_compatibility_bullet(
                 compatibility
             )
         )
 
 
-        if compatibility_text:
+        if compatibility_bullet:
 
-
-            has_compatible = any(
-                "compatible with" in x.lower()
-                for x in bullets
+            bullets.append(
+                compatibility_bullet
             )
-
-
-            if not has_compatible:
-
-                bullets.append(
-                    compatibility_text
-                )
 
 
 
         # =========================
         # 购买提示
-        # 只针对兼容产品
         # =========================
 
-        if compatibility_text:
+        purchase_note = (
+            BulletGenerator.build_purchase_note(
+                compatibility
+            )
+        )
 
 
-            has_purchase_note = any(
+        if purchase_note:
 
-                (
-                    "before purchase" in x.lower()
-                    or
-                    "confirm your model" in x.lower()
-                    or
-                    "check the original part number" in x.lower()
-                )
-
-                for x in bullets
-
+            bullets.append(
+                purchase_note
             )
 
 
-            if not has_purchase_note:
-
-                bullets.append(
-                    "Please check the original part number and model information before purchase."
-                )
-
-
 
         # =========================
-        # 清理
+        # 清理和去重
         # =========================
 
         bullets = [
 
             BulletGenerator.clean(
-                x
+                item
             )
 
-            for x in bullets
+            for item in bullets
 
-            if x
+            if item
 
         ]
 
@@ -390,6 +217,9 @@ class BulletGenerator:
             )
         )
 
+
+
+        # 限制 Amazon 五点数量
 
         bullets = bullets[:5]
 
@@ -406,7 +236,6 @@ class BulletGenerator:
 
             "bullets": bullets,
 
-
             "validation": {
 
                 "compliance_ok":
@@ -414,90 +243,225 @@ class BulletGenerator:
 
             },
 
-
-            "blocked_words": blocked_words
+            "blocked_words":
+                blocked_words
 
         }
+
+
+
     # =========================
-    # Highlight提取
+    # 第一条：
+    # 产品定义 + 核心功能
     # =========================
 
     @staticmethod
-    def extract_highlights(
+    def build_identity_bullet(
+        product_type,
+        main_function,
+        highlights
+    ):
+
+
+        text = " ".join(
+            highlights
+        ).lower()
+
+
+
+        if "washing machine" in text:
+
+            return (
+                "Compatible replacement washing machine part "
+                "designed to help restore normal operation."
+            )
+
+
+        if "shaver" in text:
+
+            return (
+                "Electric shaver designed for convenient "
+                "daily grooming use."
+            )
+
+
+        if "filter" in text:
+
+            return (
+                "Replacement filter designed for "
+                "compatible device maintenance."
+            )
+
+
+        if main_function:
+
+            return (
+                f"Designed to support {main_function.lower()}."
+            )
+
+
+        if product_type:
+
+            return (
+                f"Compatible replacement {product_type.lower()}."
+            )
+
+
+        return ""
+            # =========================
+    # 功能价值展开
+    # =========================
+
+    @staticmethod
+    def build_function_bullet(
+        highlights,
+        main_function
+    ):
+
+
+        for item in highlights:
+
+            text = str(
+                item
+            ).lower()
+
+
+
+            if (
+                "restore" in text
+                or
+                "function" in text
+            ):
+
+                return (
+                    "Designed to help restore normal "
+                    "device operation with a practical "
+                    "replacement solution."
+                )
+
+
+        if main_function:
+
+            return (
+                f"Designed to support {main_function.lower()} "
+                "for compatible devices."
+            )
+
+
+        return ""
+
+
+
+    # =========================
+    # 特点展开
+    # =========================
+
+    @staticmethod
+    def build_feature_bullets(
         highlights
     ):
 
         result = []
 
 
-        if isinstance(
-            highlights,
-            list
-        ):
+        for item in highlights:
 
-            result.extend(
-                [
-                    str(x)
-                    for x in highlights
-                    if x
-                ]
-            )
+            text = str(
+                item
+            ).strip()
 
 
-        elif isinstance(
-            highlights,
-            dict
-        ):
-
-            data = highlights.get(
-                "highlights",
-                []
-            )
+            lower = text.lower()
 
 
-            if isinstance(
-                data,
-                list
+
+            # 产品名称不重复展开
+
+            if (
+                "replacement" in lower
+                and len(text.split()) <= 5
             ):
 
-                result.extend(
-                    [
-                        str(x)
-                        for x in data
-                        if x
-                    ]
+                continue
+
+
+
+            # 兼容信息单独处理
+
+            if (
+                "compatible" in lower
+            ):
+
+                continue
+
+
+
+            if text:
+
+                result.append(
+                    BulletGenerator.expand_feature(
+                        text
+                    )
                 )
 
 
-            elif isinstance(
-                data,
-                dict
-            ):
-
-                for value in data.values():
-
-                    if isinstance(
-                        value,
-                        list
-                    ):
-
-                        result.extend(
-                            [
-                                str(x)
-                                for x in value
-                                if x
-                            ]
-                        )
-
-                    elif value:
-
-                        result.append(
-                            str(value)
-                        )
+        return result
 
 
-        return BulletGenerator.remove_duplicate(
-            result
+
+    @staticmethod
+    def expand_feature(
+        feature
+    ):
+
+
+        lower = feature.lower()
+
+
+
+        if "waterproof" in lower:
+
+            return (
+                "Waterproof design supports "
+                "convenient wet and dry use."
+            )
+
+
+        if "9d" in lower:
+
+            return (
+                "9D floating head design helps "
+                "adapt to different shaving angles."
+            )
+
+
+        if "led" in lower:
+
+            return (
+                "LED display provides convenient "
+                usage information during operation."
+            )
+
+
+        if "rechargeable" in lower:
+
+            return (
+                "Rechargeable cordless operation "
+                "provides convenient daily use."
+            )
+
+
+        if "6-in-1" in lower:
+
+            return (
+                "6-in-1 grooming functions support "
+                "multiple personal care needs."
+            )
+
+
+        return (
+            f"{feature} provides practical "
+            "product functionality."
         )
 
 
@@ -507,7 +471,7 @@ class BulletGenerator:
     # =========================
 
     @staticmethod
-    def build_compatibility(
+    def build_compatibility_bullet(
         compatibility
     ):
 
@@ -550,33 +514,18 @@ class BulletGenerator:
         if models:
 
 
-            if len(models) > 4:
-
-                model_text = (
-                    " ".join(
-                        [
-                            str(x)
-                            for x in models[:3]
-                        ]
-                    )
-                    +
-                    " and more models"
-                )
-
-
-            else:
-
-                model_text = " ".join(
-                    [
-                        str(x)
-                        for x in models
-                    ]
-                )
+            model_text = " ".join(
+                [
+                    str(x)
+                    for x in models[:4]
+                ]
+            )
 
 
             return (
                 f"Compatible with {brand_text} "
-                f"{model_text}. Please confirm your model before purchase."
+                f"{model_text} models. "
+                "Please verify compatibility before purchase."
             )
 
 
@@ -588,7 +537,95 @@ class BulletGenerator:
 
 
     # =========================
-    # 去重复
+    # 购买提示
+    # =========================
+
+    @staticmethod
+    def build_purchase_note(
+        compatibility
+    ):
+
+
+        if isinstance(
+            compatibility,
+            dict
+        ):
+
+            brands = compatibility.get(
+                "brands",
+                []
+            )
+
+            if brands:
+
+                return (
+                    "Please check your original model "
+                    "and part information before purchase."
+                )
+
+
+        return ""
+
+
+
+    # =========================
+    # Highlight读取
+    # =========================
+
+    @staticmethod
+    def extract_highlights(
+        highlights
+    ):
+
+
+        result = []
+
+
+        if isinstance(
+            highlights,
+            dict
+        ):
+
+            data = highlights.get(
+                "highlights",
+                []
+            )
+
+
+            if isinstance(
+                data,
+                list
+            ):
+
+                result.extend(
+                    [
+                        str(x)
+                        for x in data
+                        if x
+                    ]
+                )
+
+
+        elif isinstance(
+            highlights,
+            list
+        ):
+
+            result.extend(
+                [
+                    str(x)
+                    for x in highlights
+                    if x
+                ]
+            )
+
+
+        return result
+
+
+
+    # =========================
+    # 去重
     # =========================
 
     @staticmethod
@@ -626,7 +663,7 @@ class BulletGenerator:
 
 
     # =========================
-    # 文本清理
+    # 清理
     # =========================
 
     @staticmethod
