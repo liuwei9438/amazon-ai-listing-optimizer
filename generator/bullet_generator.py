@@ -61,15 +61,23 @@ class BulletGenerator:
 
         title = (
             profile.get(
-                "original_title",
-                ""
-            )
-            or profile.get(
                 "title",
                 ""
             )
             or profile.get(
-                "generated_title",
+                "original_title",
+                ""
+            )
+            or profile.get(
+                "product_title",
+                ""
+            )
+            or profile.get(
+                "name",
+                ""
+            )
+            or profile.get(
+                "basic_info",
                 {}
             ).get(
                 "title",
@@ -79,7 +87,21 @@ class BulletGenerator:
                 "basic_info",
                 {}
             ).get(
-                "product_type",
+                "product_name",
+                ""
+            )
+            or profile.get(
+                "basic_info",
+                {}
+            ).get(
+                "main_function",
+                ""
+            )
+            or profile.get(
+                "product_core",
+                {}
+            ).get(
+                "product_name",
                 ""
             )
             or ""
