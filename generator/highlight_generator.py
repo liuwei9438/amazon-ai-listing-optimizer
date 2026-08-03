@@ -1,397 +1,54 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
 
 
 class HighlightGenerator:
+
     """
     Amazon AI Listing Optimizer
 
-    Highlight Generator V2.4.1 Stable
+    Highlight Generator V2.4.2 Stable
 
-    优化：
-    - Amazon 转化型卖点
-    - 产品用途优先
-    - 兼容信息降权
-    - Short Highlight独立生成
-    - 事实保护
+    作用:
+    - 提取产品核心词
+    - 提取核心功能
+    - 提取关键特征
+    - 提取兼容信息
+    - 不生成长描述
+    - 不替代Bullet和Description
     """
 
-
-    BANNED_WORDS = [
-
+    BLOCKED_WORDS = [
         "best",
         "best seller",
-        "bestseller",
         "#1",
-        "number one",
-
         "premium",
         "original",
         "genuine",
         "official",
-
+        "authentic",
         "perfect",
-        "amazing",
-        "professional",
-
-        "top quality",
-        "high quality",
-
-        "sale",
         "discount",
-        "promotion"
-
+        "promotion",
+        "top quality",
     ]
 
 
-    PRODUCT_TYPE_RULES = {
-
-
-        "replacement_part": [
-
-            "button",
-            "switch",
-            "cover",
-            "replacement",
-            "part",
-            "handle",
-            "housing"
-
-        ],
-
-
-        "filter": [
-
-            "filter",
-            "hepa",
-            "filtration"
-
-        ],
-
-
-        "electronic": [
-
-            "battery",
-            "charging",
-            "display",
-            "wireless",
-            "electric"
-
-        ],
-
-
-        "grooming": [
-
-            "shaver",
-            "trimmer",
-            "razor"
-
-        ]
-
-    }
-
-
-
-    FEATURE_RULES = {
-
-
-        "waterproof": [
-
-            "waterproof",
-            "water resistant",
-            "ipx"
-
-        ],
-
-
-        "rechargeable": [
-
-            "rechargeable",
-            "battery",
-            "usb charging"
-
-        ],
-
-
-        "wireless": [
-
-            "wireless",
-            "cordless"
-
-        ],
-
-
-        "display": [
-
-            "led display",
-            "lcd display",
-            "display"
-
-        ],
-
-
-        "multifunction": [
-
-            "multi-function",
-            "multifunction",
-            "6 in 1",
-            "5 in 1",
-            "4 in 1"
-
-        ],
-
-
-        "portable": [
-
-            "portable",
-            "compact",
-            "travel"
-
-        ]
-
-    }
-
-
-
-    # ==========================
-    # 主入口
-    # ==========================
-
-    @classmethod
+    @staticmethod
     def generate(
-        cls,
-        profile: Dict[str, Any]
-    ) -> Dict[str, Any]:
-
-
-        text = cls.collect_text(
-            profile
-        )
-
-
-        product_type = cls.detect_product_type(
-            text
-        )
-
-
-        features = cls.extract_features(
-            text
-        )
+        profile: dict
+    ) -> dict:
 
 
         highlights = []
 
 
-        # 1. 产品用途卖点
-        usage = cls.generate_usage(
-            product_type,
-            profile
-        )
-
-
-        if usage:
-
-            highlights.append(
-                usage
-            )
-
-
-        # 2. 功能卖点
-
-        for feature in features:
-
-            item = cls.feature_text(
-                feature
-            )
-
-
-            if item:
-
-                highlights.append(
-                    item
-                )
-
-
-        # 3. 兼容信息最后加入
-
-        compatibility = cls.generate_compatibility(
-            profile
-        )
-
-
-        if compatibility:
-
-            highlights.append(
-                compatibility
-            )
-
-
-        highlights = cls.clean_list(
-            highlights
-        )
-
-
-        highlights = cls.limit_highlights(
-            highlights
-        )
-
-
-        short_highlights = cls.generate_short(
-            features,
-            product_type
-        )
-
-
-        return {
-
-
-            "highlights": highlights,
-
-
-            "short_highlights": short_highlights,
-
-
-            "keywords": cls.extract_keywords(
-                highlights
-            )
-
-        }
-            # ==========================
-    # 产品类型判断
-    # ==========================
-
-    @classmethod
-    def detect_product_type(
-        cls,
-        text: str
-    ) -> str:
-
-
-        text_lower = text.lower()
-
-
-        for product_type, words in cls.PRODUCT_TYPE_RULES.items():
-
-            for word in words:
-
-                if word in text_lower:
-
-                    return product_type
-
-
-        return "general"
-
-
-
-    # ==========================
-    # 收集产品文本
-    # ==========================
-
-    @staticmethod
-    def collect_text(
-        profile
-    ) -> str:
-
-
-        texts = []
-
-
-        # 基础信息
-
-        basic_info = profile.get(
+        basic = profile.get(
             "basic_info",
             {}
         )
 
-
-        if isinstance(
-            basic_info,
-            dict
-        ):
-
-            for value in basic_info.values():
-
-                if value:
-
-                    texts.append(
-                        str(value)
-                    )
-
-
-
-        # 标题
-
-        for key in [
-            "title",
-            "original_title"
-        ]:
-
-            value = profile.get(
-                key,
-                ""
-            )
-
-            if value:
-
-                texts.append(
-                    str(value)
-                )
-
-
-
-        # Features
-
-        features = profile.get(
-            "features",
-            []
-        )
-
-
-        if isinstance(
-            features,
-            list
-        ):
-
-            texts.extend(
-                [
-                    str(x)
-                    for x in features
-                ]
-            )
-
-        elif features:
-
-            texts.append(
-                str(features)
-            )
-
-
-
-        # Bullet
-
-        bullets = profile.get(
-            "bullets",
-            []
-        )
-
-
-        if isinstance(
-            bullets,
-            list
-        ):
-
-            texts.extend(
-                [
-                    str(x)
-                    for x in bullets
-                ]
-            )
-
-
-
-        # Compatibility
 
         compatibility = profile.get(
             "compatibility",
@@ -399,124 +56,221 @@ class HighlightGenerator:
         )
 
 
-        if isinstance(
-            compatibility,
-            dict
-        ):
-
-            for key in [
-                "brands",
-                "models"
-            ]:
-
-                values = compatibility.get(
-                    key,
-                    []
-                )
-
-
-                if isinstance(
-                    values,
-                    list
-                ):
-
-                    texts.extend(
-                        [
-                            str(x)
-                            for x in values
-                        ]
-                    )
-
-
-
-        return " ".join(
-            texts
+        product_core = profile.get(
+            "product_core",
+            {}
         )
 
 
-
-    # ==========================
-    # 功能提取
-    # ==========================
-
-    @classmethod
-    def extract_features(
-        cls,
-        text
-    ) -> List[str]:
-
-
-        result=[]
-
-
-        text_lower = text.lower()
-
-
-        for name, keywords in cls.FEATURE_RULES.items():
-
-
-            for keyword in keywords:
+        title = (
+            profile.get(
+                "title",
+                ""
+            )
+            or profile.get(
+                "original_title",
+                ""
+            )
+            or profile.get(
+                "generated_title",
+                {}
+            ).get(
+                "title",
+                ""
+            )
+            or ""
+        )
 
 
-                if keyword in text_lower:
-
-                    result.append(
-                        name
-                    )
-
-                    break
-
+        product_type = str(
+            basic.get(
+                "product_type",
+                ""
+            )
+        )
 
 
-        return result
+        main_function = str(
+            basic.get(
+                "main_function",
+                ""
+            )
+        )
+
+
+        text = (
+            title
+            +
+            " "
+            +
+            product_type
+            +
+            " "
+            +
+            main_function
+        ).lower()
 
 
 
-    # ==========================
-    # 产品用途生成
-    # ==========================
+        # =========================
+        # 1. 产品核心词
+        # =========================
 
-    @classmethod
-    def generate_usage(
-        cls,
+        product_identity = (
+            HighlightGenerator.build_product_identity(
+                text,
+                product_type,
+                main_function
+            )
+        )
+
+
+        if product_identity:
+
+            highlights.append(
+                product_identity
+            )
+
+
+
+        # =========================
+        # 2. 核心功能
+        # =========================
+
+        function_feature = (
+            HighlightGenerator.build_function_feature(
+                text,
+                main_function
+            )
+        )
+
+
+        if function_feature:
+
+            highlights.append(
+                function_feature
+            )
+
+
+
+        # =========================
+        # 3. 产品特点
+        # =========================
+
+        features = (
+            HighlightGenerator.extract_features(
+                product_core,
+                text
+            )
+        )
+
+
+        for feature in features:
+
+            if feature:
+
+                highlights.append(
+                    feature
+                )
+
+
+
+        # =========================
+        # 4. 兼容信息
+        # =========================
+
+        compatibility_text = (
+            HighlightGenerator.build_compatibility(
+                compatibility
+            )
+        )
+
+
+        if compatibility_text:
+
+            highlights.append(
+                compatibility_text
+            )
+
+
+
+        highlights = (
+            HighlightGenerator.clean_list(
+                highlights
+            )
+        )
+
+
+        highlights = highlights[:6]
+
+
+        return {
+
+            "highlights": highlights,
+
+            "validation": {
+
+                "compliance_ok":
+                    len(
+                        HighlightGenerator.check_blocked_words(
+                            str(highlights)
+                        )
+                    ) == 0
+
+            },
+
+            "blocked_words":
+                HighlightGenerator.check_blocked_words(
+                    str(highlights)
+                )
+
+        }
+
+
+
+    # =========================
+    # 产品核心词
+    # =========================
+
+    @staticmethod
+    def build_product_identity(
+        text,
         product_type,
-        profile
+        main_function
     ):
 
 
-        if product_type == "replacement_part":
-
+        if (
+            "button" in text
+            or "switch" in text
+        ):
 
             return (
-                "Replacement part designed "
-                "to restore normal device operation"
+                "Washing Machine Start Button Replacement"
             )
 
 
-        if product_type == "filter":
-
+        if (
+            "shaver" in text
+            or "razor" in text
+        ):
 
             return (
-                "Replacement filter designed "
-                "for regular maintenance"
+                "Electric Shaver"
             )
 
 
-        if product_type == "grooming":
-
+        if "filter" in text:
 
             return (
-                "Designed for convenient "
-                "daily grooming needs"
+                "Replacement Filter"
             )
 
 
-        if product_type == "electronic":
-
+        if product_type:
 
             return (
-                "Designed for convenient "
-                "daily use"
+                product_type.title()
             )
 
 
@@ -524,66 +278,131 @@ class HighlightGenerator:
 
 
 
-    # ==========================
-    # 功能描述
-    # ==========================
+    # =========================
+    # 功能特点
+    # =========================
 
     @staticmethod
-    def feature_text(
-        feature
+    def build_function_feature(
+        text,
+        main_function
     ):
 
 
-        mapping = {
+        if (
+            "button" in text
+            or "switch" in text
+        ):
+
+            return (
+                "Restores Start Control Function"
+            )
 
 
-            "waterproof":
-                "Waterproof design supports wet and dry use",
+        if (
+            "shaver" in text
+            or "razor" in text
+        ):
+
+            if (
+                "waterproof" in text
+                or "wet dry" in text
+            ):
+
+                return (
+                    "Wet & Dry Shaving Function"
+                )
+
+            return (
+                "Daily Grooming Function"
+            )
 
 
-            "rechargeable":
-                "Rechargeable design for convenient operation",
+        if "filter" in text:
+
+            return (
+                "Improves Filtration Performance"
+            )
 
 
-            "wireless":
-                "Cordless operation for flexible use",
+        if main_function:
+
+            return (
+                main_function.title()
+            )
 
 
-            "display":
-                "LED display for easy status checking",
-
-
-            "multifunction":
-                "Multiple functions for different usage needs",
-
-
-            "portable":
-                "Compact design suitable for travel use"
-
-        }
-
-
-        return mapping.get(
-            feature,
-            ""
-        )
+        return ""
 
 
 
-    # ==========================
-    # 兼容信息
-    # ==========================
+    # =========================
+    # 特征提取
+    # =========================
 
     @staticmethod
-    def generate_compatibility(
-        profile
+    def extract_features(
+        product_core,
+        text
     ):
 
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
+        features = []
+
+
+        feature_text = str(
+            product_core
+        ).lower()
+
+
+
+        if "9d" in text:
+
+            features.append(
+                "9D Floating Head Design"
+            )
+
+
+        if "6-in-1" in text:
+
+            features.append(
+                "6-in-1 Grooming Functions"
+            )
+
+
+        if "waterproof" in text:
+
+            features.append(
+                "Waterproof Design"
+            )
+
+
+        if "led" in text:
+
+            features.append(
+                "LED Display"
+            )
+
+
+        if "rechargeable" in text:
+
+            features.append(
+                "Rechargeable Cordless Operation"
+            )
+
+
+        return features
+
+
+
+    # =========================
+    # 兼容
+    # =========================
+
+    @staticmethod
+    def build_compatibility(
+        compatibility
+    ):
 
 
         if not isinstance(
@@ -594,15 +413,8 @@ class HighlightGenerator:
             return ""
 
 
-
         brands = compatibility.get(
             "brands",
-            []
-        )
-
-
-        models = compatibility.get(
-            "models",
             []
         )
 
@@ -612,292 +424,93 @@ class HighlightGenerator:
             return ""
 
 
-
-        brand = brands[0]
-
-
-
-        if len(models) > 3:
-
-
-            model_text = (
-                " ".join(
-                    models[:2]
-                )
-                +
-                " and more models"
-            )
-
-
-        else:
-
-
-            model_text = " ".join(
-                models
-            )
-
-
-
-        if model_text:
-
-
-            return (
-                f"Compatible with {brand} "
-                f"{model_text}"
-            )
-
-
         return (
-            f"Compatible with {brand}"
+            "Compatible with "
+            +
+            ", ".join(
+                [
+                    str(x)
+                    for x in brands[:3]
+                ]
+            )
+            +
+            " Models"
         )
-            # ==========================
-    # Highlight数量控制
-    # ==========================
+
+
+
+    # =========================
+    # 清理
+    # =========================
 
     @staticmethod
-    def limit_highlights(
-        highlights
-    ):
-
-
-        result=[]
-
-
-        for item in highlights:
-
-
-            if not item:
-                continue
-
-
-            if item not in result:
-
-                result.append(
-                    item
-                )
-
-
-            if len(result) >= 5:
-
-                break
-
-
-
-        return result
-
-
-
-    # ==========================
-    # Short Highlights生成
-    # ==========================
-
-    @classmethod
-    def generate_short(
-        cls,
-        features,
-        product_type
-    ):
-
-
-        result=[]
-
-
-        mapping={
-
-
-            "waterproof":
-                "Waterproof Design",
-
-
-            "rechargeable":
-                "Rechargeable",
-
-
-            "wireless":
-                "Cordless Operation",
-
-
-            "display":
-                "LED Display",
-
-
-            "multifunction":
-                "Multi Function",
-
-
-            "portable":
-                "Portable Design"
-
-        }
-
-
-
-        for feature in features:
-
-
-            value = mapping.get(
-                feature,
-                ""
-            )
-
-
-            if value:
-
-                result.append(
-                    value
-                )
-
-
-
-        # 如果没有功能关键词
-        # 根据产品类型补充
-
-        if not result:
-
-
-            if product_type == "replacement_part":
-
-                result.append(
-                    "Replacement Part"
-                )
-
-
-            elif product_type == "filter":
-
-                result.append(
-                    "Replacement Filter"
-                )
-
-
-            elif product_type == "grooming":
-
-                result.append(
-                    "Daily Grooming"
-                )
-
-
-        return result[:5]
-
-
-
-    # ==========================
-    # 文本清理
-    # ==========================
-
-    @classmethod
     def clean_list(
-        cls,
         items
     ):
 
 
-        result=[]
+        result = []
+
+        seen = set()
 
 
         for item in items:
 
-
-            item = cls.clean_text(
-                item
+            text = (
+                re.sub(
+                    r"\s+",
+                    " ",
+                    str(item)
+                )
+                .strip()
             )
 
 
-            if not item:
-
-                continue
+            key = text.lower()
 
 
-            if item.lower() not in [
-                x.lower()
-                for x in result
-            ]:
+            if (
+                text
+                and key not in seen
+            ):
 
                 result.append(
-                    item
+                    text
                 )
 
+                seen.add(
+                    key
+                )
 
 
         return result
 
 
 
-    @classmethod
-    def clean_text(
-        cls,
+    # =========================
+    # 禁用词
+    # =========================
+
+    @staticmethod
+    def check_blocked_words(
         text
     ):
 
-
-        if not text:
-
-            return ""
+        found = []
 
 
+        for word in HighlightGenerator.BLOCKED_WORDS:
 
-        result = str(text)
-
-
-
-        for word in cls.BANNED_WORDS:
-
-
-            result = re.sub(
-                word,
-                "",
-                result,
+            if re.search(
+                r"\b" + re.escape(word) + r"\b",
+                text,
                 flags=re.I
-            )
+            ):
+
+                found.append(
+                    word
+                )
 
 
-
-        result = re.sub(
-            r"\s+",
-            " ",
-            result
-        )
-
-
-
-        return result.strip()
-
-
-
-    # ==========================
-    # SEO关键词
-    # ==========================
-
-    @staticmethod
-    def extract_keywords(
-        highlights
-    ):
-
-
-        keywords=[]
-
-
-        for item in highlights:
-
-
-            words = re.findall(
-                r"[a-zA-Z0-9]+",
-                item.lower()
-            )
-
-
-            for word in words:
-
-
-                if (
-                    len(word) >= 5
-                    and
-                    word not in keywords
-                ):
-
-                    keywords.append(
-                        word
-                    )
-
-
-
-        return keywords[:10]
+        return found
+        
