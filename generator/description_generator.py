@@ -203,87 +203,72 @@ class DescriptionGenerator:
     def build_product_intro(
         profile: dict
     ):
-    
+
         basic = profile.get(
             "basic_info",
             {}
         )
-    
-        product_type = (
+
+
+        product_type = str(
             basic.get(
                 "product_type",
                 ""
             )
-            or ""
         )
-    
-    
-        title = (
-            profile.get(
-                "title",
+
+
+        main_function = str(
+            basic.get(
+                "main_function",
                 ""
             )
-            or profile.get(
-                "original_title",
-                ""
-            )
-            or profile.get(
-                "basic_info",
-                {}
-            ).get(
-                "title",
-                ""
-            )
-            or profile.get(
-                "product_title",
-                ""
-            )
-            or ""
         )
-    
-    
+
+
         text = (
-            title
+            product_type
             +
             " "
             +
-            product_type
+            main_function
         ).lower()
-    
-    
+
+
+
         if (
             "button" in text
             or "switch" in text
         ):
-    
+
             return (
-                "This compatible replacement part "
+                "This compatible replacement start button "
                 "is designed to help restore normal "
                 "washing machine control operation."
             )
-    
-    
+
+
         if "filter" in text:
-    
+
             return (
                 "This compatible replacement filter "
                 "is designed for regular maintenance "
                 "and replacement use."
             )
-    
-    
+
+
         if (
             "shaver" in text
             or "razor" in text
             or "trimmer" in text
         ):
-    
+
             return (
                 "This grooming device is designed "
                 "for convenient daily personal care use."
             )
-    
-    
+
+
         return ""
     
     # =========================
