@@ -74,37 +74,66 @@ class BulletGenerator:
                 "original_title",
                 ""
             )
+            or ""
         )
 
 
-        product_type = (
-            basic.get(
-                "product_type",
-                ""
+        product_text = (
+            title
+            +
+            " "
+            +
+            str(
+                basic.get(
+                    "product_type",
+                    ""
+                )
             )
-        )
+        ).lower()
+
 
 
         # =========================
-        # Bullet 1 产品用途
+        # 第一条：产品用途
         # =========================
 
-        intro = BulletGenerator.build_intro(
-            title,
-            product_type
-        )
-
-
-        if intro:
+        if (
+            "button" in product_text
+            or "switch" in product_text
+        ):
 
             bullets.append(
-                intro
+                "Compatible replacement button designed to help restore normal washing machine control operation."
+            )
+
+
+        elif "filter" in product_text:
+
+            bullets.append(
+                "Replacement filter designed for regular maintenance and replacement use."
+            )
+
+
+        elif (
+            "shaver" in product_text
+            or "trimmer" in product_text
+        ):
+
+            bullets.append(
+                "Designed for convenient daily grooming with practical shaving and trimming functions."
+            )
+
+
+        else:
+
+            bullets.append(
+                "Replacement component designed for compatible device use."
             )
 
 
 
         # =========================
-        # Highlight转换
+        # 第二～四条：Highlight
         # =========================
 
         highlight_items = (
@@ -116,16 +145,37 @@ class BulletGenerator:
 
         for item in highlight_items:
 
-            if item:
+            text = BulletGenerator.clean(
+                item
+            )
 
-                bullets.append(
-                    item
+
+            if not text:
+
+                continue
+
+
+            if (
+                "compatible with" in text.lower()
+                and
+                any(
+                    "compatible with" in x.lower()
+                    for x in bullets
                 )
+            ):
+
+                continue
+
+
+            bullets.append(
+                text
+            )
 
 
 
         # =========================
         # 兼容信息
+        # 只添加一次
         # =========================
 
         compatibility_text = (
@@ -137,14 +187,22 @@ class BulletGenerator:
 
         if compatibility_text:
 
-            bullets.append(
-                compatibility_text
+            has_compatible = any(
+                "compatible with" in x.lower()
+                for x in bullets
             )
+
+
+            if not has_compatible:
+
+                bullets.append(
+                    compatibility_text
+                )
 
 
 
         # =========================
-        # 使用提醒
+        # 购买提醒
         # =========================
 
         bullets.append(
@@ -153,10 +211,20 @@ class BulletGenerator:
 
 
 
+        # =========================
+        # 清理去重
+        # =========================
+
         bullets = [
-            BulletGenerator.clean(x)
+
+            BulletGenerator.clean(
+                x
+            )
+
             for x in bullets
+
             if x
+
         ]
 
 
@@ -170,6 +238,7 @@ class BulletGenerator:
         bullets = bullets[:5]
 
 
+
         blocked_words = (
             BulletGenerator.check_blocked_words(
                 str(bullets)
@@ -181,6 +250,7 @@ class BulletGenerator:
 
             "bullets": bullets,
 
+
             "validation": {
 
                 "compliance_ok":
@@ -188,10 +258,10 @@ class BulletGenerator:
 
             },
 
+
             "blocked_words": blocked_words
 
         }
-
 
 
     # =========================
