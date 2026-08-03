@@ -15,8 +15,6 @@ from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from core import export_unchanged, integrity_report, read_workbook
-from core.product_core import ProductCoreBuilder
-from core.product_knowledge import ProductKnowledgeBuilder
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
@@ -24,9 +22,10 @@ from generator.short_title_generator import ShortTitleGenerator
 from generator.title_generator import TitleGenerator
 from services.config import get_openai_api_key
 from services.listing_exporter import ListingExporter
-from services.optimization_cache import OptimizationCache
+
 
 VERSION = "V2.4.0-Highlight-Pipeline"
+
 
 def display_highlights(highlight_result) -> None:
     """
@@ -104,6 +103,7 @@ def display_highlights(highlight_result) -> None:
                 st.write(
                     "• " + text
                 )
+
 
 def display_generated_content(profile: dict) -> None:
     title_result = profile.get("generated_title", {})
@@ -201,12 +201,11 @@ def display_generated_content(profile: dict) -> None:
         st.write("### AI生成详情描述")
         st.write(description)
 
+
 st.set_page_config(
     page_title="Amazon AI Listing Optimizer",
     layout="wide",
 )
-if "optimization_cache" not in st.session_state:
-    st.session_state["optimization_cache"]={}
 
 st.title("Amazon AI Listing Optimizer")
 st.caption(VERSION)
@@ -368,7 +367,6 @@ if uploaded is not None:
     )
 
     if st.button("开始 AI 商品理解", type="primary"):
-        st.write("按钮已触发")
         if not api_key.strip():
             st.error("请先填写 OpenAI API Key。")
         else:
@@ -380,66 +378,20 @@ if uploaded is not None:
             profiles = []
             progress = st.progress(0)
             target_records = envelope.records[: int(max_products)]
-            
+
             for i, record in enumerate(target_records):
-                st.write(
-                    f"正在处理产品：{record.title}"
-                )
-                cache_key = OptimizationCache.create_key(
-                    record
-                )
-                cached = OptimizationCache.get(
-                        st.session_state["optimization_cache"],
-                        cache_key
-                    )
-                if cached:
-                        profiles.append(
-                            cached
-                        )
-                        continue
                 try:
                     profile = engine.analyze(record)
-                    st.write("✅ 商品理解完成")
-                    # =========================
-                    # SEO Intent
-                    # =========================
-                    seo_intent = generate_primary_search(
-                        profile
-                    )
-                    profile["seo_intent"] = seo_intent
-                    # =========================
-                    # SEO Keywords
-                    # =========================
-                    seo_keywords = SEOKeywordEngine.generate(
-                        profile
-                    )
-                    profile["seo"] = seo_keywords
-                    # =========================
-                    # Product Core
-                    # =========================
-                    product_core = ProductCoreBuilder.build(
-                        profile
-                    )
-                    profile["product_core"] = product_core
-                    st.write("✅ Product Core 完成")
-                    # =========================
-                    # Product Knowledge
-                    # =========================
-                    product_knowledge = ProductKnowledgeBuilder.build(
-                        profile
-                    )
-                    profile["product_knowledge"] = product_knowledge
-                    st.write("✅ Product Knowledge 完成")
-    
+
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
-    
+
                     seo_keywords = SEOKeywordEngine.generate(profile)
                     profile["seo"] = seo_keywords
-    
+
                     primary_search = seo_intent.get("primary_search", [])
                     primary_text = primary_search[0] if primary_search else ""
-    
+
                     detected_brands = (
                         profile.get("brand_info", {}).get(
                             "detected_brands",
@@ -450,16 +402,15 @@ if uploaded is not None:
                             [],
                         )
                     )
-    
+
                     profile["compliance_result"] = protect_text(
                         primary_text,
                         detected_brands=detected_brands,
                     )
-    
+
                     title_result = TitleGenerator.generate(profile)
                     short_title_result = ShortTitleGenerator.generate(profile)
                     highlight_result = HighlightGenerator.generate(profile)
-                    st.write("✅ Title/Highlight 完成")
                    
                     models = ModelProtection.extract_models(
                         profile
@@ -485,42 +436,38 @@ if uploaded is not None:
                         profile,
                         highlight_result,
                     )
-    
+
                     profile["generated_title"] = ModelProtection.protect_result(
                         title_result,
                         models
                     )
-    
-    
+
+
                     profile["short_title_result"] = ModelProtection.protect_result(
                         short_title_result,
                         models
                     )
-    
-    
+
+
                     profile["highlight_result"] = ModelProtection.protect_result(
                         highlight_result,
                         models
                     )
-    
-    
+
+
                     profile["bullet_result"] = ModelProtection.protect_result(
                         bullet_result,
                         models
                     )
-    
-    
+
+
                     profile["description_result"] = ModelProtection.protect_result(
                         description_result,
                         models
                     )
-                    st.write("✅ Description 完成")
-                    OptimizationCache.set(
-                        st.session_state["optimization_cache"],
-                        cache_key,
-                        profile
-                    )
+
                     profiles.append(profile)
+
                     product_type = (
                         profile.get("basic_info", {}).get(
                             "product_type",
@@ -528,56 +475,128 @@ if uploaded is not None:
                         )
                         or "未识别产品类型"
                     )
-    
+
                     expander_title = (
                         f"{record.sku or '第' + str(i + 1) + '个产品'}"
                         f"｜{product_type}"
                     )
-    
-        
-                except UnderstandingError as exc:
-        
-                    st.error(
-                            f"{record.sku or '第' + str(i + 1) + '个产品'} "
-                            f"分析失败：{exc}"
-                        )
-                with st.expander(
-                    expander_title,
-                    expanded=i == 0,
-                ):
-
-                    st.write(
-                        "**产品类型：**",
-                        product_type,
-                    )
-
-
-                    display_generated_content(
-                        profile
-                    )
-
 
                     with st.expander(
-                        "查看完整 Product Profile JSON"
+                        expander_title,
+                        expanded=i == 0,
                     ):
-                
-                        st.json(
-                            profile
+                        a, b, c = st.columns(3)
+
+                        a.write("**产品类型**")
+                        a.write(product_type)
+
+                        b.write("**品牌关系**")
+                        b.write(
+                            profile.get("brand_info", {}).get(
+                                "relationship",
+                                "Unknown",
+                            )
                         )
-        
-                except Exception as exc:
-                    
-                    import traceback
-                    
-                    st.error(
-                            f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                            f"处理失败: {exc}"
+
+                        c.write("**风险等级**")
+                        c.write(
+                            profile.get("compliance", {}).get(
+                                "risk_level",
+                                "Unknown",
+                            )
                         )
+
+                        compatible_brands = profile.get(
+                            "compatibility",
+                            {},
+                        ).get("brands", [])
+
+                        compatible_models = profile.get(
+                            "compatibility",
+                            {},
+                        ).get("models", [])
+
+                        st.write(
+                            "**兼容品牌：**",
+                            "、".join(compatible_brands) or "Unknown",
+                        )
+                        st.write(
+                            "**兼容型号：**",
+                            "、".join(compatible_models) or "Unknown",
+                        )
+                        st.write(
+                            "**核心功能：**",
+                            profile.get("basic_info", {}).get(
+                                "main_function",
+                                "",
+                            )
+                            or "Unknown",
+                        )
+                        st.write(
+                            "**主要关键词：**",
+                            "、".join(
+                                profile.get("seo", {}).get(
+                                    "primary_keywords",
+                                    [],
+                                )
+                            )
+                            or "Unknown",
+                        )
+                        st.write(
+                            "**搜索意图：**",
+                            profile.get("seo", {}).get(
+                                "search_intent",
+                                "",
+                            )
+                            or "Unknown",
+                        )
+
+                        st.write("### SEO Intent")
+                        st.write(
+                            "**Primary Search：**",
+                            "、".join(primary_search) or "Unknown",
+                        )
+
+                        compliance_result = profile.get(
+                            "compliance_result",
+                            {},
+                        )
+
+                        st.write("### Compliance Check")
+                        st.write(
+                            "**Protected Text：**",
+                            compliance_result.get("text", ""),
+                        )
+                        st.write(
+                            "**Detected Brands：**",
+                            "、".join(
+                                compliance_result.get(
+                                    "detected_brands",
+                                    [],
+                                )
+                            )
+                            or "None",
+                        )
+                        st.write(
+                            "**Risk：**",
+                            compliance_result.get("risk", ""),
+                        )
+
+                        st.write(
+                            "**事实锁：**",
+                            profile.get("fact_lock", {}),
+                        )
+
+                        display_generated_content(profile)
+
+                        with st.expander("查看完整 Product Profile JSON"):
+                            st.json(profile)
+
                 except UnderstandingError as exc:
                     st.error(
-                            f"{record.sku or '第' + str(i + 1) + '个产品'} "
-                            f"分析失败：{exc}"
-                        )
+                        f"{record.sku or '第' + str(i + 1) + '个产品'} "
+                        f"分析失败：{exc}"
+                    )
                 except Exception as exc:
                     import traceback
                     st.error(
@@ -585,322 +604,89 @@ if uploaded is not None:
                         f"处理失败: {exc}"
                     )
                     st.code(
-                    traceback.format_exc()
-                    )
-                    failed_profile = {
-                        "sku": record.sku,
-                        "status": "failed",
-                        "error": "AI processing failed",
-                        "title": record.title,
-                    }
-                    profiles.append(
-                            failed_profile
-                        )
-                
-                    progress.progress((i + 1) / len(target_records))
-                
-                    st.session_state["profiles"] = profiles
-                
-                    profiles = st.session_state.get(
-                        "profiles", 
-                        []
+                        traceback.format_exc()
                     )
 
-                    if profiles:
-                        success_profiles = [
-                            p for p in profiles
-                            if p.get("status") != "failed"
-                        ]
-                        failed_items = [
-                            p for p in profiles
-                            if p.get("status")=="failed"
-                        ]
-                        if failed_items:
-                            st.warning(
-                                f"发现 {len(failed_items)} 个失败产品"
-                            )
-                            if st.button(
-                                "重新优化失败产品"
-                            ):
-                                retry_engine = ProductUnderstandingEngine(
-                                    api_key=api_key,
-                                    model=model,
-                                )
-                                retry_success = []
-                                retry_failed = []
-                                progress_retry = st.progress(0)
-                                for idx, failed in enumerate(
-                                    failed_items
-                                ):
-                                    try:
-                                        st.write(
-                                            f"正在重新优化：{failed.get('sku','')}"
-                                        )
-                                        # 找回原始记录
-                                        record = None
-                                        for r in envelope.records:
-                                            if r.sku == failed.get("sku"):
-                                                record = r
-                                                break
-                                        if record is None:
-                                            raise Exception(
-                                                "找不到原始产品记录"
-                                            )
-                
-                
-                                        # 重新执行 AI 理解
-                
-                                        profile = retry_engine.analyze(
-                                            record
-                                        )
-                                        # SEO
-                
-                                        seo_intent = generate_primary_search(
-                                            profile
-                                        )
-                
-                                        profile["seo_intent"] = seo_intent
-                
-                
-                
-                                        seo_keywords = SEOKeywordEngine.generate(
-                                            profile
-                                        )
-                                        profile["seo"] = seo_keywords
-                
-                
-                
-                                        # Product Core
-                
-                                        profile["product_core"] = (
-                                            ProductCoreBuilder.build(
-                                                profile
-                                            )
-                                        )
-                
-                
-                
-                                        # 生成内容
-                
-                                        models = ModelProtection.extract_models(
-                                            profile
-                                        )
-                
-                
-                                        title_result = TitleGenerator.generate(
-                                           profile
-                                        )
-                
-                
-                                        short_title_result = (
-                                            ShortTitleGenerator.generate(
-                                                profile
-                                            )
-                                        )
-                                        highlight_result = (
-                                            HighlightGenerator.generate(
-                                                profile
-                                            )
-                                        )
-                
-                
-                                        bullet_result = (
-                                            BulletGenerator.generate(
-                                                profile,
-                                                highlight_result,
-                                            )
-                                        )
-                
-                
-                                        description_result = (
-                                            DescriptionGenerator.generate(
-                                                profile,
-                                                highlight_result,
-                                            )
-                                        )
-                
-                
-                
-                                        profile["generated_title"] = (
-                                            ModelProtection.protect_result(
-                                                title_result,
-                                                models
-                                            )
-                                        )
-                                        profile["short_title_result"] = (
-                                                ModelProtection.protect_result(
-                                                        short_title_result,
-                                                        models
-                                                )
-                                        )
-                
-                
-                                        profile["highlight_result"] = (
-                                                ModelProtection.protect_result(
-                                                        highlight_result,
-                                                        models
-                                                )
-                                        )
-                
-                
-                                        profile["bullet_result"] = (
-                                                ModelProtection.protect_result(
-                                                        bullet_result,
-                                                        models
-                                                )
-                                        )
-                
-                
-                                        profile["description_result"] = (
-                                                ModelProtection.protect_result(
-                                                        description_result,
-                                                        models
-                                                )
-                                        )
-                
-                
-                                        retry_success.append(
-                                                profile
-                
-                                        )
-                
-                
-                                    except Exception as exc:
-                
-                                        retry_failed.append(
-                                            {
-                                                "sku":
-                                                    failed.get("sku"),
-                                                "status":
-                                                    "failed",
-                
-                                                "error":
-                                                    str(exc),
-                
-                                                "title":
-                                                    failed.get("title"),
-                                            }
-                                        )
-                
-                
-                                    progress_retry.progress(
-                                        (idx + 1) / len(failed_items)
-                                    )
-                
-                
-                
-                                # 更新结果
-                
-                                new_profiles = []
-                
-                
-                                for p in profiles:
-                
-                
-                                    if p.get("status") == "failed":
-                
-                                        continue
-                
-                
-                                    new_profiles.append(
-                                        p
-                                    )
-                
-                
-                                    new_profiles.extend(
-                                        retry_success
-                                    )
-                
-                
-                                    new_profiles.extend(
-                                         retry_failed
-                                    )
-                
-                
-                                    st.session_state["profiles"] = (
-                                        new_profiles
-                                    )
-                
-                
-                                    st.success(
-                                        f"重新优化完成：成功 {len(retry_success)} 个，失败 {len(retry_failed)} 个"
-                                    )
-                
-                
-                                    st.rerun()
-                        st.download_button(
-                            "下载 Product Profile JSON",
-                            data=json.dumps(
-                                profiles,
-                                ensure_ascii=False,
-                                indent=2,
-                            ).encode("utf-8"),
-                            file_name="product_profiles_v2.4.0.json",
-                            mime="application/json",
-                        )
-                
-                        st.subheader("AI优化结果导出")
-                
-                        try:
-                            optimized_export = ListingExporter.export(
-                                envelope.dataframe,
-                                success_profiles,
-                            )
-                
-                            if hasattr(optimized_export, "getvalue"):
-                                optimized_data = optimized_export.getvalue()
-                            else:
-                                optimized_data = optimized_export
-                
-                            safe_stem = re.sub(
-                                r"\.xlsx$",
-                                "",
-                                uploaded.name,
-                                flags=re.I,
-                            )
-                
-                            st.download_button(
-                                "导出 AI 优化结果",
-                                data=optimized_data,
-                                file_name=f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
-                                mime=(
-                                    "application/vnd.openxmlformats-officedocument."
-                                    "spreadsheetml.sheet"
-                                ),
-                                type="primary",
-                            )
-                        except Exception as exc:
-                            st.error(f"生成 AI 优化结果文件失败：{exc}")
-                
-                    st.subheader("原文件完整性导出")
-                
-                    unchanged_export = export_unchanged(envelope)
-                    integrity = integrity_report(
-                        envelope,
-                        unchanged_export,
-                    )
-                
-                    if integrity["byte_identical"]:
-                        st.success(
-                            "验证通过：原样导出文件与上传文件完全一致，"
-                            f"大小 {integrity['export_size']:,} 字节。"
-                        )
-                
-                        safe_stem = re.sub(
-                            r"\.xlsx$",
-                            "",
-                            uploaded.name,
-                            flags=re.I,
-                        )
-                
-                        st.download_button(
-                            "导出原文件完整性测试文件",
-                            data=unchanged_export,
-                            file_name=f"{safe_stem}_{VERSION}_原样导出.xlsx",
-                            mime=(
-                                "application/vnd.openxmlformats-officedocument."
-                                "spreadsheetml.sheet"
-                            ),
-                        )
-                    else:
-                        st.error("原文件完整性验证失败，已停止原样导出。")
+                progress.progress((i + 1) / len(target_records))
+
+            st.session_state["profiles"] = profiles
+
+    profiles = st.session_state.get("profiles", [])
+
+    if profiles:
+        st.download_button(
+            "下载 Product Profile JSON",
+            data=json.dumps(
+                profiles,
+                ensure_ascii=False,
+                indent=2,
+            ).encode("utf-8"),
+            file_name="product_profiles_v2.4.0.json",
+            mime="application/json",
+        )
+
+        st.subheader("AI优化结果导出")
+
+        try:
+            optimized_export = ListingExporter.export(
+                envelope.dataframe,
+                profiles,
+            )
+
+            if hasattr(optimized_export, "getvalue"):
+                optimized_data = optimized_export.getvalue()
+            else:
+                optimized_data = optimized_export
+
+            safe_stem = re.sub(
+                r"\.xlsx$",
+                "",
+                uploaded.name,
+                flags=re.I,
+            )
+
+            st.download_button(
+                "导出 AI 优化结果",
+                data=optimized_data,
+                file_name=f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
+                mime=(
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
+                type="primary",
+            )
+        except Exception as exc:
+            st.error(f"生成 AI 优化结果文件失败：{exc}")
+
+    st.subheader("原文件完整性导出")
+
+    unchanged_export = export_unchanged(envelope)
+    integrity = integrity_report(
+        envelope,
+        unchanged_export,
+    )
+
+    if integrity["byte_identical"]:
+        st.success(
+            "验证通过：原样导出文件与上传文件完全一致，"
+            f"大小 {integrity['export_size']:,} 字节。"
+        )
+
+        safe_stem = re.sub(
+            r"\.xlsx$",
+            "",
+            uploaded.name,
+            flags=re.I,
+        )
+
+        st.download_button(
+            "导出原文件完整性测试文件",
+            data=unchanged_export,
+            file_name=f"{safe_stem}_{VERSION}_原样导出.xlsx",
+            mime=(
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+        )
+    else:
+        st.error("原文件完整性验证失败，已停止原样导出。")
