@@ -276,17 +276,22 @@ class BulletGenerator:
 
         if compatibility_text:
 
-
-            already_has = any(
-                "compatible with" in x.lower()
+            already_has_purchase_note = any(
+                (
+                    "confirm your model" in x.lower()
+                    or
+                    "before purchase" in x.lower()
+                    or
+                    "check the original part number" in x.lower()
+                )
                 for x in bullets
             )
-
-
-            if not already_has:
-
+        
+        
+            if not already_has_purchase_note:
+        
                 bullets.append(
-                    compatibility_text
+                    "Please check the original part number and model information before purchase."
                 )
 
 
