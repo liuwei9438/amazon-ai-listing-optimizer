@@ -120,9 +120,17 @@ class DescriptionGenerator:
 
         if compatibility_text:
 
-            paragraphs.append(
-                compatibility_text
+            has_compatible = any(
+                "compatible with" in item.lower()
+                for item in highlight_items
             )
+
+
+            if not has_compatible:
+
+                paragraphs.append(
+                    compatibility_text
+                )
 
 
 
@@ -191,13 +199,25 @@ class DescriptionGenerator:
     # =========================
     # 产品定位生成
     # =========================
-
     @staticmethod
     def build_product_intro(
         profile: dict
     ):
-
-
+    
+        basic = profile.get(
+            "basic_info",
+            {}
+        )
+    
+        product_type = (
+            basic.get(
+                "product_type",
+                ""
+            )
+            or ""
+        )
+    
+    
         title = (
             profile.get(
                 "title",
@@ -207,75 +227,55 @@ class DescriptionGenerator:
                 "original_title",
                 ""
             )
+            or ""
         )
-
-
-        product_type = (
-            profile.get(
-                "basic_info",
-                {}
-            ).get(
-                "product_type",
-                ""
-            )
-        )
-
-
+    
+    
         text = (
             title
-            or product_type
-        )
-
-
-        if not text:
-
-            return ""
-
-
-
-        lower = text.lower()
-
-
-
+            +
+            " "
+            +
+            product_type
+        ).lower()
+    
+    
         if (
-            "button" in lower
-            or "switch" in lower
+            "button" in text
+            or "switch" in text
         ):
-
+    
             return (
                 "This compatible replacement part "
                 "is designed to help restore normal "
-                "device operation."
+                "washing machine control operation."
             )
-
-
-        if "filter" in lower:
-
+    
+    
+        if "filter" in text:
+    
             return (
-                "This replacement filter is designed "
-                "for regular maintenance and replacement use."
+                "This compatible replacement filter "
+                "is designed for regular maintenance "
+                "and replacement use."
             )
-
-
+    
+    
         if (
-            "shaver" in lower
-            or "trimmer" in lower
+            "shaver" in text
+            or "razor" in text
+            or "trimmer" in text
         ):
-
+    
             return (
                 "This grooming device is designed "
                 "for convenient daily personal care use."
             )
-
-
-        return (
-            f"This product is a {product_type} "
-            "replacement component."
-            if product_type
-            else
-            "This product is designed for replacement use."
-        )
-            # =========================
+    
+    
+        return ""
+    
+    # =========================
     # Highlight 提取
     # =========================
 
