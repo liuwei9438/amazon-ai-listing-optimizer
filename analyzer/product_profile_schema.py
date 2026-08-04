@@ -20,6 +20,7 @@ _SCHEMA: dict[str, Any] = {
             "type": "object",
             "additionalProperties": False,
             "properties": {
+                "product_name": _string(),
                 "product_type": _string(),
                 "category": _string(),
                 "main_function": _string(),
@@ -32,7 +33,7 @@ _SCHEMA: dict[str, Any] = {
                 "package_contents": _string_list(),
             },
             "required": [
-                "product_type", "category", "main_function", "quantity",
+                "product_name","product_type", "category", "main_function", "quantity",
                 "material", "color", "dimensions", "voltage", "power",
                 "package_contents",
             ],
