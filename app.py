@@ -408,9 +408,36 @@ if uploaded is not None:
                         detected_brands=detected_brands,
                     )
 
-                    title_result = TitleGenerator.generate(profile)
-                    short_title_result = ShortTitleGenerator.generate(profile)
-                    highlight_result = HighlightGenerator.generate(profile)
+                    # =========================
+                    # Highlight
+                    # 商品亮点提取
+                    # =========================
+                    
+                    highlight_result = HighlightGenerator.generate(
+                        profile
+                    )
+                    
+                    profile["highlight_result"] = highlight_result
+                    
+                    
+                    
+                    # =========================
+                    # Short Title
+                    # =========================
+                    
+                    short_title_result = ShortTitleGenerator.generate(
+                        profile
+                    )
+                    
+                    
+                    
+                    # =========================
+                    # Title
+                    # =========================
+                    
+                    title_result = TitleGenerator.generate(
+                        profile
+                    )
                    
                     models = ModelProtection.extract_models(
                         profile
@@ -428,6 +455,8 @@ if uploaded is not None:
                         highlight_result,
                         models,
                     )
+                    
+                    profile["highlight_result"] = highlight_result
                     st.write("DEBUG PROFILE TITLE")
                     st.write(profile.get("title"))
                     st.write(profile.get("original_title"))
