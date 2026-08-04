@@ -158,7 +158,12 @@ class ProductKnowledgeBuilder:
         product_type = ProductKnowledgeBuilder.clean_text(
             basic_info.get("product_type")
         )
-
+        main_function = ProductKnowledgeBuilder.first_text(
+            basic_info.get("main_function"),
+            basic_info.get("core_function"),
+            basic_info.get("function"),
+            basic_info.get("key_function"),
+        )
         product_name = ProductKnowledgeBuilder.first_text(
             product_core.get("product_name"),
             product_core.get("name"),
@@ -179,6 +184,7 @@ class ProductKnowledgeBuilder:
             product_name,
             primary_keywords[0] if primary_keywords else "",
             primary_search[0] if primary_search else "",
+            main_function,
             product_type,
         )
 
