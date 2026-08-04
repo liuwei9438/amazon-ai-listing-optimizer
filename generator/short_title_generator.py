@@ -8,13 +8,12 @@ class ShortTitleGenerator:
     """
     Amazon AI Listing Optimizer
 
-    Short Title Generator V2.5 Final
+    Short Title Generator V2.5.1
 
     规则:
     - 基于 Highlight 生成短标题
-    - 只保留产品身份
-    - 可加入品牌
-    - 可加入规格型特点
+    - 支持多语言兼容表达
+    - 产品核心词优先
     - 不加入功能描述
     """
 
@@ -22,18 +21,31 @@ class ShortTitleGenerator:
     MAX_LENGTH = 80
 
 
-    ALLOWED_SPEC_WORDS = [
+    COMPATIBLE_PHRASES = {
 
-        "9d",
-        "6-in-1",
-        "ipx7",
-        "led",
-        "wireless",
-        "cordless",
-        "portable",
-        "mini",
+        "English":
+            "Compatible with",
 
-    ]
+        "Spanish":
+            "Compatible con",
+
+        "German":
+            "Kompatibel mit",
+
+        "French":
+            "Compatible avec",
+
+        "Italian":
+            "Compatibile con",
+
+        "Portuguese":
+            "Compatível com",
+
+        "Japanese":
+            "対応",
+
+    }
+
 
 
     @staticmethod
@@ -45,6 +57,12 @@ class ShortTitleGenerator:
         highlight_result = profile.get(
             "highlight_result",
             {}
+        )
+
+
+        language = profile.get(
+            "language",
+            "English"
         )
 
 
@@ -71,13 +89,13 @@ class ShortTitleGenerator:
             )
 
 
-            text = (
+            text = str(
                 item.get(
                     "text",
                     ""
                 )
-                .strip()
-            )
+            ).strip()
+
 
 
             if not text:
@@ -128,9 +146,21 @@ class ShortTitleGenerator:
 
         if brand:
 
+            phrase = (
+                ShortTitleGenerator.get_compatible_phrase(
+                    language
+                )
+            )
+
+
             parts.append(
+                phrase
+                +
+                " "
+                +
                 brand
             )
+
 
 
         if spec:
@@ -138,6 +168,7 @@ class ShortTitleGenerator:
             parts.append(
                 spec
             )
+
 
 
         if product:
@@ -153,25 +184,31 @@ class ShortTitleGenerator:
         )
 
 
-
-        title = (
-            ShortTitleGenerator.clean(
-                title
-            )
-        )
-
-
         return {
 
-            "short_title": title
+            "short_title":
+                ShortTitleGenerator.clean(
+                    title
+                )
 
         }
 
 
 
-    # =========================
-    # Highlight读取
-    # =========================
+    @staticmethod
+    def get_compatible_phrase(
+        language
+    ):
+
+
+        return (
+            ShortTitleGenerator.COMPATIBLE_PHRASES.get(
+                language,
+                ShortTitleGenerator.COMPATIBLE_PHRASES["English"]
+            )
+        )
+
+
 
     @staticmethod
     def extract_highlights(
@@ -187,34 +224,19 @@ class ShortTitleGenerator:
             return []
 
 
-        highlights = data.get(
-            "highlights",
-            []
-        )
-
-
-        result = []
-
-
-        for item in highlights:
-
+        return [
+            x
+            for x in data.get(
+                "highlights",
+                []
+            )
             if isinstance(
-                item,
+                x,
                 dict
-            ):
-
-                result.append(
-                    item
-                )
+            )
+        ]
 
 
-        return result
-
-
-
-    # =========================
-    # 提取品牌
-    # =========================
 
     @staticmethod
     def extract_brand(
@@ -222,15 +244,10 @@ class ShortTitleGenerator:
     ):
 
 
-        text = str(
-            text
-        )
-
-
         text = re.sub(
-            r"compatible with",
+            r"compatible.*?with",
             "",
-            text,
+            str(text),
             flags=re.I
         )
 
@@ -243,24 +260,14 @@ class ShortTitleGenerator:
         )
 
 
-        text = text.strip()
+        return (
+            text
+            .replace(",", " ")
+            .strip()
+            .split()[0]
+        )
 
 
-
-        if "," in text:
-
-            text = (
-                text.split(",")[0]
-            )
-
-
-        return text.strip()
-
-
-
-    # =========================
-    # 判断规格型特点
-    # =========================
 
     @staticmethod
     def is_spec_feature(
@@ -273,36 +280,26 @@ class ShortTitleGenerator:
         ).lower()
 
 
+        specs = [
 
-        for word in ShortTitleGenerator.ALLOWED_SPEC_WORDS:
+            "9d",
+            "6-in-1",
+            "ipx7",
+            "led",
+            "wireless",
+            "cordless",
+            "mini",
+            "portable",
 
-            if word in lower:
-
-                return True
-
-
-
-        # 数字规格，例如:
-        # 1000W
-        # 5L
-        # 12V
-
-        if re.search(
-            r"\b\d+[a-zA-Z]+\b",
-            lower
-        ):
-
-            return True
+        ]
 
 
+        return any(
+            x in lower
+            for x in specs
+        )
 
-        return False
 
-
-
-    # =========================
-    # 清理
-    # =========================
 
     @staticmethod
     def clean(
