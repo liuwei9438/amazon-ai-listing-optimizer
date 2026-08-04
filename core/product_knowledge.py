@@ -187,7 +187,9 @@ class ProductKnowledgeBuilder:
             main_function,
             product_type,
         )
-
+        object_name = ProductKnowledgeBuilder.normalize_product_name(
+            raw_object_name
+        )
         category = ProductKnowledgeBuilder.first_text(
             basic_info.get("category"),
             basic_info.get("product_category"),
@@ -201,12 +203,80 @@ class ProductKnowledgeBuilder:
 
         return {
             "object_name": object_name,
-            "product_name": product_name,
+            "product_name": ProductKnowledgeBuilder.normalize_product_name(
+                product_name
+            ),
             "product_type": product_type,
             "category": category,
             "parent_product": parent_product,
         }
+    # =========================================================
+    # Product Name Normalizer
+    # =========================================================
 
+    @staticmethod
+    def normalize_product_name(
+        text: str
+    ) -> str:
+
+        text = ProductKnowledgeBuilder.clean_text(
+            text
+        )
+
+        if not text:
+            return ""
+
+
+        words = text.split()
+
+
+        result = []
+
+        seen = set()
+
+
+        for word in words:
+
+            key = word.lower().strip(
+                ".,-_"
+            )
+
+
+            if key in seen:
+                continue
+
+
+            seen.add(key)
+
+            result.append(word)
+
+
+        text = " ".join(result)
+
+
+        remove_terms = [
+            "power drive",
+            "operation",
+            "function",
+            "solution",
+            "replacement solution",
+        ]
+
+
+        lower = text.lower()
+
+
+        for term in remove_terms:
+
+            if lower.endswith(term):
+
+                text = text[
+                    :
+                    -len(term)
+                ].strip()
+
+
+        return text
     # =========================================================
     # Purpose
     # =========================================================
