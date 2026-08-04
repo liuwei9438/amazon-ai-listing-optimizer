@@ -97,17 +97,23 @@ class ShortTitleGenerator:
         product_name = (
 
             identity.get(
+                "object_name"
+            )
+        
+            or
+        
+            identity.get(
                 "product_name"
             )
-
+        
             or
-
+        
             identity.get(
                 "product_type"
             )
-
+        
             or ""
-
+        
         )
 
 
