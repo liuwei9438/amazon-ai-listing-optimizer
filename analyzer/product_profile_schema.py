@@ -160,6 +160,7 @@ _SCHEMA: dict[str, Any] = {
 
 _EMPTY_PROFILE: dict[str, Any] = {
     "basic_info": {
+        "product_name": "",
         "product_type": "",
         "category": "",
         "main_function": "",
