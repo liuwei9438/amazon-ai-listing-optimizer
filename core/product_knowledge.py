@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 class ProductKnowledgeBuilder:
     """
     Product Knowledge Builder
-
     将现有 Product Profile 整理成统一的商品知识对象。
 
     设计原则：
@@ -180,13 +179,15 @@ class ProductKnowledgeBuilder:
         )
 
         # 只在已有字段中选择名称，不创造新的商品名称。
-        object_name = ProductKnowledgeBuilder.first_text(
+        raw_object_name = ProductKnowledgeBuilder.first_text(
             product_name,
             primary_keywords[0] if primary_keywords else "",
             primary_search[0] if primary_search else "",
             main_function,
             product_type,
         )
+        
+        
         object_name = ProductKnowledgeBuilder.normalize_product_name(
             raw_object_name
         )
