@@ -8,17 +8,21 @@ class ShortTitleGenerator:
     """
     Amazon AI Listing Optimizer
 
-    Short Title Generator V2.5.1
+    Short Title Generator V2.6 Stable
 
-    规则:
-    - 基于 Highlight 生成短标题
-    - 支持多语言兼容表达
-    - 产品核心词优先
-    - 不加入功能描述
+    数据来源:
+    Product Knowledge
+
+    职责:
+    - 生成产品快速识别标题
+    - 不生成营销卖点
+    - 不重新理解产品
+    - 不读取原始标题
     """
 
 
     MAX_LENGTH = 80
+
 
 
     COMPATIBLE_PHRASES = {
@@ -38,12 +42,6 @@ class ShortTitleGenerator:
         "Italian":
             "Compatibile con",
 
-        "Portuguese":
-            "Compatível com",
-
-        "Japanese":
-            "対応",
-
     }
 
 
@@ -54,89 +52,37 @@ class ShortTitleGenerator:
     ) -> dict:
 
 
-        highlight_result = profile.get(
-            "highlight_result",
+        knowledge = profile.get(
+            "product_knowledge",
             {}
         )
 
 
-        language = profile.get(
-            "language",
-            "English"
+        if not isinstance(
+            knowledge,
+            dict
+        ):
+
+            knowledge = {}
+
+
+
+        identity = knowledge.get(
+            "identity",
+            {}
         )
 
 
-        highlights = (
-            ShortTitleGenerator.extract_highlights(
-                highlight_result
-            )
+        compatibility = knowledge.get(
+            "relationship",
+            {}
         )
 
 
-        product = ""
-
-        brand = ""
-
-        spec = ""
-
-
-
-        for item in highlights:
-
-            item_type = item.get(
-                "type",
-                ""
-            )
-
-
-            text = str(
-                item.get(
-                    "text",
-                    ""
-                )
-            ).strip()
-
-
-
-            if not text:
-
-                continue
-
-
-
-            if (
-                item_type == "product"
-                and not product
-            ):
-
-                product = text
-
-
-
-            elif (
-                item_type == "compatibility"
-            ):
-
-                brand = (
-                    ShortTitleGenerator.extract_brand(
-                        text
-                    )
-                )
-
-
-
-            elif (
-                item_type == "feature"
-                and not spec
-            ):
-
-                if (
-                    ShortTitleGenerator.is_spec_feature(
-                        text
-                    )
-                ):
-
-                    spec = text
+        strategy = knowledge.get(
+            "generation_strategy",
+            {}
+        )
 
 
 
@@ -144,37 +90,93 @@ class ShortTitleGenerator:
 
 
 
-        if brand:
+        # =========================
+        # 产品核心
+        # =========================
+
+        product_name = (
+
+            identity.get(
+                "product_name"
+            )
+
+            or
+
+            identity.get(
+                "product_type"
+            )
+
+            or ""
+
+        )
+
+
+
+        if product_name:
+
+            parts.append(
+                product_name
+            )
+
+
+
+        # =========================
+        # 规格型特点
+        # =========================
+
+        short_focus = strategy.get(
+            "short_title_focus",
+            []
+        )
+
+
+        if isinstance(
+            short_focus,
+            list
+        ):
+
+            for item in short_focus:
+
+
+                if ShortTitleGenerator.is_specification(
+                    item
+                ):
+
+                    parts.insert(
+                        0,
+                        item
+                    )
+
+                    break
+
+
+
+        # =========================
+        # 兼容品牌
+        # =========================
+
+        brands = compatibility.get(
+            "brands",
+            []
+        )
+
+
+        if brands:
 
             phrase = (
-                ShortTitleGenerator.get_compatible_phrase(
-                    language
+                ShortTitleGenerator.get_phrase(
+                    profile
                 )
             )
 
 
-            parts.append(
+            parts.insert(
+                0,
                 phrase
                 +
                 " "
                 +
-                brand
-            )
-
-
-
-        if spec:
-
-            parts.append(
-                spec
-            )
-
-
-
-        if product:
-
-            parts.append(
-                product
+                str(brands[0])
             )
 
 
@@ -184,9 +186,11 @@ class ShortTitleGenerator:
         )
 
 
+
         return {
 
             "short_title":
+
                 ShortTitleGenerator.clean(
                     title
                 )
@@ -195,92 +199,47 @@ class ShortTitleGenerator:
 
 
 
+    # =========================
+    # 多语言接口
+    # =========================
+
     @staticmethod
-    def get_compatible_phrase(
-        language
+    def get_phrase(
+        profile
     ):
+
+        language = profile.get(
+            "language",
+            "English"
+        )
 
 
         return (
             ShortTitleGenerator.COMPATIBLE_PHRASES.get(
                 language,
-                ShortTitleGenerator.COMPATIBLE_PHRASES["English"]
+                "Compatible with"
             )
         )
 
 
 
-    @staticmethod
-    def extract_highlights(
-        data
-    ):
-
-
-        if not isinstance(
-            data,
-            dict
-        ):
-
-            return []
-
-
-        return [
-            x
-            for x in data.get(
-                "highlights",
-                []
-            )
-            if isinstance(
-                x,
-                dict
-            )
-        ]
-
-
+    # =========================
+    # 规格判断
+    # =========================
 
     @staticmethod
-    def extract_brand(
+    def is_specification(
         text
     ):
 
 
-        text = re.sub(
-            r"compatible.*?with",
-            "",
-            str(text),
-            flags=re.I
-        )
-
-
-        text = re.sub(
-            r"models?",
-            "",
-            text,
-            flags=re.I
-        )
-
-
-        return (
-            text
-            .replace(",", " ")
-            .strip()
-            .split()[0]
-        )
-
-
-
-    @staticmethod
-    def is_spec_feature(
-        text
-    ):
-
-
-        lower = str(
+        value = str(
             text
         ).lower()
 
 
-        specs = [
+
+        allowed = [
 
             "9d",
             "6-in-1",
@@ -288,18 +247,26 @@ class ShortTitleGenerator:
             "led",
             "wireless",
             "cordless",
-            "mini",
             "portable",
+            "mini",
 
         ]
 
 
+
         return any(
-            x in lower
-            for x in specs
+
+            x in value
+
+            for x in allowed
+
         )
 
 
+
+    # =========================
+    # 清理
+    # =========================
 
     @staticmethod
     def clean(
@@ -307,11 +274,8 @@ class ShortTitleGenerator:
     ):
 
 
-        text = re.sub(
+        return re.sub(
             r"\s+",
             " ",
             str(text)
-        ).strip()
-
-
-        return text[:ShortTitleGenerator.MAX_LENGTH]
+        ).strip()[:ShortTitleGenerator.MAX_LENGTH]
