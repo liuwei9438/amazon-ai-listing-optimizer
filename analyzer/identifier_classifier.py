@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from services import OpenAIResponsesClient, AIClientError
+from services import (
+    OpenAIResponsesClient,
+    AIClientError,
+)
 
 
 class IdentifierClassificationError(RuntimeError):
@@ -14,21 +17,41 @@ class IdentifierClassificationError(RuntimeError):
 class IdentifierClassifier:
 
     """
-    AI Identifier Classifier
+    Identifier Classifier V1.1 Stable
 
-    功能:
-    - 根据完整产品上下文判断候选标识类型
-    - 不依赖固定型号规则
-    - 避免尺寸、参数误判为型号
+    作用:
+    根据完整商品上下文，
+    判断候选标识属于:
 
-    输出:
-    model_number
-    part_number
-    dimension
-    specification
-    quantity
-    unknown
+    - model_number
+    - part_number
+    - dimension
+    - specification
+    - quantity
+    - unknown
+
+    注意:
+    不直接修改 Product Profile。
+    只提供分类结果。
     """
+
+
+
+    CLASSIFICATION_TYPES = [
+
+        "model_number",
+
+        "part_number",
+
+        "dimension",
+
+        "specification",
+
+        "quantity",
+
+        "unknown",
+
+    ]
 
 
 
@@ -37,46 +60,129 @@ class IdentifierClassifier:
 You are a product data classification expert.
 
 Your task is to classify candidate identifiers
-based on the complete product context.
+using the complete product context.
 
-Do NOT classify only by text format.
+Do NOT judge only by string format.
 
 Consider:
 
+- product name
 - product type
-- product function
+- main function
 - brand information
 - compatibility information
 - title
 - description
-- usage scenario
 
 
-Each candidate must be classified as one of:
+Classify each candidate into exactly one category:
 
-model_number
-part_number
-dimension
-specification
-quantity
-unknown
+model_number:
+A product/device model identifier.
+
+part_number:
+A manufacturer or replacement part identifier.
+
+dimension:
+A size measurement.
+
+specification:
+A technical specification such as voltage, power, capacity.
+
+quantity:
+A count value.
+
+unknown:
+Cannot determine safely.
 
 
-Rules:
+Important:
 
-1. Product models usually identify a specific device/product version.
-
-2. Dimensions must not be classified as models.
-
-3. Values with units such as cm, mm, V, W, kg are usually specifications.
-
-4. Pure numbers without product context should not become models.
-
-5. If uncertain, use unknown.
+- Pure numbers are usually not models unless product context strongly supports it.
+- Values with units are usually specifications or dimensions.
+- Dimensions must not become models.
+- If uncertain, use unknown.
 
 Return JSON only.
 
 """
+
+
+
+    RESPONSE_SCHEMA = {
+
+        "type": "object",
+
+        "additionalProperties": False,
+
+        "properties": {
+
+            "identifier_results": {
+
+                "type": "array",
+
+                "items": {
+
+                    "type": "object",
+
+                    "additionalProperties": False,
+
+                    "properties": {
+
+                        "value": {
+
+                            "type": "string"
+
+                        },
+
+
+                        "type": {
+
+                            "type": "string",
+
+                            "enum": [
+                                "model_number",
+                                "part_number",
+                                "dimension",
+                                "specification",
+                                "quantity",
+                                "unknown",
+                            ]
+
+                        },
+
+
+                        "confidence": {
+
+                            "type": "number"
+
+                        }
+
+                    },
+
+                    "required": [
+
+                        "value",
+
+                        "type",
+
+                        "confidence"
+
+                    ]
+
+                }
+
+            }
+
+        },
+
+        "required": [
+
+            "identifier_results"
+
+        ]
+
+    }
 
 
 
@@ -87,8 +193,11 @@ Return JSON only.
     ):
 
         self.client = OpenAIResponsesClient(
+
             api_key=api_key,
+
             model=model,
+
         )
 
 
@@ -103,16 +212,14 @@ Return JSON only.
         if not candidates:
 
             return {
-                "models": [],
-                "part_numbers": [],
-                "dimensions": [],
-                "specifications": [],
-                "unknown": [],
+
+                "identifier_results": []
+
             }
 
 
 
-        prompt = {
+        payload = {
 
             "product_context":
                 product_context,
@@ -128,74 +235,34 @@ Return JSON only.
         try:
 
             result = self.client.create_json(
+
                 self.SYSTEM_PROMPT,
+
                 json.dumps(
-                    prompt,
+
+                    payload,
+
                     ensure_ascii=False,
+
                 ),
-                {
-                    "type": "object",
-                    "properties": {
 
-                        "identifier_results": {
+                self.RESPONSE_SCHEMA,
 
-                            "type": "array",
-
-                            "items": {
-
-                                "type": "object",
-
-                                "properties": {
-
-                                    "value":
-                                        {
-                                        "type":"string"
-                                        },
-
-                                    "type":
-                                        {
-                                        "type":"string"
-                                        },
-
-                                    "confidence":
-                                        {
-                                        "type":"number"
-                                        }
-
-                                },
-
-                                "required":[
-                                    "value",
-                                    "type",
-                                    "confidence"
-                                ]
-
-                            }
-
-                        }
-
-                    },
-
-                    "required":[
-                        "identifier_results"
-                    ]
-
-                }
             )
 
 
         except AIClientError as exc:
 
             raise IdentifierClassificationError(
+
                 str(exc)
+
             ) from exc
 
 
 
-        return (
-            self.normalize_result(
-                result
-            )
+        return self.normalize_result(
+            result
         )
 
 
@@ -203,28 +270,34 @@ Return JSON only.
     @staticmethod
     def normalize_result(
         result: dict[str, Any]
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, Any]:
 
 
-        output = {
+        if not isinstance(
+            result,
+            dict
+        ):
 
-            "models": [],
+            return {
 
-            "part_numbers": [],
+                "identifier_results": []
 
-            "dimensions": [],
+            }
 
-            "specifications": [],
-
-            "unknown": [],
-
-        }
 
 
         items = result.get(
+
             "identifier_results",
+
             []
+
         )
+
+
+
+        cleaned = []
+
 
 
         if not isinstance(
@@ -232,11 +305,12 @@ Return JSON only.
             list
         ):
 
-            return output
+            items = []
 
 
 
         for item in items:
+
 
             if not isinstance(
                 item,
@@ -246,20 +320,42 @@ Return JSON only.
                 continue
 
 
+
             value = str(
+
                 item.get(
+
                     "value",
+
                     ""
+
                 )
+
             ).strip()
 
 
+
             category = str(
+
                 item.get(
+
                     "type",
-                    ""
+
+                    "unknown"
+
                 )
+
             ).lower()
+
+
+
+            confidence = item.get(
+
+                "confidence",
+
+                0
+
+            )
 
 
 
@@ -269,47 +365,31 @@ Return JSON only.
 
 
 
-            if category == "model_number":
+            if category not in IdentifierClassifier.CLASSIFICATION_TYPES:
 
-                output["models"].append(
-                    value
-                )
-
-
-            elif category == "part_number":
-
-                output["part_numbers"].append(
-                    value
-                )
-
-
-            elif category == "dimension":
-
-                output["dimensions"].append(
-                    value
-                )
-
-
-            elif category == "specification":
-
-                output["specifications"].append(
-                    value
-                )
-
-
-            elif category == "quantity":
-
-                output["unknown"].append(
-                    value
-                )
-
-
-            else:
-
-                output["unknown"].append(
-                    value
-                )
+                category = "unknown"
 
 
 
-        return output
+            cleaned.append(
+
+                {
+
+                    "value": value,
+
+                    "type": category,
+
+                    "confidence": confidence,
+
+                }
+
+            )
+
+
+
+        return {
+
+            "identifier_results": cleaned
+
+        }
+        
