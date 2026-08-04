@@ -37,6 +37,9 @@ class ProductKnowledgeBuilder:
         basic_info = ProductKnowledgeBuilder.ensure_dict(
             profile.get("basic_info")
         )
+        product_core = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("product_core")
+        )
         brand_info = ProductKnowledgeBuilder.ensure_dict(
             profile.get("brand_info")
         )
@@ -69,6 +72,7 @@ class ProductKnowledgeBuilder:
         )
         identity = ProductKnowledgeBuilder.build_identity(
             basic_info=basic_info,
+            product_core=product_core,
             seo=seo,
             seo_intent=seo_intent,
         )
