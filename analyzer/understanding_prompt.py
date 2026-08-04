@@ -51,6 +51,35 @@ NON-NEGOTIABLE RULES:
     - no detected third-party brand -> generic
     - third-party brand without compatibility wording -> high_risk_brand_usage
     - never accept original/genuine/official/OEM claims as verified facts
+11. Extract the most accurate product_name.
+
+product_name means the specific product identity,
+not a broad category.
+
+Examples:
+
+Wrong:
+"Appliance Part"
+
+Correct:
+"Washing Machine Start Button"
+
+
+Wrong:
+"Shaver"
+
+Correct:
+"Electric Shaver"
+
+
+Wrong:
+"Vacuum Cleaner Accessory"
+
+Correct:
+"Vacuum Cleaner Roller Brush"
+
+Do not invent unsupported products.
+Use empty value only when product identity cannot be determined.
 
 SOURCE:
 {json.dumps(source, ensure_ascii=False, default=str)}
