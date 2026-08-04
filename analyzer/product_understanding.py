@@ -10,6 +10,9 @@ from .profile_validator import normalize_profile, validate_profile
 from .understanding_prompt import SYSTEM_PROMPT, build_user_prompt
 from .attribute_engine import extract_basic_attributes
 from .attribute_validator import validate_attributes
+from .identifier_classifier import (
+    IdentifierClassifier,
+)
 
 
 class UnderstandingError(RuntimeError):
@@ -17,8 +20,24 @@ class UnderstandingError(RuntimeError):
 
 
 class ProductUnderstandingEngine:
-    def __init__(self, api_key: str, model: str = "gpt-4.1-mini"):
-        self.client = OpenAIResponsesClient(api_key=api_key, model=model)
+
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gpt-4.1-mini"
+    ):
+
+        self.client = OpenAIResponsesClient(
+            api_key=api_key,
+            model=model,
+        )
+
+
+        self.identifier_classifier = IdentifierClassifier(
+            api_key=api_key,
+            model=model,
+        )
 
     def analyze(self, record: Any) -> dict[str, Any]:
         expected_lock = build_fact_lock(record)
@@ -30,6 +49,107 @@ class ProductUnderstandingEngine:
             raise UnderstandingError(str(exc)) from exc
 
         profile = normalize_profile(raw)
+        # =================================
+        # Identifier Classification
+        # 型号/尺寸/编号智能分类
+        # =================================
+        
+        candidates = []
+        
+        
+        compatibility = profile.get(
+            "compatibility",
+            {}
+        )
+        
+        
+        if isinstance(
+            compatibility,
+            dict
+        ):
+        
+            candidates.extend(
+                compatibility.get(
+                    "models",
+                    []
+                )
+            )
+        
+            candidates.extend(
+                compatibility.get(
+                    "part_numbers",
+                    []
+                )
+            )
+        
+        
+        
+        product_context = {
+        
+            "product_type":
+                profile.get(
+                    "basic_info",
+                    {}
+                ).get(
+                    "product_type",
+                    ""
+                ),
+        
+        
+            "main_function":
+                profile.get(
+                    "basic_info",
+                    {}
+                ).get(
+                    "main_function",
+                    ""
+                ),
+        
+        
+            "compatibility":
+                compatibility,
+        
+        
+            "title":
+                getattr(
+                    record,
+                    "title",
+                    ""
+                ),
+        
+        }
+        
+        
+        
+        classified_identifiers = (
+            self.identifier_classifier.classify(
+                product_context,
+                candidates,
+            )
+        )
+        
+        
+        
+        profile.setdefault(
+            "compatibility",
+            {}
+        )
+        
+        
+        profile["compatibility"]["models"] = (
+            classified_identifiers.get(
+                "models",
+                []
+            )
+        )
+        
+        
+        profile["compatibility"]["part_numbers"] = (
+            classified_identifiers.get(
+                "part_numbers",
+                []
+            )
+        )
 
         # Task 3.3A-1:
         # Use deterministic extraction for strict factual attributes.
