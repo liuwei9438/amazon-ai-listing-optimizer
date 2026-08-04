@@ -8,15 +8,18 @@ class HighlightGenerator:
     """
     Amazon AI Listing Optimizer
 
-    Highlight Generator V2.5 Stable
+    Highlight Generator V3.0 Stable
 
-    作用:
-    - 从 Product Understanding 提取商品核心亮点
-    - 不生成标题
-    - 不生成五点
-    - 不生成详情
-    - 作为 Title/Bullet/Description 的共同数据源
+    数据来源:
+    Product Knowledge
+
+    职责:
+    - 提取商品核心亮点
+    - 不重新理解产品
+    - 不猜测产品属性
+    - 不根据关键词判断功能
     """
+
 
 
     BLOCKED_WORDS = [
@@ -43,119 +46,145 @@ class HighlightGenerator:
     ]
 
 
+
     @staticmethod
     def generate(
         profile: dict
     ) -> dict:
 
 
+        knowledge = profile.get(
+            "product_knowledge",
+            {}
+        )
+
+
+        if not isinstance(
+            knowledge,
+            dict
+        ):
+
+            knowledge = {}
+
+
+
         highlights = []
 
 
-        basic = profile.get(
-            "basic_info",
-            {}
-        )
-
-
-        compatibility = profile.get(
-            "compatibility",
-            {}
-        )
-
-
-        product_core = profile.get(
-            "product_core",
-            {}
-        )
-
-
 
         # =========================
-        # 1. 产品是什么
+        # 产品核心
         # =========================
 
-        product_text = (
-            HighlightGenerator.build_product_highlight(
-                basic,
-                profile
+        identity = knowledge.get(
+            "identity",
+            {}
+        )
+
+
+        product_name = (
+            identity.get(
+                "product_name"
             )
+            or
+            identity.get(
+                "product_type"
+            )
+            or
+            identity.get(
+                "object_name"
+            )
+            or
+            ""
         )
 
 
-        if product_text:
+        if product_name:
 
             highlights.append(
                 {
-                    "type": "product",
-                    "text": product_text
+                    "type":
+                    "product",
+
+                    "text":
+                    product_name,
                 }
             )
 
 
 
         # =========================
-        # 2. 核心功能
+        # 商品亮点策略
         # =========================
 
-        function_text = (
-            HighlightGenerator.build_function_highlight(
-                basic
-            )
+        strategy = knowledge.get(
+            "generation_strategy",
+            {}
         )
 
 
-        if function_text:
-
-            highlights.append(
-                {
-                    "type": "function",
-                    "text": function_text
-                }
-            )
-
-
-
-        # =========================
-        # 3. 产品特点
-        # =========================
-
-        feature_items = (
-            HighlightGenerator.build_feature_highlights(
-                product_core,
-                profile
-            )
+        highlight_focus = strategy.get(
+            "highlight_focus",
+            []
         )
 
 
-        for item in feature_items:
+        if isinstance(
+            highlight_focus,
+            list
+        ):
 
-            highlights.append(
-                {
-                    "type": "feature",
-                    "text": item
-                }
-            )
+            for item in highlight_focus:
+
+
+                text = (
+                    HighlightGenerator.clean_text(
+                        item
+                    )
+                )
+
+
+                if text:
+
+                    highlights.append(
+                        {
+                            "type":
+                            "feature",
+
+                            "text":
+                            text,
+                        }
+                    )
 
 
 
         # =========================
-        # 4. 兼容信息
+        # 兼容信息
         # =========================
 
-        compatibility_text = (
-            HighlightGenerator.build_compatibility_highlight(
-                compatibility
-            )
+        compatibility = knowledge.get(
+            "relationship",
+            {}
         )
 
 
-        if compatibility_text:
+        brands = compatibility.get(
+            "brands",
+            []
+        )
+
+
+        if brands:
 
             highlights.append(
                 {
-                    "type": "compatibility",
-                    "text": compatibility_text
+                    "type":
+                    "compatibility",
+
+                    "text":
+                    HighlightGenerator.build_compatibility(
+                        brands
+                    )
                 }
             )
 
@@ -168,268 +197,45 @@ class HighlightGenerator:
         )
 
 
+
+        blocked = (
+            HighlightGenerator.check_blocked_words(
+                str(highlights)
+            )
+        )
+
+
+
         return {
 
-            "highlights": highlights,
+            "highlights":
+                highlights,
 
-            "validation": {
+
+            "validation":
+            {
 
                 "compliance_ok":
-                    len(
-                        HighlightGenerator.check_blocked_words(
-                            str(highlights)
-                        )
-                    ) == 0
+                    len(blocked) == 0
 
             },
 
+
             "blocked_words":
-                HighlightGenerator.check_blocked_words(
-                    str(highlights)
-                )
+                blocked,
 
         }
-            # =========================
-    # 产品核心词
+
+
+
+    # =========================
+    # 兼容表达
     # =========================
 
     @staticmethod
-    def build_product_highlight(
-        basic,
-        profile
+    def build_compatibility(
+        brands
     ):
-
-
-        product_type = str(
-            basic.get(
-                "product_type",
-                ""
-            )
-        )
-
-
-        product_name = str(
-            basic.get(
-                "product_name",
-                ""
-            )
-        )
-
-
-        text = (
-            product_name
-            or product_type
-        ).strip()
-
-
-
-        if text:
-
-            return (
-                HighlightGenerator.clean_text(
-                    text
-                )
-            )
-
-
-        return ""
-
-
-
-    # =========================
-    # 功能提炼
-    # =========================
-
-    @staticmethod
-    def build_function_highlight(
-        basic
-    ):
-
-
-        main_function = str(
-            basic.get(
-                "main_function",
-                ""
-            )
-        ).strip()
-
-
-        if not main_function:
-
-            return ""
-
-
-
-        text = (
-            main_function
-            .lower()
-        )
-
-
-
-        # 去掉过长描述
-
-        if (
-            "restore" in text
-            or
-            "operation" in text
-        ):
-
-            return (
-                "Restores Normal Product Function"
-            )
-
-
-        if (
-            "remove" in text
-            or
-            "clean" in text
-        ):
-
-            return (
-                "Improves Cleaning Performance"
-            )
-
-
-        if (
-            "shaving" in text
-            or
-            "grooming" in text
-        ):
-
-            return (
-                "Supports Daily Grooming Needs"
-            )
-
-
-        return (
-            HighlightGenerator.title_case(
-                main_function
-            )
-        )
-
-
-
-    # =========================
-    # 产品特点
-    # =========================
-
-    @staticmethod
-    def build_feature_highlights(
-        product_core,
-        profile
-    ):
-
-
-        features = []
-
-
-        text = str(
-            product_core
-        ).lower()
-
-
-
-        source_text = (
-            str(
-                profile
-            )
-            .lower()
-        )
-
-
-
-        combined = (
-            text
-            +
-            " "
-            +
-            source_text
-        )
-
-
-
-        if "9d" in combined:
-
-            features.append(
-                "9D Floating Head Design"
-            )
-
-
-        if "6-in-1" in combined:
-
-            features.append(
-                "6-in-1 Grooming Functions"
-            )
-
-
-        if "waterproof" in combined:
-
-            features.append(
-                "Waterproof Design"
-            )
-
-
-        if "ipx7" in combined:
-
-            features.append(
-                "IPX7 Waterproof Protection"
-            )
-
-
-        if "led" in combined:
-
-            features.append(
-                "LED Display"
-            )
-
-
-        if "rechargeable" in combined:
-
-            features.append(
-                "Rechargeable Cordless Operation"
-            )
-
-
-        if "anti-tangle" in combined:
-
-            features.append(
-                "Anti-Tangle Design"
-            )
-
-
-        return features[:4]
-
-
-
-    # =========================
-    # 兼容信息
-    # =========================
-
-    @staticmethod
-    def build_compatibility_highlight(
-        compatibility
-    ):
-
-
-        if not isinstance(
-            compatibility,
-            dict
-        ):
-
-            return ""
-
-
-        brands = compatibility.get(
-            "brands",
-            []
-        )
-
-
-        if not brands:
-
-            return ""
-
 
 
         return (
@@ -448,7 +254,7 @@ class HighlightGenerator:
 
 
     # =========================
-    # 清理
+    # 去重清理
     # =========================
 
     @staticmethod
@@ -465,15 +271,10 @@ class HighlightGenerator:
         for item in highlights:
 
 
-            text = item.get(
-                "text",
-                ""
-            )
-
-
-            text = (
-                HighlightGenerator.clean_text(
-                    text
+            text = HighlightGenerator.clean_text(
+                item.get(
+                    "text",
+                    ""
                 )
             )
 
@@ -500,13 +301,17 @@ class HighlightGenerator:
 
                 result.append(
                     {
-                        "type": item.get(
+                        "type":
+                        item.get(
                             "type",
                             ""
                         ),
-                        "text": text,
+
+                        "text":
+                        text,
                     }
                 )
+
 
                 seen.add(
                     key
@@ -519,7 +324,7 @@ class HighlightGenerator:
 
 
     # =========================
-    # 文本处理
+    # 文本清理
     # =========================
 
     @staticmethod
@@ -527,25 +332,12 @@ class HighlightGenerator:
         text
     ):
 
+
         return re.sub(
             r"\s+",
             " ",
             str(text)
         ).strip()
-
-
-
-    @staticmethod
-    def title_case(
-        text
-    ):
-
-        return " ".join(
-            [
-                word.capitalize()
-                for word in str(text).split()
-            ]
-        )
 
 
 
@@ -566,9 +358,13 @@ class HighlightGenerator:
 
 
             if re.search(
-                r"\b" + re.escape(word) + r"\b",
+                r"\b"
+                +
+                re.escape(word)
+                +
+                r"\b",
                 text,
-                flags=re.I
+                flags=re.I,
             ):
 
                 found.append(
