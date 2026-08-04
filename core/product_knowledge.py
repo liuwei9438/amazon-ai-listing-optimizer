@@ -64,7 +64,9 @@ class ProductKnowledgeBuilder:
         compliance_result = ProductKnowledgeBuilder.ensure_dict(
             profile.get("compliance_result")
         )
-
+        product_core = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("product_core")
+        )
         identity = ProductKnowledgeBuilder.build_identity(
             basic_info=basic_info,
             seo=seo,
@@ -137,131 +139,7 @@ class ProductKnowledgeBuilder:
             "content_guidance": content_guidance,
             "generation_strategy": generation_strategy,
         }
-        @staticmethod
-        def build_product_identity(
-            profile: dict
-        ) -> dict:
-    
-    
-            basic = profile.get(
-                "basic_info",
-                {}
-            )
-    
-    
-            product_core = profile.get(
-                "product_core",
-                {}
-            )
-    
-    
-            seo = profile.get(
-                "seo",
-                {}
-            )
-    
-    
-            title = (
-                profile.get(
-                    "title",
-                    ""
-                )
-                or
-                profile.get(
-                    "original_title",
-                    ""
-                )
-            )
-    
-    
-            product_name = ""
-    
-    
-            # =========================
-            # 第一优先:
-            # Product Core
-            # =========================
-    
-            if isinstance(
-                product_core,
-                dict
-            ):
-    
-                product_name = (
-                    product_core.get(
-                        "product_name",
-                        ""
-                    )
-                    or
-                    product_core.get(
-                        "name",
-                        ""
-                    )
-                )
-    
-    
-    
-            # =========================
-            # 第二优先:
-            # Basic Info
-            # =========================
-    
-            if not product_name:
-    
-                if isinstance(
-                    basic,
-                    dict
-                ):
-    
-                    product_name = (
-                        basic.get(
-                            "product_name",
-                            ""
-                        )
-                        or
-                        basic.get(
-                            "product_type",
-                            ""
-                        )
-                    )
-    
-    
-    
-            # =========================
-            # 第三优先:
-            # AI 主标题
-            # =========================
-    
-            if not product_name:
-    
-                product_name = title
-    
-    
-    
-            product_name = (
-                ProductKnowledgeBuilder.clean_text(
-                    product_name
-                )
-            )
-    
-    
-            return {
-    
-                "product_name":
-                    product_name,
-    
-    
-                "core_keyword":
-                    product_name.lower(),
-    
-    
-                "category":
-                    basic.get(
-                        "category",
-                        ""
-                    )
-    
-            }
+        
     # =========================================================
     # Identity
     # =========================================================
@@ -269,6 +147,7 @@ class ProductKnowledgeBuilder:
     @staticmethod
     def build_identity(
         basic_info: Dict[str, Any],
+        product_core: Dict[str, Any],
         seo: Dict[str, Any],
         seo_intent: Dict[str, Any],
     ) -> Dict[str, Any]:
@@ -277,6 +156,8 @@ class ProductKnowledgeBuilder:
         )
 
         product_name = ProductKnowledgeBuilder.first_text(
+            product_core.get("product_name"),
+            product_core.get("name"),
             basic_info.get("product_name"),
             basic_info.get("normalized_product_name"),
         )
