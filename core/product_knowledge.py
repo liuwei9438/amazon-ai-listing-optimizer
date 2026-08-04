@@ -114,9 +114,19 @@ class ProductKnowledgeBuilder:
                 compliance=compliance_knowledge,
             )
         )
+        generation_strategy = (
+            ProductKnowledgeBuilder.build_generation_strategy(
+                identity=identity,
+                purpose=purpose,
+                relationship=relationship,
+                facts=knowledge_facts,
+                features=features,
+                seo=seo_knowledge,
+            )
+        )
 
         return {
-            "schema_version": "3.0",
+            "schema_version": "3.1",
             "identity": identity,
             "purpose": purpose,
             "relationship": relationship,
@@ -125,11 +135,7 @@ class ProductKnowledgeBuilder:
             "seo": seo_knowledge,
             "compliance": compliance_knowledge,
             "content_guidance": content_guidance,
-            "source": {
-                "generated_from": "Product Profile",
-                "ai_reanalysis_used": False,
-                "facts_invented": False,
-            },
+            "generation_strategy": generation_strategy,
         }
 
     # =========================================================
@@ -480,6 +486,202 @@ class ProductKnowledgeBuilder:
 
             "rewrite_rule": rewrite,
             "blocked_claims": blocked_claims,
+        }
+    # =========================================================
+    # Generation Strategy
+    # 内容生成策略
+    # =========================================================
+
+    @staticmethod
+    def build_generation_strategy(
+        identity: Dict[str, Any],
+        purpose: Dict[str, Any],
+        relationship: Dict[str, Any],
+        facts: Dict[str, Any],
+        features: Dict[str, Any],
+        seo: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+
+        title_focus = []
+
+        short_title_focus = []
+
+        highlight_focus = []
+
+        bullet_focus = []
+
+        title_avoid = []
+
+
+
+        # =========================
+        # 产品核心词
+        # =========================
+
+        product_name = (
+            ProductKnowledgeBuilder.first_text(
+                identity.get("product_name"),
+                identity.get("object_name"),
+                identity.get("product_type"),
+            )
+        )
+
+
+        if product_name:
+
+            title_focus.append(
+                product_name
+            )
+
+            short_title_focus.append(
+                product_name
+            )
+
+
+
+        # =========================
+        # SEO关键词
+        # =========================
+
+        primary_keywords = seo.get(
+            "primary_keywords",
+            []
+        )
+
+
+        if isinstance(
+            primary_keywords,
+            list
+        ):
+
+            title_focus.extend(
+                primary_keywords[:3]
+            )
+
+
+
+        # =========================
+        # 兼容信息
+        # 标题可用
+        # =========================
+
+        brands = relationship.get(
+            "brands",
+            []
+        )
+
+
+        models = relationship.get(
+            "models",
+            []
+        )
+
+
+        if brands:
+
+            title_focus.extend(
+                brands[:2]
+            )
+
+            short_title_focus.extend(
+                brands[:1]
+            )
+
+
+
+        if models:
+
+            title_focus.extend(
+                models[:5]
+            )
+
+
+
+        # =========================
+        # 功能
+        # Highlight/Bullet使用
+        # 不直接进入标题
+        # =========================
+
+        primary_function = purpose.get(
+            "primary_function",
+            ""
+        )
+
+
+        if primary_function:
+
+            highlight_focus.append(
+                primary_function
+            )
+
+            bullet_focus.append(
+                primary_function
+            )
+
+            title_avoid.append(
+                primary_function
+            )
+
+
+
+        # =========================
+        # 产品特点
+        # =========================
+
+        feature_list = features.get(
+            "features",
+            []
+        )
+
+
+        if isinstance(
+            feature_list,
+            list
+        ):
+
+            highlight_focus.extend(
+                feature_list[:5]
+            )
+
+            bullet_focus.extend(
+                feature_list[:5]
+            )
+
+
+
+        return {
+
+            "title_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    title_focus
+                ),
+
+
+            "title_avoid":
+                ProductKnowledgeBuilder.clean_list(
+                    title_avoid
+                ),
+
+
+            "short_title_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    short_title_focus
+                ),
+
+
+            "highlight_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    highlight_focus
+                ),
+
+
+            "bullet_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    bullet_focus
+                ),
+
         }
 
     # =========================================================
