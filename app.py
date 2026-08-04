@@ -15,6 +15,7 @@ from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 from compliance.brand_protection import protect_text
 from core import export_unchanged, integrity_report, read_workbook
+from core.product_knowledge import ProductKnowledgeBuilder
 from generator.bullet_generator import BulletGenerator
 from generator.description_generator import DescriptionGenerator
 from generator.highlight_generator import HighlightGenerator
@@ -382,6 +383,16 @@ if uploaded is not None:
             for i, record in enumerate(target_records):
                 try:
                     profile = engine.analyze(record)
+                    # =========================
+                    # Product Knowledge
+                    # 商品知识层
+                    # =========================
+                    
+                    product_knowledge = ProductKnowledgeBuilder.build(
+                        profile
+                    )
+                    
+                    profile["product_knowledge"] = product_knowledge
 
                     seo_intent = generate_primary_search(profile)
                     profile["seo_intent"] = seo_intent
