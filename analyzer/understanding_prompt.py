@@ -51,10 +51,32 @@ NON-NEGOTIABLE RULES:
     - no detected third-party brand -> generic
     - third-party brand without compatibility wording -> high_risk_brand_usage
     - never accept original/genuine/official/OEM claims as verified facts
-11. Extract the most accurate product_name.
+11. Extract product identity using product_identity.
 
-product_name means the specific product identity,
-not a broad category.
+product_identity describes the actual product structure.
+
+Do not put the complete source title into product_identity.name.
+
+Separate product information into:
+
+name:
+The core product name only.
+Remove usage scenarios, application objects, materials,
+design descriptions and marketing words.
+
+context:
+Application object, target user, device or environment.
+
+design_features:
+Physical design characteristics.
+
+functional_features:
+Confirmed product functions.
+
+usage_scenarios:
+How or where the product is used.
+
+
 12. Classify product features into different categories.
 
 Do not mix product identity, functions, usage scenarios,
@@ -77,71 +99,76 @@ Where or how the product is used.
 specifications:
 Size, voltage, dimensions, model-related or measurable facts.
 
-Do not put usage scenarios into product_name.
+Do not put usage scenarios into product_identity.name.
 
 Do not put marketing claims into factual_selling_points.
 
+
 Examples:
+
+SOURCE:
+"Alicate para Orejas de Cerdo en Forma U Acero Inoxidable"
 
 Wrong:
 
-product_name:
-"Animal Ear Marking Tool for Pigs and Sheep"
+product_identity:
+{
+"name":
+"Alicate para Orejas de Cerdo en Forma U Acero Inoxidable"
+}
 
 
 Correct:
 
-product_name:
-"Animal Ear Marker"
+product_identity:
+{
+"name":
+"Alicate para Orejas",
 
-usage_scenarios:
-"Used for livestock ear identification"
+"context":
+[
+"Animal ear marking"
+],
+
+"design_features":
+[
+"U Shape"
+],
+
+"functional_features":
+[
+"Mark animal ears"
+]
+
+}
 
 
-Wrong:
-
-product_name:
+SOURCE:
 "Vacuum Cleaner Roller Brush Remove Dirt"
 
+Wrong:
+
+product_identity:
+{
+"name":
+"Vacuum Cleaner Roller Brush Remove Dirt"
+}
+
 
 Correct:
 
-product_name:
-"Vacuum Cleaner Roller Brush"
+product_identity:
+{
+"name":
+"Vacuum Cleaner Roller Brush",
 
-functional_features:
+"functional_features":
+[
 "Helps remove dirt and debris"
-Examples:
+]
 
-Wrong:
-"Appliance Part"
+}
 
-Correct:
-"Washing Machine Start Button"
-
-
-Wrong:
-"Shaver"
-
-Correct:
-"Electric Shaver"
-
-
-Wrong:
-"Vacuum Cleaner Accessory"
-
-Correct:
-"Vacuum Cleaner Roller Brush"
 
 Do not invent unsupported products.
 Use empty value only when product identity cannot be determined.
-
-SOURCE:
-{json.dumps(source, ensure_ascii=False, default=str)}
-
-VERIFIED FACT LOCK:
-{json.dumps(fact_lock, ensure_ascii=False)}
-
-PROFILE TEMPLATE:
-{json.dumps(profile_template, ensure_ascii=False)}
-""".strip()
