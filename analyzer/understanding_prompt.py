@@ -121,7 +121,7 @@ product_identity:
 Correct:
 
 product_identity:
-{
+{{
 "name":
 "Alicate para Orejas",
 
@@ -140,7 +140,7 @@ product_identity:
 "Mark animal ears"
 ]
 
-}
+}}
 
 
 SOURCE:
@@ -158,7 +158,7 @@ product_identity:
 Correct:
 
 product_identity:
-{
+{{
 "name":
 "Vacuum Cleaner Roller Brush",
 
@@ -167,7 +167,7 @@ product_identity:
 "Helps remove dirt and debris"
 ]
 
-}
+}}
 
 
 Do not invent unsupported products.
