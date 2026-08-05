@@ -198,8 +198,16 @@ class ProductKnowledgeBuilder:
         )
         
         
-        object_name = ProductKnowledgeBuilder.normalize_product_name(
-            raw_object_name
+        identity_result = (
+            ProductKnowledgeBuilder.normalize_identity(
+                raw_object_name
+            )
+        )
+        
+        
+        object_name = identity_result.get(
+            "name",
+            ""
         )
         category = ProductKnowledgeBuilder.first_text(
             basic_info.get("category"),
@@ -213,13 +221,33 @@ class ProductKnowledgeBuilder:
         )
 
         return {
-            "object_name": object_name,
-            "product_name": ProductKnowledgeBuilder.normalize_product_name(
-                product_name
-            ),
-            "product_type": product_type,
-            "category": category,
-            "parent_product": parent_product,
+
+            "object_name":
+                object_name,
+        
+            "product_name":
+                object_name,
+        
+            "product_type":
+                product_type,
+        
+            "category":
+                category,
+        
+            "parent_product":
+                parent_product,
+        
+            "identity_context":
+                identity_result.get(
+                    "context",
+                    []
+                ),
+        
+            "identity_design_features":
+                identity_result.get(
+                    "design_features",
+                    []
+                ),
         }
     # =========================================================
     # Product Name Normalizer
