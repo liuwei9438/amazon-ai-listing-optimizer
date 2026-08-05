@@ -195,50 +195,81 @@ class BulletGenerator:
     def extract_highlights(
         highlights
     ):
-
-
+    
         result = []
-
-
+    
+    
         if isinstance(
             highlights,
             dict
         ):
-
+    
             data = highlights.get(
                 "highlights",
                 []
             )
-
-
+    
+    
             if isinstance(
                 data,
                 list
             ):
+    
+                for item in data:
+    
+                    if isinstance(
+                        item,
+                        dict
+                    ):
+    
+                        text = item.get(
+                            "text",
+                            ""
+                        )
+    
+                    else:
+    
+                        text = item
+    
+    
+                    if text:
+    
+                        result.append(
+                            str(text)
+                        )
 
-                result.extend(
-                    [
-                        str(x)
-                        for x in data
-                        if x
-                    ]
-                )
 
 
         elif isinstance(
             highlights,
             list
         ):
-
-            result.extend(
-                [
-                    str(x)
-                    for x in highlights
-                    if x
-                ]
-            )
-
-
+    
+            for item in highlights:
+    
+                if isinstance(
+                    item,
+                    dict
+                ):
+    
+                    text = item.get(
+                        "text",
+                        ""
+                    )
+    
+                else:
+    
+                    text = item
+    
+    
+                if text:
+    
+                    result.append(
+                        str(text)
+                    )
+    
+    
+    
         return BulletGenerator.remove_duplicate(
             result
         )
