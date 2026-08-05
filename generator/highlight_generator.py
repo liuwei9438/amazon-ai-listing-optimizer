@@ -57,17 +57,20 @@ class HighlightGenerator:
             "product_knowledge",
             {}
         )
-        feature_classification = knowledge.get(
-            "feature_classification",
-            {}
-        )
-
+        
+        
         if not isinstance(
             knowledge,
             dict
         ):
-
+        
             knowledge = {}
+        
+        
+        feature_classification = knowledge.get(
+            "feature_classification",
+            {}
+        )
 
 
 
@@ -126,39 +129,63 @@ class HighlightGenerator:
         )
 
 
-        highlight_focus = strategy.get(
-            "highlight_focus",
-            []
-        )
+        highlight_focus = []
 
 
+        # =================================================
+        # 新版来源:
+        # Feature Classification
+        # =================================================
+        
         if isinstance(
-            highlight_focus,
-            list
+            feature_classification,
+            dict
         ):
-
-            for item in highlight_focus:
-
-
-                text = (
-                    HighlightGenerator.clean_text(
-                        item
-                    )
+        
+        
+            highlight_focus.extend(
+                feature_classification.get(
+                    "design_features",
+                    []
                 )
-
-
-                if text:
-
-                    highlights.append(
-                        {
-                            "type":
-                            "feature",
-
-                            "text":
-                            text,
-                        }
-                    )
-
+            )
+        
+        
+            highlight_focus.extend(
+                feature_classification.get(
+                    "materials",
+                    []
+                )
+            )
+        
+        
+            highlight_focus.extend(
+                feature_classification.get(
+                    "functional_features",
+                    []
+                )
+            )
+        
+        
+            highlight_focus.extend(
+                feature_classification.get(
+                    "usage_scenarios",
+                    []
+                )
+            )
+        
+        
+        
+        # =================================================
+        # 旧逻辑备用
+        # =================================================
+        
+        if not highlight_focus:
+        
+            highlight_focus = strategy.get(
+                "highlight_focus",
+                []
+            )
 
 
         # =========================
