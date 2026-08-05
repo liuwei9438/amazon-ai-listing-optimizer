@@ -634,8 +634,9 @@ if uploaded is not None:
 
                         display_generated_content(profile)
 
-                        with st.expander("查看完整 Product Profile JSON"):
-                            st.json(profile)
+                        st.write("### 完整 Product Profile JSON")
+                        
+                        st.json(profile)
 
                 except UnderstandingError as exc:
                     st.error(
