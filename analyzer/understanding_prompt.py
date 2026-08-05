@@ -55,7 +55,62 @@ NON-NEGOTIABLE RULES:
 
 product_name means the specific product identity,
 not a broad category.
+12. Classify product features into different categories.
 
+Do not mix product identity, functions, usage scenarios,
+materials and specifications.
+
+Classify information as:
+
+materials:
+Confirmed product materials only.
+
+design_features:
+Physical design characteristics.
+
+functional_features:
+Confirmed functions or operating features.
+
+usage_scenarios:
+Where or how the product is used.
+
+specifications:
+Size, voltage, dimensions, model-related or measurable facts.
+
+Do not put usage scenarios into product_name.
+
+Do not put marketing claims into factual_selling_points.
+
+Examples:
+
+Wrong:
+
+product_name:
+"Animal Ear Marking Tool for Pigs and Sheep"
+
+
+Correct:
+
+product_name:
+"Animal Ear Marker"
+
+usage_scenarios:
+"Used for livestock ear identification"
+
+
+Wrong:
+
+product_name:
+"Vacuum Cleaner Roller Brush Remove Dirt"
+
+
+Correct:
+
+product_name:
+"Vacuum Cleaner Roller Brush"
+
+functional_features:
+"Helps remove dirt and debris"
 Examples:
 
 Wrong:
