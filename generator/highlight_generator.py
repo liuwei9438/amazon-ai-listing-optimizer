@@ -57,7 +57,10 @@ class HighlightGenerator:
             "product_knowledge",
             {}
         )
-
+        feature_classification = knowledge.get(
+            "feature_classification",
+            {}
+        )
 
         if not isinstance(
             knowledge,
