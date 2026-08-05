@@ -279,80 +279,80 @@ class DescriptionGenerator:
     def extract_highlights(
         highlights
     ):
-
+    
         result = []
-
-
-        # 新版 dict
-
+    
+    
         if isinstance(
             highlights,
             dict
         ):
-
+    
             data = highlights.get(
                 "highlights",
                 []
             )
-
-
+    
+    
             if isinstance(
                 data,
                 list
             ):
-
-                result.extend(
-                    [
-                        str(x)
-                        for x in data
-                        if x
-                    ]
-                )
-
-
-            elif isinstance(
-                data,
-                dict
-            ):
-
-                for value in data.values():
-
+    
+                for item in data:
+    
                     if isinstance(
-                        value,
-                        list
+                        item,
+                        dict
                     ):
-
-                        result.extend(
-                            [
-                                str(x)
-                                for x in value
-                                if x
-                            ]
+    
+                        text = item.get(
+                            "text",
+                            ""
                         )
-
-                    elif value:
-
+    
+                    else:
+    
+                        text = item
+    
+    
+                    if text:
+    
                         result.append(
-                            str(value)
+                            str(text)
                         )
-
-
-        # list格式
-
+    
+    
+    
         elif isinstance(
             highlights,
             list
         ):
-
-            result.extend(
-                [
-                    str(x)
-                    for x in highlights
-                    if x
-                ]
-            )
-
-
+    
+            for item in highlights:
+    
+                if isinstance(
+                    item,
+                    dict
+                ):
+    
+                    text = item.get(
+                        "text",
+                        ""
+                    )
+    
+                else:
+    
+                    text = item
+    
+    
+                if text:
+    
+                    result.append(
+                        str(text)
+                    )
+    
+    
         return DescriptionGenerator.remove_duplicate(
             result
         )
