@@ -103,7 +103,7 @@ _SCHEMA: dict[str, Any] = {
             
                 "specifications": _string_list(),
             
-            }
+            },
            "required": [
 
                 "functions",
@@ -229,7 +229,7 @@ _EMPTY_PROFILE: dict[str, Any] = {
     
         "specifications": [],
     
-    }
+    },
     "seo": {
         "main_keywords": [],
         "secondary_keywords": [],
