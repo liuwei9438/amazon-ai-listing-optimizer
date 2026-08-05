@@ -90,37 +90,40 @@ _SCHEMA: dict[str, Any] = {
             "properties": {
 
                 "functions": _string_list(),
-            
+
                 "usage_scenarios": _string_list(),
-            
+
                 "factual_selling_points": _string_list(),
-            
+
                 "materials": _string_list(),
-            
+
                 "design_features": _string_list(),
-            
+
                 "functional_features": _string_list(),
-            
+
                 "specifications": _string_list(),
-            
+
             },
-           "required": [
+
+            "required": [
 
                 "functions",
-            
+
                 "usage_scenarios",
-            
+
                 "factual_selling_points",
-            
+
                 "materials",
-            
+
                 "design_features",
-            
+
                 "functional_features",
-            
+
                 "specifications",
-            
-            ]
+
+            ],
+
+        },
         "seo": {
             "type": "object",
             "additionalProperties": False,
