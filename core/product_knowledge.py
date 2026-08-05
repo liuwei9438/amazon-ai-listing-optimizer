@@ -32,43 +32,56 @@ class ProductKnowledgeBuilder:
     def build(profile: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(profile, dict):
             profile = {}
-
+    
         basic_info = ProductKnowledgeBuilder.ensure_dict(
             profile.get("basic_info")
         )
+    
+        product_identity = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("product_identity")
+        )
+    
         product_core = ProductKnowledgeBuilder.ensure_dict(
             profile.get("product_core")
         )
+    
         brand_info = ProductKnowledgeBuilder.ensure_dict(
             profile.get("brand_info")
         )
+    
         compatibility = ProductKnowledgeBuilder.ensure_dict(
             profile.get("compatibility")
         )
+    
         facts = ProductKnowledgeBuilder.ensure_dict(
             profile.get("facts")
         )
+    
         attributes = ProductKnowledgeBuilder.ensure_dict(
             profile.get("attributes")
         )
+    
         fact_lock = ProductKnowledgeBuilder.ensure_dict(
             profile.get("fact_lock")
         )
+    
         seo = ProductKnowledgeBuilder.ensure_dict(
             profile.get("seo")
         )
+    
         seo_intent = ProductKnowledgeBuilder.ensure_dict(
             profile.get("seo_intent")
         )
+    
         compliance = ProductKnowledgeBuilder.ensure_dict(
             profile.get("compliance")
         )
+    
         compliance_result = ProductKnowledgeBuilder.ensure_dict(
             profile.get("compliance_result")
         )
-        product_core = ProductKnowledgeBuilder.ensure_dict(
-            profile.get("product_core")
-        )
+    
+    
         identity = ProductKnowledgeBuilder.build_identity(
             basic_info=basic_info,
             product_core=product_core,
@@ -76,27 +89,33 @@ class ProductKnowledgeBuilder:
             seo=seo,
             seo_intent=seo_intent,
         )
-
+    
+    
         purpose = ProductKnowledgeBuilder.build_purpose(
             profile=profile,
             basic_info=basic_info,
         )
-
+    
+    
         relationship = ProductKnowledgeBuilder.build_relationship(
             brand_info=brand_info,
             compatibility=compatibility,
         )
-
+    
+    
         knowledge_facts = ProductKnowledgeBuilder.build_facts(
             facts=facts,
             attributes=attributes,
             fact_lock=fact_lock,
         )
-
+    
+    
         features = ProductKnowledgeBuilder.build_features(
             profile=profile,
             basic_info=basic_info,
         )
+    
+    
         feature_classification = (
             ProductKnowledgeBuilder.build_feature_classification(
                 attributes=attributes,
@@ -105,19 +124,22 @@ class ProductKnowledgeBuilder:
                 purpose=purpose,
             )
         )
-
+    
+    
         seo_knowledge = ProductKnowledgeBuilder.build_seo(
             seo=seo,
             seo_intent=seo_intent,
         )
-
+    
+    
         compliance_knowledge = ProductKnowledgeBuilder.build_compliance(
             brand_info=brand_info,
             compliance=compliance,
             compliance_result=compliance_result,
             relationship=relationship,
         )
-
+    
+    
         content_guidance = (
             ProductKnowledgeBuilder.build_content_guidance(
                 identity=identity,
@@ -128,6 +150,8 @@ class ProductKnowledgeBuilder:
                 compliance=compliance_knowledge,
             )
         )
+    
+    
         generation_strategy = (
             ProductKnowledgeBuilder.build_generation_strategy(
                 identity=identity,
@@ -138,6 +162,8 @@ class ProductKnowledgeBuilder:
                 seo=seo_knowledge,
             )
         )
+    
+    
         return {
             "schema_version": "3.1",
             "identity": identity,
@@ -145,14 +171,13 @@ class ProductKnowledgeBuilder:
             "relationship": relationship,
             "facts": knowledge_facts,
             "features": features,
-            "feature_classification":
-                feature_classification,
+            "feature_classification": feature_classification,
             "seo": seo_knowledge,
             "compliance": compliance_knowledge,
             "content_guidance": content_guidance,
             "generation_strategy": generation_strategy,
         }
-        
+            
     # =========================================================
     # Identity
     # =========================================================
@@ -165,88 +190,68 @@ class ProductKnowledgeBuilder:
         seo: Dict[str, Any],
         seo_intent: Dict[str, Any],
     ) -> Dict[str, Any]:
+    
         product_type = ProductKnowledgeBuilder.clean_text(
             basic_info.get("product_type")
         )
-        main_function = ProductKnowledgeBuilder.first_text(
-            basic_info.get("main_function"),
-            basic_info.get("core_function"),
-            basic_info.get("function"),
-            basic_info.get("key_function"),
-        )
+    
+    
         product_identity = ProductKnowledgeBuilder.ensure_dict(
-            basic_info.get("product_identity")
+            product_identity
         )
-        
-        
+    
+    
         product_name = ProductKnowledgeBuilder.first_text(
+    
             product_identity.get("name"),
-        
+    
             product_core.get("product_name"),
-        
+    
             product_core.get("name"),
-        
+    
             basic_info.get("product_name"),
-        
+    
             basic_info.get("normalized_product_name"),
+    
         )
-
-        primary_keywords = ProductKnowledgeBuilder.clean_list(
-            seo.get("primary_keywords")
+    
+    
+        object_name = ProductKnowledgeBuilder.clean_text(
+            product_name
         )
-
-        primary_search = ProductKnowledgeBuilder.clean_list(
-            seo_intent.get("primary_search")
-        )
-
-        # 只在已有字段中选择名称，不创造新的商品名称。
-        raw_object_name = ProductKnowledgeBuilder.first_text(
-            product_name,
-            primary_keywords[0] if primary_keywords else "",
-            primary_search[0] if primary_search else "",
-            main_function,
-            product_type,
-        )
-        
-        
-        identity_result = (
-            ProductKnowledgeBuilder.normalize_identity(
-                raw_object_name
-            )
-        )
-        
-        
-        object_name = identity_result.get(
-            "name",
-            ""
-        )
+    
+    
         category = ProductKnowledgeBuilder.first_text(
             basic_info.get("category"),
             basic_info.get("product_category"),
         )
-
+    
+    
         parent_product = ProductKnowledgeBuilder.first_text(
             basic_info.get("parent_product"),
             basic_info.get("device_type"),
             basic_info.get("application_device"),
         )
+    
+    
         return {
-
+    
             "object_name":
                 object_name,
-        
+    
             "product_name":
                 object_name,
-        
+    
             "product_type":
                 product_type,
-        
+    
             "category":
                 category,
-        
+    
             "parent_product":
                 parent_product,
-        
+    
+    
             "context":
                 ProductKnowledgeBuilder.clean_list(
                     product_identity.get(
@@ -254,7 +259,8 @@ class ProductKnowledgeBuilder:
                         []
                     )
                 ),
-        
+    
+    
             "design_features":
                 ProductKnowledgeBuilder.clean_list(
                     product_identity.get(
@@ -262,7 +268,8 @@ class ProductKnowledgeBuilder:
                         []
                     )
                 ),
-        
+    
+    
             "functional_features":
                 ProductKnowledgeBuilder.clean_list(
                     product_identity.get(
@@ -270,7 +277,8 @@ class ProductKnowledgeBuilder:
                         []
                     )
                 ),
-        
+    
+    
             "usage_scenarios":
                 ProductKnowledgeBuilder.clean_list(
                     product_identity.get(
@@ -278,7 +286,6 @@ class ProductKnowledgeBuilder:
                         []
                     )
                 ),
-        
         }
     # =========================================================
     # Product Name Normalizer
