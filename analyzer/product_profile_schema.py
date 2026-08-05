@@ -38,6 +38,7 @@ _SCHEMA: dict[str, Any] = {
             },
         
             "required": [
+                "product_identity",
         
                 "name",
         
