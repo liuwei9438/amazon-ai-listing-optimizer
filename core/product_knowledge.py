@@ -173,10 +173,20 @@ class ProductKnowledgeBuilder:
             basic_info.get("function"),
             basic_info.get("key_function"),
         )
+        product_identity = ProductKnowledgeBuilder.ensure_dict(
+            basic_info.get("product_identity")
+        )
+        
+        
         product_name = ProductKnowledgeBuilder.first_text(
+            product_identity.get("name"),
+        
             product_core.get("product_name"),
+        
             product_core.get("name"),
+        
             basic_info.get("product_name"),
+        
             basic_info.get("normalized_product_name"),
         )
 
