@@ -96,6 +96,14 @@ class ProductKnowledgeBuilder:
             profile=profile,
             basic_info=basic_info,
         )
+        feature_classification = (
+            ProductKnowledgeBuilder.build_feature_classification(
+                attributes=attributes,
+                facts=knowledge_facts,
+                identity=identity,
+                purpose=purpose,
+            )
+        )
 
         seo_knowledge = ProductKnowledgeBuilder.build_seo(
             seo=seo,
@@ -137,6 +145,8 @@ class ProductKnowledgeBuilder:
             "relationship": relationship,
             "facts": knowledge_facts,
             "features": features,
+            "feature_classification":
+                feature_classification,
             "seo": seo_knowledge,
             "compliance": compliance_knowledge,
             "content_guidance": content_guidance,
@@ -483,7 +493,82 @@ class ProductKnowledgeBuilder:
             "features": features,
             "feature_count": len(features),
         }
-
+    @staticmethod
+    def build_feature_classification(
+        attributes: Dict[str, Any],
+        facts: Dict[str, Any],
+        identity: Dict[str, Any],
+        purpose: Dict[str, Any],
+    ) -> Dict[str, Any]:
+    
+    
+        return {
+    
+            "identity_features": (
+                ProductKnowledgeBuilder.clean_list(
+                    [
+                        identity.get(
+                            "object_name",
+                            ""
+                        )
+                    ]
+                )
+            ),
+    
+    
+            "materials": (
+                ProductKnowledgeBuilder.clean_list(
+                    attributes.get(
+                        "materials",
+                        []
+                    )
+                )
+            ),
+    
+    
+            "design_features": (
+                ProductKnowledgeBuilder.clean_list(
+                    attributes.get(
+                        "design_features",
+                        []
+                    )
+                )
+            ),
+    
+    
+            "functional_features": (
+                ProductKnowledgeBuilder.clean_list(
+                    attributes.get(
+                        "functional_features",
+                        []
+                    )
+                )
+            ),
+    
+    
+            "usage_scenarios": (
+                ProductKnowledgeBuilder.clean_list(
+                    attributes.get(
+                        "usage_scenarios",
+                        []
+                    )
+                )
+            ),
+    
+    
+            "specifications": (
+                ProductKnowledgeBuilder.clean_list(
+                    attributes.get(
+                        "specifications",
+                        []
+                    )
+                )
+            ),
+    
+    
+            "confirmed_facts": facts,
+    
+        }
     # =========================================================
     # SEO
     # =========================================================
