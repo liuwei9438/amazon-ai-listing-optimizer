@@ -37,7 +37,7 @@ class ProductKnowledgeBuilder:
             profile.get("basic_info")
         )
         product_identity = ProductKnowledgeBuilder.ensure_dict(
-            profile.get("product_identity")
+            product_identity
         )
         product_core = ProductKnowledgeBuilder.ensure_dict(
             profile.get("product_core")
