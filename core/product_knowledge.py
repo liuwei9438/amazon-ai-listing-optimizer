@@ -230,8 +230,7 @@ class ProductKnowledgeBuilder:
             basic_info.get("device_type"),
             basic_info.get("application_device"),
         )
-
-       return {
+        return {
 
             "object_name":
                 object_name,
