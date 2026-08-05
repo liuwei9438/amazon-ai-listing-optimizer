@@ -38,8 +38,7 @@ _SCHEMA: dict[str, Any] = {
             },
         
             "required": [
-                "product_identity",
-        
+               
                 "name",
         
                 "category",
@@ -73,7 +72,7 @@ _SCHEMA: dict[str, Any] = {
                 "package_contents": _string_list(),
             },
             "required": [
-                "product_identity","product_name","product_type", "category", "main_function", "quantity",
+                "product_name","product_type", "category", "main_function", "quantity",
                 "material", "color", "dimensions", "voltage", "power",
                 "package_contents",
             ],
@@ -222,7 +221,7 @@ _SCHEMA: dict[str, Any] = {
         },
     },
     "required": [
-        "basic_info", "brand_info", "compatibility", "attributes",
+        "product_identity","basic_info", "brand_info", "compatibility", "attributes",
         "seo", "compliance", "fact_lock", "source_identity",
     ],
 }
