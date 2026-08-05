@@ -16,6 +16,45 @@ _SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
+        "product_identity": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+        
+                "name": _string(),
+        
+                "category": _string(),
+        
+                "parent_product": _string(),
+        
+                "context": _string_list(),
+        
+                "design_features": _string_list(),
+        
+                "functional_features": _string_list(),
+        
+                "usage_scenarios": _string_list(),
+        
+            },
+        
+            "required": [
+        
+                "name",
+        
+                "category",
+        
+                "parent_product",
+        
+                "context",
+        
+                "design_features",
+        
+                "functional_features",
+        
+                "usage_scenarios",
+        
+            ],
+        },
         "basic_info": {
             "type": "object",
             "additionalProperties": False,
@@ -33,7 +72,7 @@ _SCHEMA: dict[str, Any] = {
                 "package_contents": _string_list(),
             },
             "required": [
-                "product_name","product_type", "category", "main_function", "quantity",
+                "product_identity","product_name","product_type", "category", "main_function", "quantity",
                 "material", "color", "dimensions", "voltage", "power",
                 "package_contents",
             ],
@@ -189,6 +228,23 @@ _SCHEMA: dict[str, Any] = {
 
 
 _EMPTY_PROFILE: dict[str, Any] = {
+        "product_identity": {
+    
+        "name": "",
+    
+        "category": "",
+    
+        "parent_product": "",
+    
+        "context": [],
+    
+        "design_features": [],
+    
+        "functional_features": [],
+    
+        "usage_scenarios": [],
+    
+    },
     "basic_info": {
         "product_name": "",
         "product_type": "",
