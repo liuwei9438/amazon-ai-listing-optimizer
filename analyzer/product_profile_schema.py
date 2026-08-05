@@ -88,12 +88,39 @@ _SCHEMA: dict[str, Any] = {
             "type": "object",
             "additionalProperties": False,
             "properties": {
+
                 "functions": _string_list(),
+            
                 "usage_scenarios": _string_list(),
+            
                 "factual_selling_points": _string_list(),
-            },
-            "required": ["functions", "usage_scenarios", "factual_selling_points"],
-        },
+            
+                "materials": _string_list(),
+            
+                "design_features": _string_list(),
+            
+                "functional_features": _string_list(),
+            
+                "specifications": _string_list(),
+            
+            }
+           "required": [
+
+                "functions",
+            
+                "usage_scenarios",
+            
+                "factual_selling_points",
+            
+                "materials",
+            
+                "design_features",
+            
+                "functional_features",
+            
+                "specifications",
+            
+            ]
         "seo": {
             "type": "object",
             "additionalProperties": False,
@@ -187,10 +214,22 @@ _EMPTY_PROFILE: dict[str, Any] = {
         "compatibility_notes": [],
     },
     "attributes": {
+
         "functions": [],
+    
         "usage_scenarios": [],
+    
         "factual_selling_points": [],
-    },
+    
+        "materials": [],
+    
+        "design_features": [],
+    
+        "functional_features": [],
+    
+        "specifications": [],
+    
+    }
     "seo": {
         "main_keywords": [],
         "secondary_keywords": [],
