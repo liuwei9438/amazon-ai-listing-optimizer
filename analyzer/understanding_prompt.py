@@ -172,3 +172,4 @@ product_identity:
 
 Do not invent unsupported products.
 Use empty value only when product identity cannot be determined.
+""".strip()
