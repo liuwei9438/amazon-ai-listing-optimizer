@@ -138,20 +138,20 @@ class ProductKnowledgeBuilder:
                 seo=seo_knowledge,
             )
         )
-    return {
-        "schema_version": "3.1",
-        "identity": identity,
-        "purpose": purpose,
-        "relationship": relationship,
-        "facts": knowledge_facts,
-        "features": features,
-        "feature_classification":
-            feature_classification,
-        "seo": seo_knowledge,
-        "compliance": compliance_knowledge,
-        "content_guidance": content_guidance,
-        "generation_strategy": generation_strategy,
-    }
+        return {
+            "schema_version": "3.1",
+            "identity": identity,
+            "purpose": purpose,
+            "relationship": relationship,
+            "facts": knowledge_facts,
+            "features": features,
+            "feature_classification":
+                feature_classification,
+            "seo": seo_knowledge,
+            "compliance": compliance_knowledge,
+            "content_guidance": content_guidance,
+            "generation_strategy": generation_strategy,
+        }
         
     # =========================================================
     # Identity
