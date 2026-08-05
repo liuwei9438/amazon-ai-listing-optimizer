@@ -36,6 +36,9 @@ class ProductKnowledgeBuilder:
         basic_info = ProductKnowledgeBuilder.ensure_dict(
             profile.get("basic_info")
         )
+        product_identity = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("product_identity")
+        )
         product_core = ProductKnowledgeBuilder.ensure_dict(
             profile.get("product_core")
         )
@@ -72,6 +75,7 @@ class ProductKnowledgeBuilder:
         identity = ProductKnowledgeBuilder.build_identity(
             basic_info=basic_info,
             product_core=product_core,
+            product_identity=product_identity,
             seo=seo,
             seo_intent=seo_intent,
         )
@@ -161,6 +165,7 @@ class ProductKnowledgeBuilder:
     def build_identity(
         basic_info: Dict[str, Any],
         product_core: Dict[str, Any],
+        product_identity: Dict[str, Any],
         seo: Dict[str, Any],
         seo_intent: Dict[str, Any],
     ) -> Dict[str, Any]:
@@ -230,7 +235,7 @@ class ProductKnowledgeBuilder:
             basic_info.get("application_device"),
         )
 
-        return {
+       return {
 
             "object_name":
                 object_name,
@@ -247,17 +252,38 @@ class ProductKnowledgeBuilder:
             "parent_product":
                 parent_product,
         
-            "identity_context":
-                identity_result.get(
-                    "context",
-                    []
+            "context":
+                ProductKnowledgeBuilder.clean_list(
+                    product_identity.get(
+                        "context",
+                        []
+                    )
                 ),
         
-            "identity_design_features":
-                identity_result.get(
-                    "design_features",
-                    []
+            "design_features":
+                ProductKnowledgeBuilder.clean_list(
+                    product_identity.get(
+                        "design_features",
+                        []
+                    )
                 ),
+        
+            "functional_features":
+                ProductKnowledgeBuilder.clean_list(
+                    product_identity.get(
+                        "functional_features",
+                        []
+                    )
+                ),
+        
+            "usage_scenarios":
+                ProductKnowledgeBuilder.clean_list(
+                    product_identity.get(
+                        "usage_scenarios",
+                        []
+                    )
+                ),
+        
         }
     # =========================================================
     # Product Name Normalizer
