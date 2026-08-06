@@ -10,12 +10,11 @@ class BulletGenerator:
 
     Bullet Generator V4
 
-    设计原则:
-    - 基于 Product Knowledge 事实生成
+    原则:
+    - 只使用 Product Knowledge 已确认信息
     - 不生成营销承诺
-    - 不扩展不存在的信息
+    - 不添加未经确认的优势
     - 不改变型号、材质、规格
-    - 保持兼容表达合规
     """
 
     BLOCKED_WORDS = [
@@ -40,7 +39,7 @@ class BulletGenerator:
     @staticmethod
     def generate(
         profile: dict,
-        highlights: Any = None
+        highlights: Any = None,
     ) -> dict:
 
         knowledge = profile.get(
@@ -50,48 +49,39 @@ class BulletGenerator:
 
         if not isinstance(
             knowledge,
-            dict
+            dict,
         ):
             knowledge = {}
 
 
         identity = knowledge.get(
             "identity",
-            {}
+            {},
         )
-
 
         purpose = knowledge.get(
             "purpose",
-            {}
+            {},
         )
-
 
         relationship = knowledge.get(
             "relationship",
-            {}
+            {},
         )
-
 
         facts = knowledge.get(
             "facts",
-            {}
+            {},
         )
-
 
         feature_classification = knowledge.get(
             "feature_classification",
-            {}
+            {},
         )
 
 
         bullets = []
 
-
-        # =========================
-        # 1. Product Identity
-        # 产品主体
-        # =========================
 
         product_name = BulletGenerator.first_text(
             identity.get("product_name"),
@@ -100,16 +90,10 @@ class BulletGenerator:
 
 
         if product_name:
-
             bullets.append(
                 product_name
             )
 
-
-        # =========================
-        # 2. Main Function
-        # 核心功能
-        # =========================
 
         primary_function = BulletGenerator.first_text(
             purpose.get("primary_function")
@@ -117,16 +101,10 @@ class BulletGenerator:
 
 
         if primary_function:
-
             bullets.append(
                 primary_function
             )
 
-
-        # =========================
-        # 3. Compatibility
-        # 兼容信息
-        # =========================
 
         compatibility_text = (
             BulletGenerator.build_compatibility(
@@ -136,16 +114,10 @@ class BulletGenerator:
 
 
         if compatibility_text:
-
             bullets.append(
                 compatibility_text
             )
 
-
-        # =========================
-        # 4. Specifications
-        # 规格事实
-        # =========================
 
         specification_text = (
             BulletGenerator.build_specifications(
@@ -155,16 +127,10 @@ class BulletGenerator:
 
 
         if specification_text:
-
             bullets.append(
                 specification_text
             )
 
-
-        # =========================
-        # 5. Features
-        # 产品特征
-        # =========================
 
         feature_text = (
             BulletGenerator.build_features(
@@ -174,13 +140,11 @@ class BulletGenerator:
 
 
         if feature_text:
-
             bullets.append(
                 feature_text
             )
 
 
-        # 清理
         bullets = [
             BulletGenerator.clean(item)
             for item in bullets
@@ -206,41 +170,38 @@ class BulletGenerator:
 
 
         return {
-
             "bullets": bullets,
 
             "validation": {
-
                 "compliance_ok":
                     len(blocked_words) == 0
-
             },
 
             "blocked_words":
                 blocked_words,
-
         }
+
+
     @staticmethod
     def build_compatibility(
-        relationship: dict
+        relationship: dict,
     ) -> str:
 
         if not isinstance(
             relationship,
-            dict
+            dict,
         ):
             return ""
 
 
         brands = relationship.get(
             "brands",
-            []
+            [],
         )
-
 
         models = relationship.get(
             "models",
-            []
+            [],
         )
 
 
@@ -276,32 +237,27 @@ class BulletGenerator:
         return (
             f"Compatible with {brand_text} models."
         )
-
-
-
     @staticmethod
     def build_specifications(
-        facts: dict
+        facts: dict,
     ) -> str:
 
         if not isinstance(
             facts,
-            dict
+            dict,
         ):
             return ""
 
 
-        result = []
+        values = []
 
 
         material = BulletGenerator.first_text(
             facts.get("material")
         )
 
-
         if material:
-
-            result.append(
+            values.append(
                 f"Material: {material}"
             )
 
@@ -310,10 +266,8 @@ class BulletGenerator:
             facts.get("dimensions")
         )
 
-
         if dimensions:
-
-            result.append(
+            values.append(
                 f"Dimensions: {dimensions}"
             )
 
@@ -322,10 +276,8 @@ class BulletGenerator:
             facts.get("weight")
         )
 
-
         if weight:
-
-            result.append(
+            values.append(
                 f"Weight: {weight}"
             )
 
@@ -334,10 +286,8 @@ class BulletGenerator:
             facts.get("voltage")
         )
 
-
         if voltage:
-
-            result.append(
+            values.append(
                 f"Voltage: {voltage}"
             )
 
@@ -346,86 +296,76 @@ class BulletGenerator:
             facts.get("power")
         )
 
-
         if power:
-
-            result.append(
+            values.append(
                 f"Power: {power}"
             )
 
 
         return "; ".join(
-            result
+            values
         )
 
 
 
     @staticmethod
     def build_features(
-        feature_classification: dict
+        feature_classification: dict,
     ) -> str:
 
         if not isinstance(
             feature_classification,
-            dict
+            dict,
         ):
             return ""
 
 
-        features = []
+        result = []
 
 
-        design_features = (
-            feature_classification.get(
-                "design_features",
-                []
-            )
-        )
-
-
-        functional_features = (
-            feature_classification.get(
-                "functional_features",
-                []
-            )
-        )
-
-
-        materials = (
-            feature_classification.get(
-                "materials",
-                []
-            )
-        )
-
-
-        for item in (
-            design_features
-            +
-            functional_features
-            +
-            materials
+        for key in (
+            "design_features",
+            "functional_features",
+            "materials",
         ):
 
-            if item:
+            items = feature_classification.get(
+                key,
+                [],
+            )
 
-                features.append(
-                    str(item)
-                )
+
+            if isinstance(
+                items,
+                list,
+            ):
+
+                for item in items:
+
+                    text = BulletGenerator.first_text(
+                        item
+                    )
+
+                    if text:
+                        result.append(
+                            text
+                        )
 
 
         return "; ".join(
-            features[:3]
+            result[:3]
         )
-            @staticmethod
+
+
+
+    @staticmethod
     def first_text(
-        *values
+        *values,
     ) -> str:
 
         for value in values:
 
             if value is None:
-
                 continue
 
 
@@ -439,6 +379,7 @@ class BulletGenerator:
                 and
                 text.lower()
                 not in [
+                    "",
                     "none",
                     "null",
                     "unknown",
@@ -447,7 +388,6 @@ class BulletGenerator:
                     "{}",
                 ]
             ):
-
                 return text
 
 
@@ -457,20 +397,20 @@ class BulletGenerator:
 
     @staticmethod
     def clean(
-        text: str
+        text: str,
     ) -> str:
 
         return re.sub(
             r"\s+",
             " ",
-            str(text)
+            str(text),
         ).strip()
 
 
 
     @staticmethod
     def remove_duplicate(
-        items
+        items,
     ):
 
         result = []
@@ -504,7 +444,7 @@ class BulletGenerator:
 
     @staticmethod
     def check_blocked_words(
-        text
+        text,
     ):
 
         found = []
@@ -519,7 +459,7 @@ class BulletGenerator:
                 +
                 r"\b",
                 str(text),
-                flags=re.I
+                flags=re.I,
             ):
 
                 found.append(
