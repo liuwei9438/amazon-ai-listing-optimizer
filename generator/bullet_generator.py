@@ -8,14 +8,16 @@ class BulletGenerator:
     """
     Amazon AI Listing Optimizer
 
-    Bullet Generator V4
+    Bullet Generator V5
 
     原则:
     - 只使用 Product Knowledge 已确认信息
     - 不生成营销承诺
-    - 不添加未经确认的优势
+    - 不添加未经确认优势
     - 不改变型号、材质、规格
+    - 五点负责解释商品事实
     """
+
 
     BLOCKED_WORDS = [
         "best",
@@ -47,6 +49,7 @@ class BulletGenerator:
             {}
         )
 
+
         if not isinstance(
             knowledge,
             dict,
@@ -59,20 +62,24 @@ class BulletGenerator:
             {},
         )
 
+
         purpose = knowledge.get(
             "purpose",
             {},
         )
+
 
         relationship = knowledge.get(
             "relationship",
             {},
         )
 
+
         facts = knowledge.get(
             "facts",
             {},
         )
+
 
         feature_classification = knowledge.get(
             "feature_classification",
@@ -83,28 +90,51 @@ class BulletGenerator:
         bullets = []
 
 
-        product_name = BulletGenerator.first_text(
-            identity.get("product_name"),
-            identity.get("object_name"),
+        # =========================
+        # Bullet 1
+        # 产品定位
+        # =========================
+
+        product_text = (
+            BulletGenerator.build_product_identity(
+                identity,
+                relationship,
+            )
         )
 
 
-        if product_name:
+        if product_text:
+
             bullets.append(
-                product_name
+                product_text
             )
 
 
-        primary_function = BulletGenerator.first_text(
-            purpose.get("primary_function")
+
+        # =========================
+        # Bullet 2
+        # 核心功能
+        # =========================
+
+        function_text = (
+            BulletGenerator.build_function(
+                purpose
+            )
         )
 
 
-        if primary_function:
+        if function_text:
+
             bullets.append(
-                primary_function
+                function_text
             )
 
+
+
+        # =========================
+        # Bullet 3
+        # 兼容信息
+        # =========================
 
         compatibility_text = (
             BulletGenerator.build_compatibility(
@@ -114,10 +144,17 @@ class BulletGenerator:
 
 
         if compatibility_text:
+
             bullets.append(
                 compatibility_text
             )
 
+
+
+        # =========================
+        # Bullet 4
+        # 规格参数
+        # =========================
 
         specification_text = (
             BulletGenerator.build_specifications(
@@ -127,22 +164,32 @@ class BulletGenerator:
 
 
         if specification_text:
+
             bullets.append(
                 specification_text
             )
 
 
+
+        # =========================
+        # Bullet 5
+        # 产品特点
+        # =========================
+
         feature_text = (
             BulletGenerator.build_features(
-                feature_classification
+                feature_classification,
+                identity,
             )
         )
 
 
         if feature_text:
+
             bullets.append(
                 feature_text
             )
+
 
 
         bullets = [
@@ -170,18 +217,85 @@ class BulletGenerator:
 
 
         return {
-            "bullets": bullets,
 
-            "validation": {
+            "bullets":
+                bullets,
+
+
+            "validation":
+            {
+
                 "compliance_ok":
-                    len(blocked_words) == 0
+                    len(blocked_words) == 0,
+
             },
+
 
             "blocked_words":
                 blocked_words,
+
         }
 
 
+
+    @staticmethod
+    def build_product_identity(
+        identity: dict,
+        relationship: dict,
+    ) -> str:
+
+        product_name = BulletGenerator.first_text(
+            identity.get("product_name"),
+            identity.get("object_name"),
+        )
+
+
+        if not product_name:
+
+            return ""
+
+
+        brands = relationship.get(
+            "brands",
+            [],
+        )
+
+
+        parent_product = BulletGenerator.first_text(
+            identity.get("parent_product")
+        )
+
+
+        if brands and parent_product:
+
+            return (
+                f"Compatible replacement {product_name} "
+                f"for {brands[0]} {parent_product} models."
+            )
+
+
+        return product_name
+
+
+
+    @staticmethod
+    def build_function(
+        purpose: dict,
+    ) -> str:
+
+        function = BulletGenerator.first_text(
+            purpose.get("primary_function")
+        )
+
+
+        if not function:
+
+            return ""
+
+
+        return (
+            f"Function: Used to {function.lower()}."
+        )
     @staticmethod
     def build_compatibility(
         relationship: dict,
@@ -199,6 +313,7 @@ class BulletGenerator:
             [],
         )
 
+
         models = relationship.get(
             "models",
             [],
@@ -206,6 +321,7 @@ class BulletGenerator:
 
 
         if not brands:
+
             return ""
 
 
@@ -219,7 +335,7 @@ class BulletGenerator:
 
         if models:
 
-            model_text = " ".join(
+            model_text = ", ".join(
                 [
                     str(x)
                     for x in models[:4]
@@ -228,15 +344,18 @@ class BulletGenerator:
 
 
             return (
-                f"Compatible with {brand_text} "
+                f"Compatibility: Compatible with {brand_text} "
                 f"{model_text} models. "
                 "Please verify compatibility before purchase."
             )
 
 
         return (
-            f"Compatible with {brand_text} models."
+            f"Compatibility: Compatible with {brand_text} models."
         )
+
+
+
     @staticmethod
     def build_specifications(
         facts: dict,
@@ -246,64 +365,79 @@ class BulletGenerator:
             facts,
             dict,
         ):
+
             return ""
 
 
         values = []
 
 
-        material = BulletGenerator.first_text(
+        material = BulletGenerator.first_value(
             facts.get("material")
         )
 
         if material:
+
             values.append(
                 f"Material: {material}"
             )
 
 
-        dimensions = BulletGenerator.first_text(
+        dimensions = BulletGenerator.first_value(
             facts.get("dimensions")
         )
 
         if dimensions:
+
             values.append(
                 f"Dimensions: {dimensions}"
             )
 
 
-        weight = BulletGenerator.first_text(
+        weight = BulletGenerator.first_value(
             facts.get("weight")
         )
 
         if weight:
+
             values.append(
                 f"Weight: {weight}"
             )
 
 
-        voltage = BulletGenerator.first_text(
+        voltage = BulletGenerator.first_value(
             facts.get("voltage")
         )
 
         if voltage:
+
             values.append(
                 f"Voltage: {voltage}"
             )
 
 
-        power = BulletGenerator.first_text(
+        power = BulletGenerator.first_value(
             facts.get("power")
         )
 
         if power:
+
             values.append(
                 f"Power: {power}"
             )
 
 
-        return "; ".join(
-            values
+        if not values:
+
+            return ""
+
+
+        return (
+            "Specifications: "
+            +
+            "; ".join(values)
+            +
+            "."
         )
 
 
@@ -311,16 +445,18 @@ class BulletGenerator:
     @staticmethod
     def build_features(
         feature_classification: dict,
+        identity: dict,
     ) -> str:
 
         if not isinstance(
             feature_classification,
             dict,
         ):
+
             return ""
 
 
-        result = []
+        features = []
 
 
         for key in (
@@ -342,18 +478,39 @@ class BulletGenerator:
 
                 for item in items:
 
-                    text = BulletGenerator.first_text(
+                    value = BulletGenerator.first_value(
                         item
                     )
 
-                    if text:
-                        result.append(
-                            text
+                    if value:
+
+                        features.append(
+                            value
                         )
 
 
-        return "; ".join(
-            result[:3]
+        if not features:
+
+            product_name = BulletGenerator.first_text(
+                identity.get("product_name"),
+                identity.get("object_name"),
+            )
+
+            if product_name:
+
+                return (
+                    f"Features: {product_name}."
+                )
+
+
+        return (
+            "Features: "
+            +
+            "; ".join(
+                features[:3]
+            )
+            +
+            "."
         )
 
 
@@ -365,33 +522,71 @@ class BulletGenerator:
 
         for value in values:
 
-            if value is None:
-                continue
-
-
-            text = str(
+            text = BulletGenerator.first_value(
                 value
-            ).strip()
+            )
 
+            if text:
 
-            if (
-                text
-                and
-                text.lower()
-                not in [
-                    "",
-                    "none",
-                    "null",
-                    "unknown",
-                    "n/a",
-                    "[]",
-                    "{}",
-                ]
-            ):
                 return text
 
 
         return ""
+
+
+
+    @staticmethod
+    def first_value(
+        value,
+    ) -> str:
+
+        if value is None:
+
+            return ""
+
+
+        if isinstance(
+            value,
+            list,
+        ):
+
+            if not value:
+
+                return ""
+
+            value = value[0]
+
+
+        if isinstance(
+            value,
+            dict,
+        ):
+
+            value = value.get(
+                "value",
+                "",
+            )
+
+
+        text = str(
+            value
+        ).strip()
+
+
+        if text.lower() in (
+            "",
+            "none",
+            "null",
+            "unknown",
+            "n/a",
+            "[]",
+            "{}",
+        ):
+
+            return ""
+
+
+        return text
 
 
 
