@@ -88,7 +88,91 @@ Confirmed product functions.
 
 usage_scenarios:
 How or where the product is used.
+IDENTIFIER AND SPECIFICATION UNDERSTANDING RULE:
 
+Analyze all numbers, codes, and alphanumeric values
+based on their product meaning.
+
+Do not classify values only by their appearance.
+
+Determine whether each value is:
+
+- model_number
+- part_number
+- series_number
+- specification
+- dimension
+- unknown_code
+
+
+Examples:
+
+"EAU64824402"
+may be a model number or part number.
+
+"ADJ73992103"
+may be a replacement part number.
+
+"15 x 4.6 cm"
+is a dimension specification.
+
+"161 g"
+is a weight specification.
+
+"12V"
+is a voltage specification.
+
+
+Do not place specifications into identifiers.
+
+Do not place dimensions, weight, voltage, or power
+into model_numbers.
+
+
+SPECIFICATION RULE:
+
+Extract measurable facts separately.
+
+Classify:
+
+dimensions:
+Size, length, width, height.
+
+weight:
+Weight information.
+
+voltage:
+Electrical voltage.
+
+power:
+Power ratings.
+
+capacity:
+Capacity information.
+
+
+SEARCH STRATEGY RULE:
+
+Generate search strategy only from verified product information.
+
+Do not invent keywords, models, or identifiers.
+
+If verified identifiers exist:
+
+primary_model:
+Choose the most important identifier for product search.
+
+title_identifiers:
+Choose only high-value identifiers suitable for title usage.
+
+bullet_identifiers:
+Choose additional identifiers useful for compatibility explanation.
+
+backend_identifiers:
+Keep remaining verified identifiers.
+
+If no verified identifiers exist,
+leave these fields empty.
 
 FACT PROTECTION RULE:
 
