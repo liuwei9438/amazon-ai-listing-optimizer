@@ -757,13 +757,21 @@ class ProductKnowledgeBuilder:
             )
         )
     
-        compatible_models = (
+       compatible_models = (
             ProductKnowledgeBuilder.clean_list(
                 compatibility.get("models")
             )
         )
-    
-    
+        
+        
+        if not compatible_models:
+        
+            compatible_models = (
+                ProductKnowledgeBuilder.clean_list(
+                    compatibility.get("compatible_models")
+                )
+            )
+
         # =========================
         # 标题型号
         # =========================
