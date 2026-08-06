@@ -57,7 +57,10 @@ class TitleGenerator:
             "seo",
             {}
         )
-
+        generation_strategy = knowledge.get(
+            "generation_strategy",
+            {}
+        )
 
         title_parts = []
 
@@ -88,69 +91,43 @@ class TitleGenerator:
 
 
         # =========================
-        # Model Priority
-        # 主型号
+        # Generation Strategy Models
+        # 使用策略层决定标题型号
         # =========================
-
-        model_priority = relationship.get(
-            "model_priority",
-            {}
-        )
-
-
-        primary_model = model_priority.get(
-            "primary_model",
-            ""
-        )
-
-
-        secondary_models = model_priority.get(
-            "secondary_models",
+        
+        
+        title_focus = generation_strategy.get(
+            "title_focus",
             []
         )
-
-
+        
+        
         selected_models = []
-
+        
         removed_models = []
-
-
-        if primary_model:
-
-            selected_models.append(
-                primary_model
-            )
-
-
-        # 次型号最多补充1个
-        if secondary_models:
-
-            if len(
-                " ".join(title_parts + selected_models + [secondary_models[0]])
-            ) < 70:
-
-                selected_models.append(
-                    secondary_models[0]
-                )
-
-
-        all_models = (
-            [primary_model]
-            +
-            secondary_models
-            +
-            model_priority.get(
-                "backend_models",
-                []
-            )
-        )
-
-
-        removed_models = [
-            model
-            for model in all_models
-            if model not in selected_models
-        ]
+        
+        
+        if isinstance(title_focus, list):
+        
+            for item in title_focus:
+        
+                if not isinstance(item, str):
+                    continue
+        
+                item = item.strip()
+        
+                if not item:
+                    continue
+        
+                # 产品名不要重复进入型号列表
+                if item.lower() == product_name.lower():
+                    continue
+        
+                selected_models.append(item)
+        
+        
+        # 标题型号最多保留一个
+        selected_models = selected_models[:1]
 
 
 
