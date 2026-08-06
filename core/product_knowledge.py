@@ -404,7 +404,41 @@ class ProductKnowledgeBuilder:
     # =========================================================
     # Relationship / Compatibility
     # =========================================================
+    @staticmethod
+    def build_model_priority(
+        models: List[str],
+    ) -> Dict[str, Any]:
 
+        models = ProductKnowledgeBuilder.clean_list(
+            models
+        )
+
+        if not models:
+            return {
+                "primary_model": "",
+                "secondary_models": [],
+                "backend_models": [],
+            }
+
+
+        primary_model = models[0]
+
+
+        secondary_models = models[1:3]
+
+
+        backend_models = models[3:]
+
+
+        return {
+            "primary_model": primary_model,
+
+            "secondary_models":
+                secondary_models,
+
+            "backend_models":
+                backend_models,
+        }
     @staticmethod
     def build_relationship(
         brand_info: Dict[str, Any],
@@ -453,14 +487,37 @@ class ProductKnowledgeBuilder:
             )
 
         return {
-            "brand_relationship": relationship,
-            "compatibility_phrase": compatibility_phrase,
-            "brands": brands,
-            "models": models,
-            "series": series,
-            "part_numbers": part_numbers,
-        }
 
+            "brand_relationship":
+                relationship,
+        
+        
+            "compatibility_phrase":
+                compatibility_phrase,
+        
+        
+            "brands":
+                brands,
+        
+        
+            "models":
+                models,
+        
+        
+            "model_priority":
+                ProductKnowledgeBuilder.build_model_priority(
+                    models
+                ),
+        
+        
+            "series":
+                series,
+        
+        
+            "part_numbers":
+                part_numbers,
+        
+        }
     # =========================================================
     # Facts
     # =========================================================
