@@ -220,7 +220,7 @@ class BulletGenerator:
                 blocked_words,
 
         }
-            @staticmethod
+    @staticmethod
     def build_compatibility(
         relationship: dict
     ) -> str:
