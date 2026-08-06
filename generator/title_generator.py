@@ -26,49 +26,137 @@ class TitleGenerator:
     @staticmethod
     def generate(profile: dict) -> dict:
         """
-        Generate Amazon title from Product Profile
+        Generate Amazon title from Product Knowledge.
         """
 
-
-        basic = profile.get(
-            "basic_info",
+        knowledge = profile.get(
+            "product_knowledge",
             {}
         )
 
-        compatibility = profile.get(
-            "compatibility",
+        if not isinstance(
+            knowledge,
+            dict
+        ):
+            knowledge = {}
+
+
+        identity = knowledge.get(
+            "identity",
             {}
         )
 
-        seo = profile.get(
+
+        relationship = knowledge.get(
+            "relationship",
+            {}
+        )
+
+
+        seo = knowledge.get(
             "seo",
-            {})
+            {}
+        )
 
 
+        title_parts = []
 
-        product_type = basic.get(
-            "product_type",
+
+        # =========================
+        # Product Identity
+        # 商品主体
+        # =========================
+
+        product_name = (
+            identity.get(
+                "product_name"
+            )
+            or
+            identity.get(
+                "object_name"
+            )
+            or
             ""
         )
 
 
-        main_function = basic.get(
-            "main_function",
+        if product_name:
+
+            title_parts.append(
+                product_name
+            )
+
+
+        # =========================
+        # Model Priority
+        # 主型号
+        # =========================
+
+        model_priority = relationship.get(
+            "model_priority",
+            {}
+        )
+
+
+        primary_model = model_priority.get(
+            "primary_model",
             ""
         )
 
 
-        brands = compatibility.get(
-            "brands",
+        secondary_models = model_priority.get(
+            "secondary_models",
             []
         )
 
 
-        models = compatibility.get(
-            "models",
-            []
+        selected_models = []
+
+        removed_models = []
+
+
+        if primary_model:
+
+            selected_models.append(
+                primary_model
+            )
+
+
+        # 次型号最多补充1个
+        if secondary_models:
+
+            if len(
+                " ".join(title_parts + selected_models + [secondary_models[0]])
+            ) < 70:
+
+                selected_models.append(
+                    secondary_models[0]
+                )
+
+
+        all_models = (
+            [primary_model]
+            +
+            secondary_models
+            +
+            model_priority.get(
+                "backend_models",
+                []
+            )
         )
 
+
+        removed_models = [
+            model
+            for model in all_models
+            if model not in selected_models
+        ]
+
+
+
+        # =========================
+        # SEO Keywords
+        # =========================
 
         primary_keywords = seo.get(
             "primary_keywords",
@@ -76,232 +164,118 @@ class TitleGenerator:
         )
 
 
+        if isinstance(
+            primary_keywords,
+            list
+        ):
 
-        title_parts = []
+            for keyword in primary_keywords:
+
+                keyword = str(
+                    keyword
+                ).strip()
+
+
+                if (
+                    keyword
+                    and keyword.lower()
+                    not in product_name.lower()
+                ):
+
+                    title_parts.append(
+                        keyword
+                    )
+
+                    break
 
 
 
-        # -------------------------
-        # Compatible brand
-        # -------------------------
+        # =========================
+        # Compatibility
+        # =========================
+
+        brands = relationship.get(
+            "brands",
+            []
+        )
+
 
         if brands:
 
             title_parts.append(
-                f"Compatible with {brands[0]}"
-            )
-
-
-
-        # -------------------------
-        # Main keyword
-        # -------------------------
-
-        main_keyword = ""
-
-
-        if primary_keywords:
-
-            main_keyword = primary_keywords[0]
-
-
-        elif main_function:
-
-            main_keyword = main_function
-
-
-
-        # avoid duplicate words
-
-        if product_type:
-
-
-            product_words = (
-                product_type
-                .lower()
-                .split()
-            )
-
-
-            keyword_words = (
-                main_keyword
-                .lower()
-                .split()
-            )
-
-
-            overlap = len(
-                set(product_words)
-                &
-                set(keyword_words)
-            )
-
-
-            if overlap == 0:
-
-                main_keyword = (
-                    main_keyword
-                    +
-                    " "
-                    +
-                    product_type
+                "Compatible with "
+                +
+                ", ".join(
+                    brands[:2]
                 )
-
-
-
-        if main_keyword:
-
-            title_parts.append(
-                main_keyword
             )
 
 
 
-        # -------------------------
-        # Model ranking
-        # -------------------------
-
-        selected_models = []
-
-        removed_models = []
-
-
-
-        if models:
-
-
-            ranked_models = (
-                ModelRanker.rank(models)
-            )
-
-
-            selected_models = (
-                ranked_models[:3]
-            )
-
-
-            removed_models = [
-                m
-                for m in ranked_models
-                if m not in selected_models
-            ]
-
-
-
-        # -------------------------
-        # Protect 75 characters
-        # -------------------------
-
-        final_models = []
-
-
-        for model in selected_models:
-
-
-            test_title = (
-
-                " ".join(title_parts)
-
-                +
-
-                " "
-
-                +
-
-                " ".join(final_models)
-
-                +
-
-                " "
-
-                +
-
-                model
-
-            )
-
-
-            if len(test_title) <= 75:
-
-                final_models.append(model)
-
-
-            else:
-
-                removed_models.append(model)
-
-
+        # =========================
+        # Add models
+        # =========================
 
         title_parts.extend(
-            final_models
+            selected_models
         )
 
 
-
-        title = (
-            " ".join(title_parts)
+        title = " ".join(
+            title_parts
         )
 
 
-
-        # -------------------------
-        # Clean title
-        # -------------------------
-
-        title = (
-            TitleGenerator
-            .clean_title(title)
+        title = TitleGenerator.clean_title(
+            title
         )
 
 
-
-        title = (
-            TitleGenerator
-            .format_title_case(title)
+        title = TitleGenerator.format_title_case(
+            title
         )
 
 
-
-        title = (
-            TitleGenerator
-            .limit_length(
-                title,
-                75
-            )
+        title = TitleGenerator.limit_length(
+            title,
+            75
         )
-
 
 
         blocked_found = (
-            TitleGenerator
-            .check_blocked_words(title)
+            TitleGenerator.check_blocked_words(
+                title
+            )
         )
-
 
 
         return {
 
-
-            "title": title,
-
-
-            "selected_models": final_models,
+            "title":
+                title,
 
 
-            "removed_models": removed_models,
+            "selected_models":
+                selected_models,
 
 
-            "character_count": len(title),
+            "removed_models":
+                removed_models,
 
 
-            "validation": {
+            "character_count":
+                len(title),
+
+
+            "validation":
+            {
 
                 "length_ok":
                     len(title) <= 75,
 
 
                 "compliance_ok":
-                    len(blocked_found) == 0
+                    len(blocked_found) == 0,
 
             },
 
@@ -311,11 +285,9 @@ class TitleGenerator:
 
 
             "brand_check":
-                "passed"
+                "passed",
 
         }
-
-
 
     @staticmethod
     def clean_title(text: str):
