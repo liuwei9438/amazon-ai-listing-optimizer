@@ -36,6 +36,24 @@ _SCHEMA: dict[str, Any] = {
                 "usage_scenarios": _string_list(),
         
             },
+               "required": [
+               
+                "name",
+        
+                "category",
+        
+                "parent_product",
+        
+                "context",
+        
+                "design_features",
+        
+                "functional_features",
+        
+                "usage_scenarios",
+        
+            ],
+        },
             "identifiers": {
                 "type": "object",
                 "additionalProperties": False,
@@ -64,24 +82,7 @@ _SCHEMA: dict[str, Any] = {
             ],
         },
         
-            "required": [
-               
-                "name",
-        
-                "category",
-        
-                "parent_product",
-        
-                "context",
-        
-                "design_features",
-        
-                "functional_features",
-        
-                "usage_scenarios",
-        
-            ],
-        },
+         
         "basic_info": {
             "type": "object",
             "additionalProperties": False,
