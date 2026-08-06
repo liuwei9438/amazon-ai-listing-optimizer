@@ -236,31 +236,15 @@ _SCHEMA: dict[str, Any] = {
 
             },
 
-            "required": [
+           "required": [
             
-                "product_identity",
+                "primary_model",
             
-                "identifiers",
+                "title_identifiers",
             
-                "basic_info",
+                "bullet_identifiers",
             
-                "brand_info",
-            
-                "compatibility",
-            
-                "specifications",
-            
-                "attributes",
-            
-                "search_strategy",
-            
-                "seo",
-            
-                "compliance",
-            
-                "fact_lock",
-            
-                "source_identity",
+                "backend_identifiers",
             
             ]
         },
@@ -322,9 +306,32 @@ _SCHEMA: dict[str, Any] = {
         },
     },
     "required": [
-        "product_identity","basic_info", "brand_info", "compatibility", "attributes",
-        "seo", "compliance", "fact_lock", "source_identity",
-    ],
+
+        "product_identity",
+    
+        "identifiers",
+    
+        "basic_info",
+    
+        "brand_info",
+    
+        "compatibility",
+    
+        "specifications",
+    
+        "attributes",
+    
+        "search_strategy",
+    
+        "seo",
+    
+        "compliance",
+    
+        "fact_lock",
+    
+        "source_identity",
+    
+    ]
 }
 
 
