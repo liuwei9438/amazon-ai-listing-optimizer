@@ -1,123 +1,136 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 
 class BulletGenerator:
-
     """
     Amazon AI Listing Optimizer
 
-    Bullet Generator V2.4.3 Final
+    Bullet Generator V4
 
-    规则:
-    - 基于 Highlight 生成 Bullet
-    - 不绑定具体产品类型
-    - Highlight 提供产品特征
-    - Bullet 负责解释购买价值
+    设计原则:
+    - 基于 Product Knowledge 事实生成
+    - 不生成营销承诺
+    - 不扩展不存在的信息
+    - 不改变型号、材质、规格
+    - 保持兼容表达合规
     """
 
-
     BLOCKED_WORDS = [
-
         "best",
         "best seller",
         "#1",
-
         "premium",
         "original",
         "genuine",
         "official",
         "authentic",
-
         "discount",
         "promotion",
-
         "perfect",
         "amazing",
-
         "top quality",
         "high quality",
-
+        "oem",
     ]
 
 
     @staticmethod
     def generate(
         profile: dict,
-        highlights
+        highlights: Any = None
     ) -> dict:
+
+        knowledge = profile.get(
+            "product_knowledge",
+            {}
+        )
+
+        if not isinstance(
+            knowledge,
+            dict
+        ):
+            knowledge = {}
+
+
+        identity = knowledge.get(
+            "identity",
+            {}
+        )
+
+
+        purpose = knowledge.get(
+            "purpose",
+            {}
+        )
+
+
+        relationship = knowledge.get(
+            "relationship",
+            {}
+        )
+
+
+        facts = knowledge.get(
+            "facts",
+            {}
+        )
+
+
+        feature_classification = knowledge.get(
+            "feature_classification",
+            {}
+        )
 
 
         bullets = []
 
 
-        compatibility = profile.get(
-            "compatibility",
-            {}
+        # =========================
+        # 1. Product Identity
+        # 产品主体
+        # =========================
+
+        product_name = BulletGenerator.first_text(
+            identity.get("product_name"),
+            identity.get("object_name"),
         )
 
 
-        highlight_items = (
-            BulletGenerator.extract_highlights(
-                highlights
+        if product_name:
+
+            bullets.append(
+                product_name
             )
+
+
+        # =========================
+        # 2. Main Function
+        # 核心功能
+        # =========================
+
+        primary_function = BulletGenerator.first_text(
+            purpose.get("primary_function")
         )
 
 
+        if primary_function:
 
-        # =========================
-        # Bullet 1
-        # 产品核心价值
-        # =========================
-
-        if highlight_items:
-
-            first_bullet = (
-                BulletGenerator.expand_core_feature(
-                    highlight_items[0]
-                )
+            bullets.append(
+                primary_function
             )
 
 
-            if first_bullet:
-
-                bullets.append(
-                    first_bullet
-                )
-
-
-
         # =========================
-        # Bullet 2-4
-        # 特征展开
-        # =========================
-
-        for item in highlight_items[1:]:
-
-
-            expanded = (
-                BulletGenerator.expand_feature(
-                    item
-                )
-            )
-
-
-            if expanded:
-
-                bullets.append(
-                    expanded
-                )
-
-
-
-        # =========================
+        # 3. Compatibility
         # 兼容信息
         # =========================
 
         compatibility_text = (
             BulletGenerator.build_compatibility(
-                compatibility
+                relationship
             )
         )
 
@@ -129,29 +142,49 @@ class BulletGenerator:
             )
 
 
-
         # =========================
-        # 通用购买价值
+        # 4. Specifications
+        # 规格事实
         # =========================
 
-        if len(bullets) < 5:
+        specification_text = (
+            BulletGenerator.build_specifications(
+                facts
+            )
+        )
+
+
+        if specification_text:
 
             bullets.append(
-                "Designed as a practical solution for maintaining normal product operation."
+                specification_text
             )
 
 
-
         # =========================
+        # 5. Features
+        # 产品特征
+        # =========================
+
+        feature_text = (
+            BulletGenerator.build_features(
+                feature_classification
+            )
+        )
+
+
+        if feature_text:
+
+            bullets.append(
+                feature_text
+            )
+
+
         # 清理
-        # =========================
-
         bullets = [
-            BulletGenerator.clean(
-                x
-            )
-            for x in bullets
-            if x
+            BulletGenerator.clean(item)
+            for item in bullets
+            if item
         ]
 
 
@@ -184,248 +217,35 @@ class BulletGenerator:
             },
 
             "blocked_words":
-                blocked_words
+                blocked_words,
 
         }
-            # =========================
-    # Highlight解析
-    # =========================
-
-    @staticmethod
-    def extract_highlights(
-        highlights
-    ):
-    
-        result = []
-    
-    
-        if isinstance(
-            highlights,
-            dict
-        ):
-    
-            data = highlights.get(
-                "highlights",
-                []
-            )
-    
-    
-            if isinstance(
-                data,
-                list
-            ):
-    
-                for item in data:
-    
-                    if isinstance(
-                        item,
-                        dict
-                    ):
-    
-                        text = item.get(
-                            "text",
-                            ""
-                        )
-    
-                    else:
-    
-                        text = item
-    
-    
-                    if text:
-    
-                        result.append(
-                            str(text)
-                        )
-
-
-
-        elif isinstance(
-            highlights,
-            list
-        ):
-    
-            for item in highlights:
-    
-                if isinstance(
-                    item,
-                    dict
-                ):
-    
-                    text = item.get(
-                        "text",
-                        ""
-                    )
-    
-                else:
-    
-                    text = item
-    
-    
-                if text:
-    
-                    result.append(
-                        str(text)
-                    )
-    
-    
-    
-        return BulletGenerator.remove_duplicate(
-            result
-        )
-
-
-
-    # =========================
-    # 第一条：核心特征展开
-    # =========================
-
-    @staticmethod
-    def expand_core_feature(
-        feature
-    ):
-
-
-        text = str(
-            feature
-        ).strip()
-
-
-
-        if not text:
-
-            return ""
-
-
-
-        return (
-            f"Compatible replacement solution featuring {text.lower()} "
-            "designed to support normal product operation."
-        )
-
-
-
-    # =========================
-    # 后续特征展开
-    # =========================
-
-    @staticmethod
-    def expand_feature(
-        feature
-    ):
-
-
-        text = str(
-            feature
-        ).strip()
-
-
-        lower = text.lower()
-
-
-
-        if not text:
-
-            return ""
-
-
-
-        # 兼容信息不在这里展开
-
-        if "compatible" in lower:
-
-            return ""
-
-
-
-        if "waterproof" in lower:
-
-            return (
-                "Waterproof design supports "
-                "convenient use in different conditions."
-            )
-
-
-
-        if "rechargeable" in lower:
-
-            return (
-                "Rechargeable operation provides "
-                "convenient everyday usage."
-            )
-
-
-
-        if "led" in lower:
-
-            return (
-                "LED display provides clear "
-                "usage information during operation."
-            )
-
-
-
-        if "floating head" in lower:
-
-            return (
-                "Floating head design helps provide "
-                "flexible operation for different usage needs."
-            )
-
-
-
-        if "replacement" in lower:
-
-            return (
-                "Designed as a practical replacement "
-                "solution for compatible devices."
-            )
-
-
-
-        return (
-            f"{text} provides a practical "
-            "product feature for daily use."
-        )
-
-
-
-    # =========================
-    # 兼容信息
-    # =========================
-
-    @staticmethod
+            @staticmethod
     def build_compatibility(
-        compatibility
-    ):
-
+        relationship: dict
+    ) -> str:
 
         if not isinstance(
-            compatibility,
+            relationship,
             dict
         ):
-
             return ""
 
 
-
-        brands = compatibility.get(
+        brands = relationship.get(
             "brands",
             []
         )
 
 
-        models = compatibility.get(
+        models = relationship.get(
             "models",
             []
         )
 
 
-
         if not brands:
-
             return ""
-
 
 
         brand_text = ", ".join(
@@ -434,7 +254,6 @@ class BulletGenerator:
                 for x in brands[:3]
             ]
         )
-
 
 
         if models:
@@ -460,20 +279,203 @@ class BulletGenerator:
 
 
 
-    # =========================
-    # 去重
-    # =========================
+    @staticmethod
+    def build_specifications(
+        facts: dict
+    ) -> str:
+
+        if not isinstance(
+            facts,
+            dict
+        ):
+            return ""
+
+
+        result = []
+
+
+        material = BulletGenerator.first_text(
+            facts.get("material")
+        )
+
+
+        if material:
+
+            result.append(
+                f"Material: {material}"
+            )
+
+
+        dimensions = BulletGenerator.first_text(
+            facts.get("dimensions")
+        )
+
+
+        if dimensions:
+
+            result.append(
+                f"Dimensions: {dimensions}"
+            )
+
+
+        weight = BulletGenerator.first_text(
+            facts.get("weight")
+        )
+
+
+        if weight:
+
+            result.append(
+                f"Weight: {weight}"
+            )
+
+
+        voltage = BulletGenerator.first_text(
+            facts.get("voltage")
+        )
+
+
+        if voltage:
+
+            result.append(
+                f"Voltage: {voltage}"
+            )
+
+
+        power = BulletGenerator.first_text(
+            facts.get("power")
+        )
+
+
+        if power:
+
+            result.append(
+                f"Power: {power}"
+            )
+
+
+        return "; ".join(
+            result
+        )
+
+
+
+    @staticmethod
+    def build_features(
+        feature_classification: dict
+    ) -> str:
+
+        if not isinstance(
+            feature_classification,
+            dict
+        ):
+            return ""
+
+
+        features = []
+
+
+        design_features = (
+            feature_classification.get(
+                "design_features",
+                []
+            )
+        )
+
+
+        functional_features = (
+            feature_classification.get(
+                "functional_features",
+                []
+            )
+        )
+
+
+        materials = (
+            feature_classification.get(
+                "materials",
+                []
+            )
+        )
+
+
+        for item in (
+            design_features
+            +
+            functional_features
+            +
+            materials
+        ):
+
+            if item:
+
+                features.append(
+                    str(item)
+                )
+
+
+        return "; ".join(
+            features[:3]
+        )
+            @staticmethod
+    def first_text(
+        *values
+    ) -> str:
+
+        for value in values:
+
+            if value is None:
+
+                continue
+
+
+            text = str(
+                value
+            ).strip()
+
+
+            if (
+                text
+                and
+                text.lower()
+                not in [
+                    "none",
+                    "null",
+                    "unknown",
+                    "n/a",
+                    "[]",
+                    "{}",
+                ]
+            ):
+
+                return text
+
+
+        return ""
+
+
+
+    @staticmethod
+    def clean(
+        text: str
+    ) -> str:
+
+        return re.sub(
+            r"\s+",
+            " ",
+            str(text)
+        ).strip()
+
+
 
     @staticmethod
     def remove_duplicate(
         items
     ):
 
-
         result = []
 
         seen = set()
-
 
 
         for item in items:
@@ -496,48 +498,27 @@ class BulletGenerator:
                 )
 
 
-
         return result
 
 
-
-    # =========================
-    # 文本清理
-    # =========================
-
-    @staticmethod
-    def clean(
-        text
-    ):
-
-
-        return re.sub(
-            r"\s+",
-            " ",
-            str(text)
-        ).strip()
-
-
-
-    # =========================
-    # 禁用词检查
-    # =========================
 
     @staticmethod
     def check_blocked_words(
         text
     ):
 
-
         found = []
 
 
         for word in BulletGenerator.BLOCKED_WORDS:
 
-
             if re.search(
-                r"\b" + re.escape(word) + r"\b",
-                text,
+                r"\b"
+                +
+                re.escape(word)
+                +
+                r"\b",
+                str(text),
                 flags=re.I
             ):
 
