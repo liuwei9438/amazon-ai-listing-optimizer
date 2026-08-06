@@ -153,7 +153,9 @@ class ProductKnowledgeBuilder:
         
         knowledge_search_strategy = (
             ProductKnowledgeBuilder.build_search_strategy(
-                search_strategy
+                search_strategy,
+                identifiers,
+                compatibility,
             )
         )
     
@@ -733,42 +735,121 @@ class ProductKnowledgeBuilder:
     @staticmethod
     def build_search_strategy(
         search_strategy: Dict[str, Any],
+        identifiers: Dict[str, Any],
+        compatibility: Dict[str, Any],
     ) -> Dict[str, Any]:
+    
+        model_numbers = (
+            ProductKnowledgeBuilder.clean_list(
+                identifiers.get("model_numbers")
+            )
+        )
+    
+        part_numbers = (
+            ProductKnowledgeBuilder.clean_list(
+                identifiers.get("part_numbers")
+            )
+        )
+    
+        unknown_codes = (
+            ProductKnowledgeBuilder.clean_list(
+                identifiers.get("unknown_codes")
+            )
+        )
+    
+        compatible_models = (
+            ProductKnowledgeBuilder.clean_list(
+                compatibility.get("models")
+            )
+        )
+    
+    
+        # =========================
+        # 标题型号
+        # =========================
+    
+        title_identifiers = []
+    
+    
+        if model_numbers:
+    
+            title_identifiers.append(
+                model_numbers[0]
+            )
+    
+        elif part_numbers:
+    
+            title_identifiers.append(
+                part_numbers[0]
+            )
+    
+        elif compatible_models:
+    
+            title_identifiers.append(
+                compatible_models[0]
+            )
+    
+    
+        # =========================
+        # 五点型号
+        # =========================
+    
+        bullet_identifiers = []
+    
+        bullet_identifiers.extend(
+            compatible_models[:3]
+        )
+    
+    
+        if len(bullet_identifiers) < 3:
+    
+            bullet_identifiers.extend(
+                part_numbers[:3]
+            )
+    
+    
+        # =========================
+        # 后台型号
+        # =========================
+    
+        backend_identifiers = []
+    
+        backend_identifiers.extend(
+            model_numbers[1:]
+        )
+    
+        backend_identifiers.extend(
+            part_numbers[1:]
+        )
+    
+        backend_identifiers.extend(
+            unknown_codes
+        )
+    
     
         return {
     
             "primary_model":
-                ProductKnowledgeBuilder.clean_text(
-                    search_strategy.get(
-                        "primary_model"
-                    )
-                ),
+                title_identifiers[0]
+                if title_identifiers
+                else "",
     
     
             "title_identifiers":
                 ProductKnowledgeBuilder.clean_list(
-                    search_strategy.get(
-                        "title_identifiers",
-                        []
-                    )
+                    title_identifiers
                 ),
     
     
             "bullet_identifiers":
                 ProductKnowledgeBuilder.clean_list(
-                    search_strategy.get(
-                        "bullet_identifiers",
-                        []
-                    )
+                    bullet_identifiers
                 ),
     
     
             "backend_identifiers":
                 ProductKnowledgeBuilder.clean_list(
-                    search_strategy.get(
-                        "backend_identifiers",
-                        []
-                    )
+                    backend_identifiers
                 ),
     
         }
