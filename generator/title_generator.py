@@ -17,87 +17,144 @@ class TitleGenerator:
         "hot sale",
         "discount",
         "promotion",
+        "oem",
     ]
 
 
     @staticmethod
-    def generate(profile: dict) -> dict:
+    def generate(
+        profile: dict,
+    ) -> dict:
         """
-        Generate Amazon title from Product Knowledge.
+        Generate Amazon title from Product Knowledge V5.
+
+        Strategy:
+        - Product identity first
+        - Search intent supplement
+        - Model priority for parts
+        - Compatibility wording
+        - Fact protection
         """
+
 
         knowledge = profile.get(
             "product_knowledge",
-            {}
+            {},
         )
+
 
         if not isinstance(
             knowledge,
-            dict
+            dict,
         ):
             knowledge = {}
 
 
+
         identity = knowledge.get(
             "identity",
-            {}
+            {},
         )
 
 
         relationship = knowledge.get(
             "relationship",
-            {}
-        )
-
-
-        seo = knowledge.get(
-            "seo",
-            {}
+            {},
         )
 
 
         generation_strategy = knowledge.get(
             "generation_strategy",
-            {}
+            {},
         )
+
 
 
         title_parts = []
 
 
+
+        # =========================
+        # Strategy Data
+        # =========================
+
+        title_identity_focus = (
+            generation_strategy.get(
+                "title_identity_focus",
+                [],
+            )
+        )
+
+
+        title_attribute_focus = (
+            generation_strategy.get(
+                "title_attribute_focus",
+                [],
+            )
+        )
+
+
+        title_search_focus = (
+            generation_strategy.get(
+                "title_search_focus",
+                [],
+            )
+        )
+
+
+        title_focus = (
+            generation_strategy.get(
+                "title_focus",
+                [],
+            )
+        )
+
+
+
         # =========================
         # Product Identity
+        # 商品身份
         # =========================
 
-        product_name = (
-            identity.get(
-                "product_name"
-            )
-            or
-            identity.get(
-                "object_name"
-            )
-            or
-            ""
-        )
+
+        if isinstance(
+            title_identity_focus,
+            list,
+        ) and title_identity_focus:
 
 
-        if product_name:
-
-            title_parts.append(
-                product_name
+            title_parts.extend(
+                title_identity_focus[:2]
             )
 
 
-        # =========================
-        # Generation Strategy Models
-        # 使用策略层决定标题型号
-        # =========================
+        else:
 
-        title_focus = generation_strategy.get(
-            "title_focus",
-            []
-        )
+            product_name = (
+                identity.get(
+                    "product_name"
+                )
+                or
+                identity.get(
+                    "object_name"
+                )
+                or
+                ""
+            )
+
+
+            if product_name:
+
+                title_parts.append(
+                    product_name
+                )
+
+
+
+        # =========================
+        # Model / Part Number
+        # 型号零件号
+        # =========================
 
 
         selected_models = []
@@ -105,110 +162,172 @@ class TitleGenerator:
         removed_models = []
 
 
+        title_identifiers = []
+
+
         if isinstance(
             title_focus,
-            list
+            list,
         ):
 
-            for item in title_focus:
-
-                if not isinstance(
-                    item,
-                    str
-                ):
-                    continue
+            title_identifiers.extend(
+                title_focus
+            )
 
 
-                item = item.strip()
+
+        for item in title_identifiers:
+
+            if not isinstance(
+                item,
+                str,
+            ):
+                continue
 
 
-                if not item:
-                    continue
+            text = item.strip()
 
 
-                # 产品名不作为型号
-                if (
-                    product_name
-                    and
-                    item.lower()
-                    ==
-                    product_name.lower()
-                ):
-                    continue
+            if not text:
+                continue
 
+
+            duplicate = False
+
+
+            for part in title_parts:
+
+                if text.lower() == str(part).lower():
+
+                    duplicate = True
+
+
+                    break
+
+
+            if not duplicate:
 
                 selected_models.append(
-                    item
+                    text
                 )
 
 
-        # 保存全部候选型号
-        all_models = selected_models.copy()
 
-
-        # 标题最多保留一个核心型号
         selected_models = selected_models[:1]
 
-
-        removed_models = [
-            model
-            for model in all_models
-            if model not in selected_models
-        ]
-
-
-        # =========================
-        # Add Models
-        # 型号放在产品主体后
-        # =========================
 
         title_parts.extend(
             selected_models
         )
 
 
-        # =========================
-        # SEO Keywords
-        # =========================
 
-        primary_keywords = seo.get(
-            "primary_keywords",
-            []
-        )
+        # =========================
+        # Search Intent
+        # 搜索补充
+        # =========================
 
 
         if isinstance(
-            primary_keywords,
-            list
+            title_search_focus,
+            list,
         ):
 
-            for keyword in primary_keywords:
+            for keyword in title_search_focus:
 
                 keyword = str(
                     keyword
                 ).strip()
 
 
-                if (
-                    keyword
-                    and
-                    keyword.lower()
-                    not in product_name.lower()
-                ):
+                if not keyword:
+
+                    continue
+
+
+                duplicate = False
+
+
+                for part in title_parts:
+
+                    if keyword.lower() in str(part).lower():
+
+                        duplicate = True
+
+                        break
+
+
+                if not duplicate:
 
                     title_parts.append(
                         keyword
                     )
 
                     break
-                            # =========================
-        # Compatibility
+                                    if not duplicate:
+
+                    title_parts.append(
+                        keyword
+                    )
+
+                    break
+
+
+
+        # =========================
+        # Attribute
+        # 高价值属性
+        # =========================
+
+        if isinstance(
+            title_attribute_focus,
+            list,
+        ):
+
+            for attribute in title_attribute_focus:
+
+                attribute = str(
+                    attribute
+                ).strip()
+
+
+                if not attribute:
+
+                    continue
+
+
+                duplicate = False
+
+
+                for part in title_parts:
+
+                    if attribute.lower() in str(part).lower():
+
+                        duplicate = True
+
+                        break
+
+
+                if not duplicate:
+
+                    # 属性只添加一个，避免标题堆砌
+
+                    title_parts.append(
+                        attribute
+                    )
+
+                    break
+
+
+
+        # =========================
+        # Compatibility Brand
         # 兼容品牌
         # =========================
 
         brands = relationship.get(
             "brands",
-            []
+            [],
         )
 
 
@@ -224,8 +343,16 @@ class TitleGenerator:
 
 
 
+        # =========================
+        # Build Title
+        # =========================
+
         title = " ".join(
-            title_parts
+            [
+                str(x)
+                for x in title_parts
+                if x
+            ]
         )
 
 
@@ -241,7 +368,7 @@ class TitleGenerator:
 
         title = TitleGenerator.limit_length(
             title,
-            75
+            75,
         )
 
 
@@ -295,7 +422,9 @@ class TitleGenerator:
 
 
     @staticmethod
-    def clean_title(text: str):
+    def clean_title(
+        text: str,
+    ):
 
         for word in TitleGenerator.BLOCKED_WORDS:
 
@@ -311,7 +440,7 @@ class TitleGenerator:
 
                 text,
 
-                flags=re.I
+                flags=re.I,
 
             )
 
@@ -322,7 +451,7 @@ class TitleGenerator:
 
             " ",
 
-            text
+            text,
 
         )
 
@@ -332,7 +461,9 @@ class TitleGenerator:
 
 
     @staticmethod
-    def format_title_case(text):
+    def format_title_case(
+        text,
+    ):
 
         words = text.split()
 
@@ -343,7 +474,13 @@ class TitleGenerator:
 
             "and",
 
-            "for"
+            "for",
+
+            "de",
+
+            "para",
+
+            "con",
 
         ]
 
@@ -351,10 +488,10 @@ class TitleGenerator:
         result = []
 
 
-        for i, word in enumerate(words):
+        for index, word in enumerate(words):
 
             if (
-                i > 0
+                index > 0
                 and
                 word.lower()
                 in small_words
@@ -378,7 +515,7 @@ class TitleGenerator:
     @staticmethod
     def limit_length(
         text: str,
-        max_length: int = 75
+        max_length: int = 75,
     ):
 
         if len(text) <= max_length:
@@ -410,7 +547,9 @@ class TitleGenerator:
                 break
 
 
-            result.append(word)
+            result.append(
+                word
+            )
 
 
             length += (
@@ -425,7 +564,9 @@ class TitleGenerator:
 
 
     @staticmethod
-    def check_blocked_words(text):
+    def check_blocked_words(
+        text,
+    ):
 
         found = []
 
@@ -442,11 +583,13 @@ class TitleGenerator:
 
                 text,
 
-                flags=re.I
+                flags=re.I,
 
             ):
 
-                found.append(word)
+                found.append(
+                    word
+                )
 
 
         return found
