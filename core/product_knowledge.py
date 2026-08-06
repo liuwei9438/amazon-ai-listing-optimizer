@@ -1141,7 +1141,6 @@ class ProductKnowledgeBuilder:
         search_strategy,
     ) -> Dict[str, Any]:
 
-
         title_focus = []
 
         short_title_focus = []
@@ -1153,9 +1152,21 @@ class ProductKnowledgeBuilder:
         title_avoid = []
 
 
+        # 新增：
+        # 商品身份扩展
+        title_identity_focus = []
+
+        # 新增：
+        # 高价值属性
+        title_attribute_focus = []
+
+        # 新增：
+        # 搜索意图关键词
+        title_search_focus = []
+
 
         # =========================
-        # 产品核心词
+        # 产品核心身份
         # =========================
 
         product_name = (
@@ -1176,43 +1187,109 @@ class ProductKnowledgeBuilder:
             short_title_focus.append(
                 product_name
             )
-      
+
+            title_identity_focus.append(
+                product_name
+            )
+
 
         # =========================
-        # 兼容信息
-        # 标题可用
+        # 商品身份扩展
+        # 解决：
+        # Alicate Para Orejas
+        # 这种过短商品名
+        # =========================
+
+        primary_function = ProductKnowledgeBuilder.first_text(
+            purpose.get("primary_function")
+        )
+
+
+        usage_scenarios = ProductKnowledgeBuilder.clean_list(
+            identity.get("usage_scenarios")
+        )
+
+
+        category = ProductKnowledgeBuilder.first_text(
+            identity.get("category")
+        )
+
+
+        if product_name:
+
+            word_count = len(
+                product_name.split()
+            )
+
+
+            if word_count < 4:
+
+                if primary_function:
+
+                    title_identity_focus.append(
+                        primary_function
+                    )
+
+
+                elif usage_scenarios:
+
+                    title_identity_focus.append(
+                        usage_scenarios[0]
+                    )
+
+
+                elif category:
+
+                    title_identity_focus.append(
+                        category
+                    )
+
+
+
+        # =========================
+        # 型号 / 零件号
+        # =========================
+
+        title_identifiers = search_strategy.get(
+            "title_identifiers",
+            []
+        )
+
+
+        bullet_identifiers = search_strategy.get(
+            "bullet_identifiers",
+            []
+        )
+
+
+        backend_identifiers = search_strategy.get(
+            "backend_identifiers",
+            []
+        )
+
+
+        if title_identifiers:
+
+            title_focus.extend(
+                title_identifiers[:1]
+            )
+
+
+            short_title_focus.extend(
+                title_identifiers[:1]
+            )
+
+
+
+        # =========================
+        # 品牌
         # =========================
 
         brands = relationship.get(
             "brands",
             []
         )
-        title_identifiers = search_strategy.get(
-            "title_identifiers",
-            []
-        )
-        
-        
-        bullet_identifiers = search_strategy.get(
-            "bullet_identifiers",
-            []
-        )
-        
-        
-        backend_identifiers = search_strategy.get(
-            "backend_identifiers",
-            []
-        )
-        if title_identifiers:
 
-            title_focus.extend(
-                title_identifiers[:1]
-            )
-        
-        
-            short_title_focus.extend(
-                title_identifiers[:1]
-            )
 
         if brands:
 
@@ -1220,15 +1297,17 @@ class ProductKnowledgeBuilder:
                 brands[:2]
             )
 
+
             short_title_focus.extend(
                 brands[:1]
             )
 
 
 
-        
         # =========================
-        # SEO关键词
+        # SEO搜索词
+        # 不直接大量进入标题
+        # 只作为补充策略
         # =========================
 
         primary_keywords = seo.get(
@@ -1242,23 +1321,44 @@ class ProductKnowledgeBuilder:
             list
         ):
 
-            title_focus.extend(
+            title_search_focus.extend(
                 primary_keywords[:3]
             )
 
 
 
         # =========================
-        # 功能
-        # Highlight/Bullet使用
-        # 不直接进入标题
+        # 属性提取
         # =========================
 
-        primary_function = purpose.get(
-            "primary_function",
-            ""
+        materials = ProductKnowledgeBuilder.clean_list(
+            facts.get("material")
         )
 
+
+        if materials:
+
+            title_attribute_focus.extend(
+                materials[:1]
+            )
+
+
+        feature_list = ProductKnowledgeBuilder.clean_list(
+            features.get("features")
+        )
+
+
+        if feature_list:
+
+            title_attribute_focus.extend(
+                feature_list[:2]
+            )
+
+
+
+        # =========================
+        # Highlight / Bullet
+        # =========================
 
         if primary_function:
 
@@ -1266,38 +1366,30 @@ class ProductKnowledgeBuilder:
                 primary_function
             )
 
+
             bullet_focus.append(
                 primary_function
             )
+
 
             title_avoid.append(
                 primary_function
             )
 
+
         if bullet_identifiers:
-        
+
             bullet_focus.extend(
                 bullet_identifiers
             )
 
-        # =========================
-        # 产品特点
-        # =========================
 
-        feature_list = features.get(
-            "features",
-            []
-        )
-
-
-        if isinstance(
-            feature_list,
-            list
-        ):
+        if feature_list:
 
             highlight_focus.extend(
                 feature_list[:5]
             )
+
 
             bullet_focus.extend(
                 feature_list[:5]
@@ -1310,6 +1402,24 @@ class ProductKnowledgeBuilder:
             "title_focus":
                 ProductKnowledgeBuilder.clean_list(
                     title_focus
+                ),
+
+
+            "title_identity_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    title_identity_focus
+                ),
+
+
+            "title_attribute_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    title_attribute_focus
+                ),
+
+
+            "title_search_focus":
+                ProductKnowledgeBuilder.clean_list(
+                    title_search_focus
                 ),
 
 
@@ -1335,13 +1445,13 @@ class ProductKnowledgeBuilder:
                 ProductKnowledgeBuilder.clean_list(
                     bullet_focus
                 ),
-            
+
+
             "backend_identifiers":
                 ProductKnowledgeBuilder.clean_list(
                     backend_identifiers
                 ),
         }
-
     # =========================================================
     # Content Guidance
     # =========================================================
