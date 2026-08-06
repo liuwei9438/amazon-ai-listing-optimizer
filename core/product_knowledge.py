@@ -756,16 +756,17 @@ class ProductKnowledgeBuilder:
                 identifiers.get("unknown_codes")
             )
         )
-    
-       compatible_models = (
+
+
+        compatible_models = (
             ProductKnowledgeBuilder.clean_list(
                 compatibility.get("models")
             )
         )
-        
-        
+
+
         if not compatible_models:
-        
+
             compatible_models = (
                 ProductKnowledgeBuilder.clean_list(
                     compatibility.get("compatible_models")
