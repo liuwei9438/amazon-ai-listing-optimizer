@@ -1222,7 +1222,7 @@ class ProductKnowledgeBuilder:
             )
 
 
-       if word_count < 4:
+        if word_count < 4:
 
             # 第一优先：核心功能
             if primary_function:
