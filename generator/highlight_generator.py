@@ -46,217 +46,256 @@ class HighlightGenerator:
     ]
 
 
-
     @staticmethod
     def generate(
         profile: dict
     ) -> dict:
-
-
+    
+    
         knowledge = profile.get(
             "product_knowledge",
             {}
         )
-        
-        
+    
+    
         if not isinstance(
             knowledge,
             dict
         ):
-        
             knowledge = {}
-        
-        
-        feature_classification = knowledge.get(
-            "feature_classification",
-            {}
-        )
-
-
-
-        highlights = []
-
-
-
-        # =========================
-        # 产品核心
-        # =========================
-
+    
+    
         identity = knowledge.get(
             "identity",
             {}
         )
-
-
-        product_name = (
-            identity.get(
-                "product_name"
-            )
-            or
-            identity.get(
-                "product_type"
-            )
-            or
-            identity.get(
-                "object_name"
-            )
-            or
-            ""
-        )
-
-
-        if product_name:
-
-            highlights.append(
-                {
-                    "type":
-                    "product",
-
-                    "text":
-                    product_name,
-                }
-            )
-
-
-
-        # =========================
-        # 商品亮点策略
-        # =========================
-
-        strategy = knowledge.get(
-            "generation_strategy",
+    
+    
+        feature_classification = knowledge.get(
+            "feature_classification",
             {}
         )
-
-
-        highlight_focus = []
-
-
+    
+    
+        highlights = []
+    
+    
         # =================================================
-        # 新版来源:
-        # Feature Classification
+        # 1. Product Identity
+        # 产品主体
         # =================================================
-        
+    
         if isinstance(
-            feature_classification,
+            identity,
             dict
         ):
-        
-        
+    
+            product_name = (
+                identity.get(
+                    "product_name"
+                )
+                or
+                identity.get(
+                    "object_name"
+                )
+                or
+                ""
+            )
+    
+    
+            if product_name:
+    
+                highlights.append(
+                    {
+                        "type":
+                        "product",
+    
+                        "text":
+                        product_name,
+                    }
+                )
+    
+    
+    
+        # =================================================
+        # 2. Feature Collection
+        # 商品特点
+        # =================================================
+    
+        highlight_focus = []
+    
+    
+        # -----------------------------
+        # Identity Features
+        # -----------------------------
+    
+        if isinstance(
+            identity,
+            dict
+        ):
+    
             highlight_focus.extend(
-                feature_classification.get(
+                identity.get(
                     "design_features",
                     []
                 )
             )
-        
-        
+    
+    
+            highlight_focus.extend(
+                identity.get(
+                    "functional_features",
+                    []
+                )
+            )
+    
+    
+    
+        # -----------------------------
+        # Fact Features
+        # -----------------------------
+    
+        if isinstance(
+            feature_classification,
+            dict
+        ):
+    
             highlight_focus.extend(
                 feature_classification.get(
                     "materials",
                     []
                 )
             )
-        
-        
+    
+    
             highlight_focus.extend(
                 feature_classification.get(
-                    "functional_features",
+                    "specifications",
                     []
                 )
             )
-        
-        
-            highlight_focus.extend(
-                feature_classification.get(
-                    "usage_scenarios",
-                    []
-                )
-            )
-        
-        
-        
-        # =================================================
-        # 旧逻辑备用
-        # =================================================
-        
+    
+    
+    
+        # -----------------------------
+        # Fallback old logic
+        # -----------------------------
+    
         if not highlight_focus:
-        
-            highlight_focus = strategy.get(
-                "highlight_focus",
-                []
+    
+            strategy = knowledge.get(
+                "generation_strategy",
+                {}
             )
-
-
-        # =========================
-        # 兼容信息
-        # =========================
-
+    
+    
+            if isinstance(
+                strategy,
+                dict
+            ):
+    
+                highlight_focus.extend(
+                    strategy.get(
+                        "highlight_focus",
+                        []
+                    )
+                )
+    
+    
+    
+        for feature in highlight_focus:
+    
+            text = HighlightGenerator.clean_text(
+                feature
+            )
+    
+    
+            if text:
+    
+                highlights.append(
+                    {
+                        "type":
+                        "feature",
+    
+                        "text":
+                        text,
+                    }
+                )
+    
+    
+    
+        # =================================================
+        # 3. Compatibility
+        # =================================================
+    
         compatibility = knowledge.get(
             "relationship",
             {}
         )
-
-
-        brands = compatibility.get(
-            "brands",
-            []
-        )
-
-
-        if brands:
-
-            highlights.append(
-                {
-                    "type":
-                    "compatibility",
-
-                    "text":
-                    HighlightGenerator.build_compatibility(
-                        brands
-                    )
-                }
+    
+    
+        if isinstance(
+            compatibility,
+            dict
+        ):
+    
+            brands = compatibility.get(
+                "brands",
+                []
             )
-
-
-
+    
+    
+            if brands:
+    
+                highlights.append(
+                    {
+                        "type":
+                        "compatibility",
+    
+                        "text":
+                        HighlightGenerator.build_compatibility(
+                            brands
+                        )
+                    }
+                )
+    
+    
+    
+        # =================================================
+        # 4. Clean
+        # =================================================
+    
         highlights = (
             HighlightGenerator.clean_highlights(
                 highlights
             )
         )
-
-
-
+    
+    
         blocked = (
             HighlightGenerator.check_blocked_words(
                 str(highlights)
             )
         )
-
-
-
+    
+    
         return {
-
+    
             "highlights":
                 highlights,
-
-
+    
+    
             "validation":
             {
-
                 "compliance_ok":
                     len(blocked) == 0
-
             },
-
-
+    
+    
             "blocked_words":
                 blocked,
-
+    
         }
-
-
 
     # =========================
     # 兼容表达
