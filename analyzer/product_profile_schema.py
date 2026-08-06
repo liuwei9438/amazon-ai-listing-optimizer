@@ -36,6 +36,33 @@ _SCHEMA: dict[str, Any] = {
                 "usage_scenarios": _string_list(),
         
             },
+            "identifiers": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+    
+                    "model_numbers": _string_list(),
+    
+                    "part_numbers": _string_list(),
+    
+                    "series_numbers": _string_list(),
+    
+                    "unknown_codes": _string_list(),
+    
+                },
+
+            "required": [
+
+                "model_numbers",
+
+                "part_numbers",
+
+                "series_numbers",
+
+                "unknown_codes",
+
+            ],
+        },
         
             "required": [
                
@@ -123,6 +150,37 @@ _SCHEMA: dict[str, Any] = {
             },
             "required": ["brands", "models", "part_numbers", "compatibility_notes"],
         },
+        "specifications": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+
+                "dimensions": _string_list(),
+
+                "weight": _string_list(),
+
+                "voltage": _string_list(),
+
+                "power": _string_list(),
+
+                "capacity": _string_list(),
+
+            },
+
+            "required": [
+
+                "dimensions",
+
+                "weight",
+
+                "voltage",
+
+                "power",
+
+                "capacity",
+
+            ],
+        },
         "attributes": {
             "type": "object",
             "additionalProperties": False,
@@ -162,6 +220,49 @@ _SCHEMA: dict[str, Any] = {
 
             ],
 
+        },
+        "search_strategy": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+
+                "primary_model": _string(),
+
+                "title_identifiers": _string_list(),
+
+                "bullet_identifiers": _string_list(),
+
+                "backend_identifiers": _string_list(),
+
+            },
+
+            "required": [
+            
+                "product_identity",
+            
+                "identifiers",
+            
+                "basic_info",
+            
+                "brand_info",
+            
+                "compatibility",
+            
+                "specifications",
+            
+                "attributes",
+            
+                "search_strategy",
+            
+                "seo",
+            
+                "compliance",
+            
+                "fact_lock",
+            
+                "source_identity",
+            
+            ]
         },
         "seo": {
             "type": "object",
@@ -245,6 +346,17 @@ _EMPTY_PROFILE: dict[str, Any] = {
         "usage_scenarios": [],
     
     },
+        "identifiers": {
+
+        "model_numbers": [],
+
+        "part_numbers": [],
+
+        "series_numbers": [],
+
+        "unknown_codes": [],
+
+    },
     "basic_info": {
         "product_name": "",
         "product_type": "",
@@ -287,6 +399,17 @@ _EMPTY_PROFILE: dict[str, Any] = {
         "functional_features": [],
     
         "specifications": [],
+    
+    },
+        "search_strategy": {
+    
+        "primary_model": "",
+    
+        "title_identifiers": [],
+    
+        "bullet_identifiers": [],
+    
+        "backend_identifiers": [],
     
     },
     "seo": {
