@@ -90,6 +90,18 @@ usage_scenarios:
 How or where the product is used.
 
 
+FACT PROTECTION RULE:
+
+The AI must separate confirmed facts from assumptions.
+
+Only extract information that is directly supported by SOURCE.
+
+Do not improve, enrich, complete, or guess product information
+based on general product knowledge.
+
+If a feature is not explicitly supported by SOURCE,
+leave the field empty.
+
 
 12. Classify product features into different categories.
 
@@ -112,6 +124,34 @@ Where or how the product is used.
 
 specifications:
 Size, voltage, dimensions, model-related or measurable facts.
+
+
+DESIGN FEATURE RULE:
+
+Only extract design_features that are explicitly supported by SOURCE.
+
+Do not infer design features from common product structures.
+
+Do not add ergonomic, comfortable, anti-slip, durable,
+or similar benefit descriptions unless SOURCE explicitly states them.
+
+
+FUNCTION RULE:
+
+Only include functions explicitly confirmed by SOURCE.
+
+Do not convert design descriptions into functions.
+
+Do not assume a product capability only because the product
+is commonly used for that purpose.
+
+
+CONTEXT AND USAGE RULE:
+
+Only include context and usage_scenarios directly supported by SOURCE.
+
+Do not expand the usage scope based on general knowledge.
+
 
 Do not put usage scenarios into product_identity.name.
 
