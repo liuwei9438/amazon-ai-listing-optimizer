@@ -1119,13 +1119,22 @@ class ProductKnowledgeBuilder:
             "brands",
             []
         )
-
-
-        models = relationship.get(
-            "models",
+        title_identifiers = search_strategy.get(
+            "title_identifiers",
             []
         )
-
+        
+        
+        bullet_identifiers = search_strategy.get(
+            "bullet_identifiers",
+            []
+        )
+        
+        
+        backend_identifiers = search_strategy.get(
+            "backend_identifiers",
+            []
+        )
 
         if brands:
 
@@ -1173,7 +1182,11 @@ class ProductKnowledgeBuilder:
                 primary_function
             )
 
-
+        if bullet_identifiers:
+        
+            bullet_focus.extend(
+                bullet_identifiers
+            )
 
         # =========================
         # 产品特点
@@ -1230,7 +1243,11 @@ class ProductKnowledgeBuilder:
                 ProductKnowledgeBuilder.clean_list(
                     bullet_focus
                 ),
-
+            
+            "backend_identifiers":
+                ProductKnowledgeBuilder.clean_list(
+                    backend_identifiers
+                ),
         }
 
     # =========================================================
