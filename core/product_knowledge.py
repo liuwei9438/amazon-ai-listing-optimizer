@@ -1086,29 +1086,7 @@ class ProductKnowledgeBuilder:
             short_title_focus.append(
                 product_name
             )
-
-
-
-        # =========================
-        # SEO关键词
-        # =========================
-
-        primary_keywords = seo.get(
-            "primary_keywords",
-            []
-        )
-
-
-        if isinstance(
-            primary_keywords,
-            list
-        ):
-
-            title_focus.extend(
-                primary_keywords[:3]
-            )
-
-
+      
 
         # =========================
         # 兼容信息
@@ -1135,6 +1113,16 @@ class ProductKnowledgeBuilder:
             "backend_identifiers",
             []
         )
+        if title_identifiers:
+
+            title_focus.extend(
+                title_identifiers[:1]
+            )
+        
+        
+            short_title_focus.extend(
+                title_identifiers[:1]
+            )
 
         if brands:
 
@@ -1148,10 +1136,24 @@ class ProductKnowledgeBuilder:
 
 
 
-        if title_identifiers:
+        
+        # =========================
+        # SEO关键词
+        # =========================
+
+        primary_keywords = seo.get(
+            "primary_keywords",
+            []
+        )
+
+
+        if isinstance(
+            primary_keywords,
+            list
+        ):
 
             title_focus.extend(
-                title_identifiers
+                primary_keywords[:3]
             )
 
 
