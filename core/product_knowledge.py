@@ -112,6 +112,7 @@ class ProductKnowledgeBuilder:
         relationship = ProductKnowledgeBuilder.build_relationship(
             brand_info=brand_info,
             compatibility=compatibility,
+            identifiers=identifiers,
         )
     
     
@@ -136,7 +137,25 @@ class ProductKnowledgeBuilder:
                 purpose=purpose,
             )
         )
-    
+        knowledge_identifiers = (
+            ProductKnowledgeBuilder.build_identifiers(
+                identifiers
+            )
+        )
+        
+        
+        knowledge_specifications = (
+            ProductKnowledgeBuilder.build_specifications(
+                specifications
+            )
+        )
+        
+        
+        knowledge_search_strategy = (
+            ProductKnowledgeBuilder.build_search_strategy(
+                search_strategy
+            )
+        )
     
         seo_knowledge = ProductKnowledgeBuilder.build_seo(
             seo=seo,
@@ -172,9 +191,10 @@ class ProductKnowledgeBuilder:
                 facts=knowledge_facts,
                 features=features,
                 seo=seo_knowledge,
+                search_strategy=knowledge_search_strategy,
             )
         )
-    
+            
     
         return {
 
@@ -462,14 +482,19 @@ class ProductKnowledgeBuilder:
     # =========================================================
     @staticmethod
     def build_model_priority(
-        models: List[str],
+         model_numbers: List[str],
+         part_numbers: List[str],
     ) -> Dict[str, Any]:
 
-        models = ProductKnowledgeBuilder.clean_list(
-            models
+        model_numbers = ProductKnowledgeBuilder.clean_list(
+            model_numbers
+        )
+        
+        part_numbers = ProductKnowledgeBuilder.clean_list(
+            part_numbers
         )
 
-        if not models:
+        if not model_numbers and not part_numbers:
             return {
                 "primary_model": "",
                 "secondary_models": [],
@@ -477,13 +502,25 @@ class ProductKnowledgeBuilder:
             }
 
 
-        primary_model = models[0]
+        primary_model = (
+            model_numbers[0]
+            if model_numbers
+            else part_numbers[0]
+        )
 
 
-        secondary_models = models[1:3]
-
-
-        backend_models = models[3:]
+        secondary_models = (
+            model_numbers[1:3]
+            +
+            part_numbers[:1]
+        )
+        
+        
+        backend_models = (
+            model_numbers[3:]
+            +
+            part_numbers[1:]
+        )
 
 
         return {
@@ -499,6 +536,7 @@ class ProductKnowledgeBuilder:
     def build_relationship(
         brand_info: Dict[str, Any],
         compatibility: Dict[str, Any],
+        identifiers: Dict[str, Any],
     ) -> Dict[str, Any]:
         brands = ProductKnowledgeBuilder.clean_list(
             compatibility.get("brands")
@@ -508,6 +546,14 @@ class ProductKnowledgeBuilder:
             brands = ProductKnowledgeBuilder.clean_list(
                 brand_info.get("detected_brands")
             )
+        model_numbers = ProductKnowledgeBuilder.clean_list(
+            identifiers.get("model_numbers")
+        )
+        
+        
+        part_numbers = ProductKnowledgeBuilder.clean_list(
+            identifiers.get("part_numbers")
+        )
 
         models = ProductKnowledgeBuilder.clean_list(
             compatibility.get("models")
@@ -522,9 +568,11 @@ class ProductKnowledgeBuilder:
             compatibility.get("series")
         )
 
-        part_numbers = ProductKnowledgeBuilder.clean_list(
+        compatibility_part_numbers = ProductKnowledgeBuilder.clean_list(
             compatibility.get("part_numbers")
         )
+        if not part_numbers:
+            part_numbers = compatibility_part_numbers
 
         relationship = ProductKnowledgeBuilder.first_text(
             brand_info.get("relationship"),
@@ -556,13 +604,26 @@ class ProductKnowledgeBuilder:
                 brands,
         
         
+            # 原来的兼容设备型号，保留
             "models":
                 models,
         
         
+            # 新增：商品自身识别出来的型号
+            "identifier_models":
+                model_numbers,
+        
+        
+            # 新增：商品自身识别出来的零件号
+            "identifier_parts":
+                part_numbers,
+        
+        
+            # 型号优先级
             "model_priority":
                 ProductKnowledgeBuilder.build_model_priority(
-                    models
+                    model_numbers,
+                    part_numbers,
                 ),
         
         
@@ -981,12 +1042,13 @@ class ProductKnowledgeBuilder:
 
     @staticmethod
     def build_generation_strategy(
-        identity: Dict[str, Any],
-        purpose: Dict[str, Any],
-        relationship: Dict[str, Any],
-        facts: Dict[str, Any],
-        features: Dict[str, Any],
-        seo: Dict[str, Any],
+        identity,
+        purpose,
+        relationship,
+        facts,
+        features,
+        seo,
+        search_strategy,
     ) -> Dict[str, Any]:
 
 
@@ -1077,10 +1139,10 @@ class ProductKnowledgeBuilder:
 
 
 
-        if models:
+        if title_identifiers:
 
             title_focus.extend(
-                models[:5]
+                title_identifiers
             )
 
 
