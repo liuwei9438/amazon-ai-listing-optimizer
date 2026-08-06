@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import re
 
-from generator.model_ranker import ModelRanker
-
 
 class TitleGenerator:
-
 
     BLOCKED_WORDS = [
         "best",
@@ -57,17 +54,19 @@ class TitleGenerator:
             "seo",
             {}
         )
+
+
         generation_strategy = knowledge.get(
             "generation_strategy",
             {}
         )
+
 
         title_parts = []
 
 
         # =========================
         # Product Identity
-        # 商品主体
         # =========================
 
         product_name = (
@@ -94,41 +93,78 @@ class TitleGenerator:
         # Generation Strategy Models
         # 使用策略层决定标题型号
         # =========================
-        
-        
+
         title_focus = generation_strategy.get(
             "title_focus",
             []
         )
-        
-        
+
+
         selected_models = []
-        
+
         removed_models = []
-        
-        
-        if isinstance(title_focus, list):
-        
+
+
+        if isinstance(
+            title_focus,
+            list
+        ):
+
             for item in title_focus:
-        
-                if not isinstance(item, str):
+
+                if not isinstance(
+                    item,
+                    str
+                ):
                     continue
-        
+
+
                 item = item.strip()
-        
+
+
                 if not item:
                     continue
-        
-                # 产品名不要重复进入型号列表
-                if item.lower() == product_name.lower():
+
+
+                # 产品名不作为型号
+                if (
+                    product_name
+                    and
+                    item.lower()
+                    ==
+                    product_name.lower()
+                ):
                     continue
-        
-                selected_models.append(item)
-        
-        
-        # 标题型号最多保留一个
+
+
+                selected_models.append(
+                    item
+                )
+
+
+        # 保存全部候选型号
+        all_models = selected_models.copy()
+
+
+        # 标题最多保留一个核心型号
         selected_models = selected_models[:1]
 
+
+        removed_models = [
+            model
+            for model in all_models
+            if model not in selected_models
+        ]
+
+
+        # =========================
+        # Add Models
+        # 型号放在产品主体后
+        # =========================
+
+        title_parts.extend(
+            selected_models
+        )
 
 
         # =========================
@@ -155,7 +191,8 @@ class TitleGenerator:
 
                 if (
                     keyword
-                    and keyword.lower()
+                    and
+                    keyword.lower()
                     not in product_name.lower()
                 ):
 
@@ -164,11 +201,9 @@ class TitleGenerator:
                     )
 
                     break
-
-
-
-        # =========================
+                            # =========================
         # Compatibility
+        # 兼容品牌
         # =========================
 
         brands = relationship.get(
@@ -187,15 +222,6 @@ class TitleGenerator:
                 )
             )
 
-
-
-        # =========================
-        # Add models
-        # =========================
-
-        title_parts.extend(
-            selected_models
-        )
 
 
         title = " ".join(
@@ -266,12 +292,12 @@ class TitleGenerator:
 
         }
 
+
+
     @staticmethod
     def clean_title(text: str):
 
-
         for word in TitleGenerator.BLOCKED_WORDS:
-
 
             text = re.sub(
 
@@ -288,7 +314,6 @@ class TitleGenerator:
                 flags=re.I
 
             )
-
 
 
         text = re.sub(
@@ -309,7 +334,6 @@ class TitleGenerator:
     @staticmethod
     def format_title_case(text):
 
-
         words = text.split()
 
 
@@ -329,17 +353,16 @@ class TitleGenerator:
 
         for i, word in enumerate(words):
 
-
             if (
                 i > 0
-                and word.lower()
+                and
+                word.lower()
                 in small_words
             ):
 
                 result.append(
                     word.lower()
                 )
-
 
             else:
 
@@ -358,11 +381,9 @@ class TitleGenerator:
         max_length: int = 75
     ):
 
-
         if len(text) <= max_length:
 
             return text
-
 
 
         words = text.split()
@@ -374,9 +395,7 @@ class TitleGenerator:
         length = 0
 
 
-
         for word in words:
-
 
             if (
                 length
@@ -391,7 +410,6 @@ class TitleGenerator:
                 break
 
 
-
             result.append(word)
 
 
@@ -402,7 +420,6 @@ class TitleGenerator:
             )
 
 
-
         return " ".join(result)
 
 
@@ -410,12 +427,10 @@ class TitleGenerator:
     @staticmethod
     def check_blocked_words(text):
 
-
         found = []
 
 
         for word in TitleGenerator.BLOCKED_WORDS:
-
 
             if re.search(
 
@@ -432,7 +447,6 @@ class TitleGenerator:
             ):
 
                 found.append(word)
-
 
 
         return found
