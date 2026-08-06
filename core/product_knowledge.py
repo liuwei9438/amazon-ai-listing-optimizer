@@ -1222,30 +1222,30 @@ class ProductKnowledgeBuilder:
             )
 
 
-           if word_count < 4:
+       if word_count < 4:
 
-                # 第一优先：核心功能
-                if primary_function:
-            
-                    title_identity_focus.append(
-                        primary_function
-                    )
-            
-            
-                # 第二优先：产品类别
-                elif category:
-            
-                    title_identity_focus.append(
-                        category
-                    )
-            
-            
-                # 第三优先：搜索关键词
-                elif title_search_focus:
-            
-                    title_identity_focus.append(
-                        title_search_focus[0]
-                    )
+            # 第一优先：核心功能
+            if primary_function:
+        
+                title_identity_focus.append(
+                    primary_function
+                )
+        
+        
+            # 第二优先：产品类别
+            elif category:
+        
+                title_identity_focus.append(
+                    category
+                )
+        
+        
+            # 第三优先：搜索关键词
+            elif title_search_focus:
+        
+                title_identity_focus.append(
+                    title_search_focus[0]
+                )
 
 
 
