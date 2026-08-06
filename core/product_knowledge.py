@@ -60,7 +60,19 @@ class ProductKnowledgeBuilder:
         attributes = ProductKnowledgeBuilder.ensure_dict(
             profile.get("attributes")
         )
-    
+        identifiers = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("identifiers")
+        )
+        
+        
+        specifications = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("specifications")
+        )
+        
+        
+        search_strategy = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("search_strategy")
+        )
         fact_lock = ProductKnowledgeBuilder.ensure_dict(
             profile.get("fact_lock")
         )
@@ -165,19 +177,63 @@ class ProductKnowledgeBuilder:
     
     
         return {
-            "schema_version": "3.1",
-            "identity": identity,
-            "purpose": purpose,
-            "relationship": relationship,
-            "facts": knowledge_facts,
-            "features": features,
-            "feature_classification": feature_classification,
-            "seo": seo_knowledge,
-            "compliance": compliance_knowledge,
-            "content_guidance": content_guidance,
-            "generation_strategy": generation_strategy,
+
+            "schema_version":
+                "4.0",
+        
+            "identity":
+                identity,
+        
+        
+            "identifiers":
+                knowledge_identifiers,
+        
+        
+            "specifications":
+                knowledge_specifications,
+        
+        
+            "purpose":
+                purpose,
+        
+        
+            "relationship":
+                relationship,
+        
+        
+            "facts":
+                knowledge_facts,
+        
+        
+            "features":
+                features,
+        
+        
+            "search_strategy":
+                knowledge_search_strategy,
+        
+        
+            "feature_classification":
+                feature_classification,
+        
+        
+            "seo":
+                seo_knowledge,
+        
+        
+            "compliance":
+                compliance_knowledge,
+        
+        
+            "content_guidance":
+                content_guidance,
+        
+        
+            "generation_strategy":
+                generation_strategy,
+        
         }
-            
+                    
     # =========================================================
     # Identity
     # =========================================================
@@ -517,6 +573,143 @@ class ProductKnowledgeBuilder:
             "part_numbers":
                 part_numbers,
         
+        }
+    @staticmethod
+    def build_identifiers(
+        identifiers: Dict[str, Any],
+    ) -> Dict[str, Any]:
+    
+        return {
+    
+            "model_numbers":
+                ProductKnowledgeBuilder.clean_list(
+                    identifiers.get(
+                        "model_numbers",
+                        []
+                    )
+                ),
+    
+    
+            "part_numbers":
+                ProductKnowledgeBuilder.clean_list(
+                    identifiers.get(
+                        "part_numbers",
+                        []
+                    )
+                ),
+    
+    
+            "series_numbers":
+                ProductKnowledgeBuilder.clean_list(
+                    identifiers.get(
+                        "series_numbers",
+                        []
+                    )
+                ),
+    
+    
+            "unknown_codes":
+                ProductKnowledgeBuilder.clean_list(
+                    identifiers.get(
+                        "unknown_codes",
+                        []
+                    )
+                ),
+    
+        }
+    @staticmethod
+    def build_specifications(
+        specifications: Dict[str, Any],
+    ) -> Dict[str, Any]:
+    
+        return {
+    
+            "dimensions":
+                ProductKnowledgeBuilder.clean_list(
+                    specifications.get(
+                        "dimensions",
+                        []
+                    )
+                ),
+    
+    
+            "weight":
+                ProductKnowledgeBuilder.clean_list(
+                    specifications.get(
+                        "weight",
+                        []
+                    )
+                ),
+    
+    
+            "voltage":
+                ProductKnowledgeBuilder.clean_list(
+                    specifications.get(
+                        "voltage",
+                        []
+                    )
+                ),
+    
+    
+            "power":
+                ProductKnowledgeBuilder.clean_list(
+                    specifications.get(
+                        "power",
+                        []
+                    )
+                ),
+    
+    
+            "capacity":
+                ProductKnowledgeBuilder.clean_list(
+                    specifications.get(
+                        "capacity",
+                        []
+                    )
+                ),
+    
+        }
+    @staticmethod
+    def build_search_strategy(
+        search_strategy: Dict[str, Any],
+    ) -> Dict[str, Any]:
+    
+        return {
+    
+            "primary_model":
+                ProductKnowledgeBuilder.clean_text(
+                    search_strategy.get(
+                        "primary_model"
+                    )
+                ),
+    
+    
+            "title_identifiers":
+                ProductKnowledgeBuilder.clean_list(
+                    search_strategy.get(
+                        "title_identifiers",
+                        []
+                    )
+                ),
+    
+    
+            "bullet_identifiers":
+                ProductKnowledgeBuilder.clean_list(
+                    search_strategy.get(
+                        "bullet_identifiers",
+                        []
+                    )
+                ),
+    
+    
+            "backend_identifiers":
+                ProductKnowledgeBuilder.clean_list(
+                    search_strategy.get(
+                        "backend_identifiers",
+                        []
+                    )
+                ),
+    
         }
     # =========================================================
     # Facts
