@@ -144,17 +144,18 @@ class ShortTitleGenerator:
             for item in short_focus:
 
 
-                if ShortTitleGenerator.is_specification(
+                if (
                     item
+                    and
+                    item.lower()
+                    not in product_name.lower()
                 ):
-
-                    parts.insert(
-                        0,
+                
+                    parts.append(
                         item
                     )
-
+                
                     break
-
 
 
         # =========================
@@ -174,10 +175,9 @@ class ShortTitleGenerator:
                     profile
                 )
             )
-
-
-            parts.insert(
-                0,
+        
+        
+            parts.append(
                 phrase
                 +
                 " "
