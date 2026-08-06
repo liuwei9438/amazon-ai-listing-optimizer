@@ -17,8 +17,9 @@ _SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
     "properties": {
         "product_identity": {
+
             "type": "object",
-            "additionalProperties": False,
+        
             "properties": {
         
                 "name": _string(),
@@ -36,50 +37,50 @@ _SCHEMA: dict[str, Any] = {
                 "usage_scenarios": _string_list(),
         
             },
-               "required": [
-               
+        
+            "required":[
                 "name",
-        
                 "category",
-        
                 "parent_product",
-        
                 "context",
-        
                 "design_features",
-        
                 "functional_features",
-        
                 "usage_scenarios",
+            ]
         
-            ],
         },
-            "identifiers": {
-                "type": "object",
-                "additionalProperties": False,
-                "properties": {
-    
-                    "model_numbers": _string_list(),
-    
-                    "part_numbers": _string_list(),
-    
-                    "series_numbers": _string_list(),
-    
-                    "unknown_codes": _string_list(),
-    
-                },
-
-            "required": [
-
+        
+        
+        "identifiers": {
+        
+            "type": "object",
+        
+            "additionalProperties": False,
+        
+            "properties": {
+        
+                "model_numbers": _string_list(),
+        
+                "part_numbers": _string_list(),
+        
+                "series_numbers": _string_list(),
+        
+                "unknown_codes": _string_list(),
+        
+            },
+        
+            "required":[
+        
                 "model_numbers",
-
+        
                 "part_numbers",
-
+        
                 "series_numbers",
-
+        
                 "unknown_codes",
-
-            ],
+        
+            ]
+        
         },
         
          
