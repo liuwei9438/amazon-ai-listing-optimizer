@@ -38,14 +38,38 @@ def process_batch(
     api_key,
     model="gpt-4.1-mini",
     options=None,
-    {
-        "title": enable_title,
-        "short_title": enable_short_title,
-        "highlight": enable_highlight,
-        "bullet": enable_bullet,
-        "description": enable_description,
-        "seo": enable_seo,
-    }
+):
+
+    if options is None:
+        options = {}
+        enable_title = options.get(
+    "title",
+    True
+)
+
+enable_short_title = options.get(
+    "short_title",
+    True
+)
+
+enable_highlight = options.get(
+    "highlight",
+    True
+)
+
+enable_bullet = options.get(
+    "bullet",
+    True
+)
+
+enable_description = options.get(
+    "description",
+    True
+)
+
+enable_seo = options.get(
+    "seo",
+    True
 )
 ):
     if options is None:
@@ -226,15 +250,14 @@ def process_batch(
             start = time.time()
             if enable_highlight:
 
-                highlight_result = (
-                    HighlightGenerator.generate(
-                        profile
-                    )
+                highlight_result = HighlightGenerator.generate(
+                    profile
                 )
             
             else:
             
                 highlight_result = {}
+                        
 
             profile[
                 "highlight_result"
