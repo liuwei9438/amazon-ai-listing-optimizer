@@ -26,7 +26,7 @@ from services.listing_exporter import ListingExporter
 
 
 VERSION = "V2.4.0-Highlight-Pipeline"
-
+BATCH_SIZE = 10
 
 def display_highlights(highlight_result) -> None:
     """
@@ -359,13 +359,12 @@ if uploaded is not None:
     api_key = manual_api_key.strip() or saved_api_key
     model = st.text_input("模型", value="gpt-4.1-mini")
 
-    record_count = max(1, len(envelope.records))
-    max_products = st.number_input(
-        "本次分析产品数",
-        min_value=1,
-        max_value=max(1, min(20, record_count)),
-        value=min(3, record_count),
-    )
+    record_count = len(envelope.records)
+
+    st.info(
+        f"当前文件共有 {record_count} 个产品，"
+        f"将全部进行 AI 优化。"
+    ))
 
     if st.button("开始 AI 商品理解", type="primary"):
         if not api_key.strip():
@@ -377,12 +376,35 @@ if uploaded is not None:
             )
 
             profiles = []
-            progress = st.progress(0)
-            target_records = envelope.records[: int(max_products)]
 
-            for i, record in enumerate(target_records):
-                try:
-                    profile = engine.analyze(record)
+            progress = st.progress(0)
+            
+            status_text = st.empty()
+            
+            target_records = envelope.records
+
+            total = len(target_records)
+
+            for batch_start in range(
+                0,
+                total,
+                BATCH_SIZE
+            ):
+            
+                batch_records = target_records[
+                    batch_start:
+                    batch_start + BATCH_SIZE
+                ]
+            
+            
+                for i, record in enumerate(
+                    batch_records,
+                    start=batch_start
+                ):
+            
+                    try:
+            
+                        profile = engine.analyze(record)
                     # =========================
                     # Product Knowledge
                     # 商品知识层
@@ -653,7 +675,17 @@ if uploaded is not None:
                         traceback.format_exc()
                     )
 
-                progress.progress((i + 1) / len(target_records))
+                completed = i + 1
+                
+                status_text.write(
+                    f"正在优化：{completed}/{total} "
+                    f"成功：{len(profiles)}"
+                )
+                
+                
+                progress.progress(
+                    completed / total
+                )
 
             st.session_state["profiles"] = profiles
 
