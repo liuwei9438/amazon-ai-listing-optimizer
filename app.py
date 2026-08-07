@@ -507,9 +507,7 @@ if uploaded is not None:
                         
                             profile["seo"] = seo_keywords
                         
-                        else:
-                        
-                            profile["seo"] = {}
+                    
     
                         primary_search = seo_intent.get("primary_search", [])
                         primary_text = primary_search[0] if primary_search else ""
