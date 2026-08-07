@@ -535,236 +535,236 @@ if uploaded is not None:
     
                         profiles.append(profile)
 
-                    product_type = (
-                        profile.get("basic_info", {}).get(
-                            "product_type",
-                            "",
-                        )
-                        or "未识别产品类型"
-                    )
-
-                    expander_title = (
-                        f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                        f"｜{product_type}"
-                    )
-
-                    with st.expander(
-                        expander_title,
-                        expanded=i == 0,
-                    ):
-                        a, b, c = st.columns(3)
-
-                        a.write("**产品类型**")
-                        a.write(product_type)
-
-                        b.write("**品牌关系**")
-                        b.write(
-                            profile.get("brand_info", {}).get(
-                                "relationship",
-                                "Unknown",
-                            )
-                        )
-
-                        c.write("**风险等级**")
-                        c.write(
-                            profile.get("compliance", {}).get(
-                                "risk_level",
-                                "Unknown",
-                            )
-                        )
-
-                        compatible_brands = profile.get(
-                            "compatibility",
-                            {},
-                        ).get("brands", [])
-
-                        compatible_models = profile.get(
-                            "compatibility",
-                            {},
-                        ).get("models", [])
-
-                        st.write(
-                            "**兼容品牌：**",
-                            "、".join(compatible_brands) or "Unknown",
-                        )
-                        st.write(
-                            "**兼容型号：**",
-                            "、".join(compatible_models) or "Unknown",
-                        )
-                        st.write(
-                            "**核心功能：**",
+                        product_type = (
                             profile.get("basic_info", {}).get(
-                                "main_function",
+                                "product_type",
                                 "",
                             )
-                            or "Unknown",
+                            or "未识别产品类型"
                         )
-                        st.write(
-                            "**主要关键词：**",
-                            "、".join(
+    
+                        expander_title = (
+                            f"{record.sku or '第' + str(i + 1) + '个产品'}"
+                            f"｜{product_type}"
+                        )
+    
+                        with st.expander(
+                            expander_title,
+                            expanded=i == 0,
+                        ):
+                            a, b, c = st.columns(3)
+    
+                            a.write("**产品类型**")
+                            a.write(product_type)
+    
+                            b.write("**品牌关系**")
+                            b.write(
+                                profile.get("brand_info", {}).get(
+                                    "relationship",
+                                    "Unknown",
+                                )
+                            )
+    
+                            c.write("**风险等级**")
+                            c.write(
+                                profile.get("compliance", {}).get(
+                                    "risk_level",
+                                    "Unknown",
+                                )
+                            )
+    
+                            compatible_brands = profile.get(
+                                "compatibility",
+                                {},
+                            ).get("brands", [])
+    
+                            compatible_models = profile.get(
+                                "compatibility",
+                                {},
+                            ).get("models", [])
+    
+                            st.write(
+                                "**兼容品牌：**",
+                                "、".join(compatible_brands) or "Unknown",
+                            )
+                            st.write(
+                                "**兼容型号：**",
+                                "、".join(compatible_models) or "Unknown",
+                            )
+                            st.write(
+                                "**核心功能：**",
+                                profile.get("basic_info", {}).get(
+                                    "main_function",
+                                    "",
+                                )
+                                or "Unknown",
+                            )
+                            st.write(
+                                "**主要关键词：**",
+                                "、".join(
+                                    profile.get("seo", {}).get(
+                                        "primary_keywords",
+                                        [],
+                                    )
+                                )
+                                or "Unknown",
+                            )
+                            st.write(
+                                "**搜索意图：**",
                                 profile.get("seo", {}).get(
-                                    "primary_keywords",
-                                    [],
+                                    "search_intent",
+                                    "",
                                 )
+                                or "Unknown",
                             )
-                            or "Unknown",
-                        )
-                        st.write(
-                            "**搜索意图：**",
-                            profile.get("seo", {}).get(
-                                "search_intent",
-                                "",
+    
+                            st.write("### SEO Intent")
+                            st.write(
+                                "**Primary Search：**",
+                                "、".join(primary_search) or "Unknown",
                             )
-                            or "Unknown",
-                        )
-
-                        st.write("### SEO Intent")
-                        st.write(
-                            "**Primary Search：**",
-                            "、".join(primary_search) or "Unknown",
-                        )
-
-                        compliance_result = profile.get(
-                            "compliance_result",
-                            {},
-                        )
-
-                        st.write("### Compliance Check")
-                        st.write(
-                            "**Protected Text：**",
-                            compliance_result.get("text", ""),
-                        )
-                        st.write(
-                            "**Detected Brands：**",
-                            "、".join(
-                                compliance_result.get(
-                                    "detected_brands",
-                                    [],
+    
+                            compliance_result = profile.get(
+                                "compliance_result",
+                                {},
+                            )
+    
+                            st.write("### Compliance Check")
+                            st.write(
+                                "**Protected Text：**",
+                                compliance_result.get("text", ""),
+                            )
+                            st.write(
+                                "**Detected Brands：**",
+                                "、".join(
+                                    compliance_result.get(
+                                        "detected_brands",
+                                        [],
+                                    )
                                 )
+                                or "None",
                             )
-                            or "None",
+                            st.write(
+                                "**Risk：**",
+                                compliance_result.get("risk", ""),
+                            )
+    
+                            st.write(
+                                "**事实锁：**",
+                                profile.get("fact_lock", {}),
+                            )
+    
+                            display_generated_content(profile)
+    
+                            st.write("### 完整 Product Profile JSON")
+                            
+                            st.json(profile)
+    
+                    except UnderstandingError as exc:
+                        st.error(
+                            f"{record.sku or '第' + str(i + 1) + '个产品'} "
+                            f"分析失败：{exc}"
                         )
-                        st.write(
-                            "**Risk：**",
-                            compliance_result.get("risk", ""),
+                    except Exception as exc:
+                        import traceback
+                        st.error(
+                            f"{record.sku or '第' + str(i + 1) + '个产品'}"
+                            f"处理失败: {exc}"
                         )
-
-                        st.write(
-                            "**事实锁：**",
-                            profile.get("fact_lock", {}),
-                        )
-
-                        display_generated_content(profile)
-
-                        st.write("### 完整 Product Profile JSON")
-                        
-                        st.json(profile)
-
-                except UnderstandingError as exc:
-                    st.error(
-                        f"{record.sku or '第' + str(i + 1) + '个产品'} "
-                        f"分析失败：{exc}"
-                    )
-                except Exception as exc:
-                    import traceback
-                    st.error(
-                        f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                        f"处理失败: {exc}"
-                    )
-            st.code(
-                traceback.format_exc()
-            )
-
-            completed = i + 1
-            
-            status_text.write(
-                f"正在优化：{completed}/{total} "
-                f"成功：{len(profiles)}"
-            )
+                st.code(
+                    traceback.format_exc()
+                )
+    
+                completed = i + 1
                 
-                
-            progress.progress(
-                completed / total
+                status_text.write(
+                    f"正在优化：{completed}/{total} "
+                    f"成功：{len(profiles)}"
+                )
+                    
+                    
+                progress.progress(
+                    completed / total
+                )
+    
+                st.session_state["profiles"] = profiles
+    
+        profiles = st.session_state.get("profiles", [])
+    
+        if profiles:
+            st.download_button(
+                "下载 Product Profile JSON",
+                data=json.dumps(
+                    profiles,
+                    ensure_ascii=False,
+                    indent=2,
+                ).encode("utf-8"),
+                file_name="product_profiles_v2.4.0.json",
+                mime="application/json",
             )
-
-            st.session_state["profiles"] = profiles
-
-    profiles = st.session_state.get("profiles", [])
-
-    if profiles:
-        st.download_button(
-            "下载 Product Profile JSON",
-            data=json.dumps(
-                profiles,
-                ensure_ascii=False,
-                indent=2,
-            ).encode("utf-8"),
-            file_name="product_profiles_v2.4.0.json",
-            mime="application/json",
+    
+            st.subheader("AI优化结果导出")
+    
+            try:
+                optimized_export = ListingExporter.export(
+                    envelope.dataframe,
+                    profiles,
+                )
+    
+                if hasattr(optimized_export, "getvalue"):
+                    optimized_data = optimized_export.getvalue()
+                else:
+                    optimized_data = optimized_export
+    
+                safe_stem = re.sub(
+                    r"\.xlsx$",
+                    "",
+                    uploaded.name,
+                    flags=re.I,
+                )
+    
+                st.download_button(
+                    "导出 AI 优化结果",
+                    data=optimized_data,
+                    file_name=f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
+                    mime=(
+                        "application/vnd.openxmlformats-officedocument."
+                        "spreadsheetml.sheet"
+                    ),
+                    type="primary",
+                )
+            except Exception as exc:
+                st.error(f"生成 AI 优化结果文件失败：{exc}")
+    
+        st.subheader("原文件完整性导出")
+    
+        unchanged_export = export_unchanged(envelope)
+        integrity = integrity_report(
+            envelope,
+            unchanged_export,
         )
-
-        st.subheader("AI优化结果导出")
-
-        try:
-            optimized_export = ListingExporter.export(
-                envelope.dataframe,
-                profiles,
+    
+        if integrity["byte_identical"]:
+            st.success(
+                "验证通过：原样导出文件与上传文件完全一致，"
+                f"大小 {integrity['export_size']:,} 字节。"
             )
-
-            if hasattr(optimized_export, "getvalue"):
-                optimized_data = optimized_export.getvalue()
-            else:
-                optimized_data = optimized_export
-
+    
             safe_stem = re.sub(
                 r"\.xlsx$",
                 "",
                 uploaded.name,
                 flags=re.I,
             )
-
+    
             st.download_button(
-                "导出 AI 优化结果",
-                data=optimized_data,
-                file_name=f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
+                "导出原文件完整性测试文件",
+                data=unchanged_export,
+                file_name=f"{safe_stem}_{VERSION}_原样导出.xlsx",
                 mime=(
                     "application/vnd.openxmlformats-officedocument."
                     "spreadsheetml.sheet"
                 ),
-                type="primary",
             )
-        except Exception as exc:
-            st.error(f"生成 AI 优化结果文件失败：{exc}")
-
-    st.subheader("原文件完整性导出")
-
-    unchanged_export = export_unchanged(envelope)
-    integrity = integrity_report(
-        envelope,
-        unchanged_export,
-    )
-
-    if integrity["byte_identical"]:
-        st.success(
-            "验证通过：原样导出文件与上传文件完全一致，"
-            f"大小 {integrity['export_size']:,} 字节。"
-        )
-
-        safe_stem = re.sub(
-            r"\.xlsx$",
-            "",
-            uploaded.name,
-            flags=re.I,
-        )
-
-        st.download_button(
-            "导出原文件完整性测试文件",
-            data=unchanged_export,
-            file_name=f"{safe_stem}_{VERSION}_原样导出.xlsx",
-            mime=(
-                "application/vnd.openxmlformats-officedocument."
-                "spreadsheetml.sheet"
-            ),
-        )
-    else:
-        st.error("原文件完整性验证失败，已停止原样导出。")
+        else:
+            st.error("原文件完整性验证失败，已停止原样导出。")
