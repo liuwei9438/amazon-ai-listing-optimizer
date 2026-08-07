@@ -364,7 +364,37 @@ if uploaded is not None:
 
     api_key = manual_api_key.strip() or saved_api_key
     model = st.text_input("模型", value="gpt-4.1-mini")
-
+    st.subheader("优化内容选择")
+    
+    enable_title = st.checkbox(
+        "优化标题",
+        value=True
+    )
+    
+    enable_short_title = st.checkbox(
+        "优化短标题",
+        value=True
+    )
+    
+    enable_highlight = st.checkbox(
+        "优化商品亮点",
+        value=True
+    )
+    
+    enable_bullet = st.checkbox(
+        "优化五点描述",
+        value=True
+    )
+    
+    enable_description = st.checkbox(
+        "优化详情描述",
+        value=True
+    )
+    
+    enable_seo = st.checkbox(
+        "优化SEO关键词",
+        value=True
+    )
     record_count = len(envelope.records)
 
     st.info(
@@ -425,8 +455,15 @@ if uploaded is not None:
                         seo_intent = generate_primary_search(profile)
                         profile["seo_intent"] = seo_intent
     
-                        seo_keywords = SEOKeywordEngine.generate(profile)
-                        profile["seo"] = seo_keywords
+                        if enable_seo:
+
+                            seo_keywords = SEOKeywordEngine.generate(profile)
+                        
+                            profile["seo"] = seo_keywords
+                        
+                        else:
+                        
+                            profile["seo"] = {}
     
                         primary_search = seo_intent.get("primary_search", [])
                         primary_text = primary_search[0] if primary_search else ""
@@ -452,9 +489,15 @@ if uploaded is not None:
                         # 商品亮点提取
                         # =========================
                         
-                        highlight_result = HighlightGenerator.generate(
-                            profile
-                        )
+                        if enable_highlight:
+
+                            highlight_result = HighlightGenerator.generate(
+                                profile
+                            )
+                        
+                        else:
+                        
+                            highlight_result = {}
                         
                         profile["highlight_result"] = highlight_result
                         
@@ -464,19 +507,30 @@ if uploaded is not None:
                         # Short Title
                         # =========================
                         
-                        short_title_result = ShortTitleGenerator.generate(
-                            profile
-                        )
+                        if enable_short_title:
+
+                            short_title_result = ShortTitleGenerator.generate(
+                                profile
+                            )
                         
+                        else:
+                        
+                            short_title_result = {}
                         
                         
                         # =========================
                         # Title
                         # =========================
                         
-                        title_result = TitleGenerator.generate(
-                            profile
-                        )
+                        if enable_title:
+                        
+                            title_result = TitleGenerator.generate(
+                                profile
+                            )
+                        
+                        else:
+                        
+                            title_result = {}
                        
                         models = ModelProtection.extract_models(
                             profile
@@ -501,15 +555,31 @@ if uploaded is not None:
                         st.write(profile.get("original_title"))
                         st.write(profile.get("basic_info"))
                         st.write(profile.get("product_core"))
-                        bullet_result = BulletGenerator.generate(
-                            profile,
-                            highlight_result,
-                        )
-                        description_result = DescriptionGenerator.generate(
-                            profile,
-                            highlight_result,
-                        )
-    
+                        if enable_bullet:
+
+                            bullet_result = BulletGenerator.generate(
+                                profile,
+                                highlight_result,
+                            )
+                        
+                        else:
+                        
+                            bullet_result = {
+                                "bullets":[]
+                            }
+                        if enable_description:
+
+                            description_result = DescriptionGenerator.generate(
+                                profile,
+                                highlight_result,
+                            )
+                        
+                        else:
+                        
+                            description_result = {
+                                "description":""
+                            }
+                            
                         profile["generated_title"] = ModelProtection.protect_result(
                             title_result,
                             models
