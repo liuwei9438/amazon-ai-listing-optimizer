@@ -495,7 +495,6 @@ if uploaded is not None:
                         
                             seo_keywords = SEOKeywordEngine.generate(profile)
                         
-                            profile["seo"] = seo_keywords
                         
                         else:
                         
@@ -636,16 +635,28 @@ if uploaded is not None:
                                 "description":""
                             }
                             
-                        profile["generated_title"] = ModelProtection.protect_result(
-                            title_result,
-                            models
-                        )
+                        if enable_title:
+
+                            profile["generated_title"] = ModelProtection.protect_result(
+                                title_result,
+                                models
+                            )
+                        
+                        else:
+                        
+                            profile["generated_title"] = {}
     
     
-                        profile["short_title_result"] = ModelProtection.protect_result(
-                            short_title_result,
-                            models
-                        )
+                        if enable_short_title:
+
+                            profile["short_title_result"] = ModelProtection.protect_result(
+                                short_title_result,
+                                models
+                            )
+                        
+                        else:
+                        
+                            profile["short_title_result"] = {}
     
     
                         profile["highlight_result"] = ModelProtection.protect_result(
