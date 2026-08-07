@@ -38,6 +38,15 @@ def process_batch(
     api_key,
     model="gpt-4.1-mini",
     options=None,
+    {
+        "title": enable_title,
+        "short_title": enable_short_title,
+        "highlight": enable_highlight,
+        "bullet": enable_bullet,
+        "description": enable_description,
+        "seo": enable_seo,
+    }
+)
 ):
     if options is None:
     options = {}
