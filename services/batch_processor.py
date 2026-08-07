@@ -37,7 +37,10 @@ def process_batch(
     task_id,
     api_key,
     model="gpt-4.1-mini",
+    options=None,
 ):
+    if options is None:
+    options = {}
     """
     批量处理产品
 
@@ -67,7 +70,35 @@ def process_batch(
 
 
     total = len(records)
-
+    enable_title = options.get(
+        "title",
+        True
+    )
+    
+    enable_short_title = options.get(
+        "short_title",
+        True
+    )
+    
+    enable_highlight = options.get(
+        "highlight",
+        True
+    )
+    
+    enable_bullet = options.get(
+        "bullet",
+        True
+    )
+    
+    enable_description = options.get(
+        "description",
+        True
+    )
+    
+    enable_seo = options.get(
+        "seo",
+        True
+    )
 
     for index, record in enumerate(records):
 
@@ -116,38 +147,28 @@ def process_batch(
 
             start = time.time()
 
-            seo_intent = (
-                generate_primary_search(
+            if enable_seo:
+            
+                seo_intent = generate_primary_search(
                     profile
                 )
-            )
             
-            timing["seo_intent"] = round(
-                time.time() - start,
-                2
-            )
-
-            profile[
-                "seo_intent"
-            ] = seo_intent
-
-
-            start = time.time()
-
-            seo_keywords = (
-                SEOKeywordEngine.generate(
+                profile["seo_intent"] = seo_intent
+            
+            
+                seo_keywords = SEOKeywordEngine.generate(
                     profile
                 )
-            )
             
-            timing["seo_keywords"] = round(
-                time.time() - start,
-                2
-            )
-
-            profile[
-                "seo"
-            ] = seo_keywords
+                profile["seo"] = seo_keywords
+            
+            else:
+            
+                seo_intent = {}
+            
+                profile["seo_intent"] = {}
+            
+                profile["seo"] = {}
 
 
 
@@ -194,12 +215,17 @@ def process_batch(
             # Highlight
             # =====================
             start = time.time()
-            highlight_result = (
-                HighlightGenerator.generate(
-                    profile
-                )
-            )
+            if enable_highlight:
 
+                highlight_result = (
+                    HighlightGenerator.generate(
+                        profile
+                    )
+                )
+            
+            else:
+            
+                highlight_result = {}
 
             profile[
                 "highlight_result"
@@ -211,11 +237,17 @@ def process_batch(
             # Short Title
             # =====================
 
-            short_title_result = (
-                ShortTitleGenerator.generate(
-                    profile
+            if enable_short_title:
+
+                short_title_result = (
+                    ShortTitleGenerator.generate(
+                        profile
+                    )
                 )
-            )
+            
+            else:
+            
+                short_title_result = {}
 
 
 
@@ -269,12 +301,18 @@ def process_batch(
 
             start = time.time()
 
-            bullet_result = (
-                BulletGenerator.generate(
-                    profile,
-                    highlight_result,
+           if enable_bullet:
+
+                bullet_result = (
+                    BulletGenerator.generate(
+                        profile,
+                        highlight_result,
+                    )
                 )
-            )
+            
+            else:
+            
+                bullet_result = {}
             
             timing["bullet"] = round(
                 time.time() - start,
@@ -297,12 +335,18 @@ def process_batch(
 
             start = time.time()
 
-            description_result = (
-                DescriptionGenerator.generate(
-                    profile,
-                    highlight_result,
+           if enable_description:
+
+                description_result = (
+                    DescriptionGenerator.generate(
+                        profile,
+                        highlight_result,
+                    )
                 )
-            )
+            
+            else:
+            
+                description_result = {}
             
             timing["description"] = round(
                 time.time() - start,
