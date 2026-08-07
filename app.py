@@ -584,11 +584,7 @@ if uploaded is not None:
                         )
                         
                         profile["highlight_result"] = highlight_result
-                        st.write("DEBUG PROFILE TITLE")
-                        st.write(profile.get("title"))
-                        st.write(profile.get("original_title"))
-                        st.write(profile.get("basic_info"))
-                        st.write(profile.get("product_core"))
+                     
                         if enable_bullet:
 
                             bullet_result = BulletGenerator.generate(
