@@ -486,12 +486,24 @@ if uploaded is not None:
                         
                         profile["product_knowledge"] = product_knowledge
     
-                        seo_intent = generate_primary_search(profile)
-                        profile["seo_intent"] = seo_intent
-    
                         if enable_seo:
 
+                            seo_intent = generate_primary_search(profile)
+                        
+                            profile["seo_intent"] = seo_intent
+                        
+                        
                             seo_keywords = SEOKeywordEngine.generate(profile)
+                        
+                            profile["seo"] = seo_keywords
+                        
+                        else:
+                        
+                            seo_intent = {}
+                        
+                            profile["seo_intent"] = {}
+                        
+                            profile["seo"] = {}
                         
                             profile["seo"] = seo_keywords
                         
@@ -570,14 +582,30 @@ if uploaded is not None:
                             profile
                         )
                         
-                        title_result = ModelProtection.protect_result(
-                            title_result,
-                            models,
-                        )
-                        short_title_result = ModelProtection.protect_result(
-                            short_title_result,
-                            models,
-                        )
+                        if enable_title:
+
+                            profile["generated_title"] = (
+                                ModelProtection.protect_result(
+                                    title_result,
+                                    models
+                                )
+                            )
+                        
+                        else:
+                        
+                            profile["generated_title"] = {}
+                        if enable_short_title:
+                        
+                            profile["short_title_result"] = (
+                                ModelProtection.protect_result(
+                                    short_title_result,
+                                    models
+                                )
+                            )
+                        
+                        else:
+                        
+                            profile["short_title_result"] = {}
                         highlight_result = ModelProtection.protect_result(
                             highlight_result,
                             models,
