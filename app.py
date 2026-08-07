@@ -833,46 +833,34 @@ if uploaded is not None:
                         )
                     except Exception as exc:
 
-                    failed_items.append(
-                        {
-                            "index": i,
-                            "sku": record.sku,
-                            "error": str(exc)
-                        }
-                    )
-                st.code(
-                    traceback.format_exc()
-                )
-    
+                        failed_items.append(
+                            {
+                                "index": i,
+                                "sku": record.sku,
+                                "error": str(exc)
+                            }
+                        )
+                    
+                        print(
+                            f"{record.sku} failed:",
+                            exc
+                        )
+                        
                 completed = i + 1
 
                 if completed % 10 == 0 or completed == total:
                 
+                
                     status_text.info(
                         f"""
-                正在优化：
-                
-                {completed}/{total}
-                
-                成功：
-                {len(profiles)}
-                """
+                    正在优化：
+                    
+                    {completed}/{total}
+                    
+                    成功：
+                    {len(profiles)}
+                    """
                     )
-                
-                    progress.progress(
-                        completed / total
-                    )
-                
-                status_text.info(
-                    f"""
-                正在优化：
-                
-                {completed}/{total}
-                
-                成功：
-                {len(profiles)}
-                """
-                )
                     
                     
                 progress.progress(
@@ -894,8 +882,12 @@ if uploaded is not None:
                 )
                 st.success(
                     f"优化完成：共处理 {len(profiles)} 个产品"
-                )
-    
+                            )
+                if failed_items:
+                
+                    st.warning(
+                        f"失败 {len(failed_items)} 个产品"
+                    )
         profiles = st.session_state.get("profiles", [])
     
         if profiles:
