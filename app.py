@@ -402,138 +402,138 @@ if uploaded is not None:
                     start=batch_start
                 ):
             
-                try:
-                
-                    profile = engine.analyze(record)
-                    # =========================
-                    # Product Knowledge
-                    # 商品知识层
-                    # =========================
+                    try:
                     
-                    product_knowledge = ProductKnowledgeBuilder.build(
-                        profile
-                    )
-                    
-                    profile["product_knowledge"] = product_knowledge
-
-                    seo_intent = generate_primary_search(profile)
-                    profile["seo_intent"] = seo_intent
-
-                    seo_keywords = SEOKeywordEngine.generate(profile)
-                    profile["seo"] = seo_keywords
-
-                    primary_search = seo_intent.get("primary_search", [])
-                    primary_text = primary_search[0] if primary_search else ""
-
-                    detected_brands = (
-                        profile.get("brand_info", {}).get(
-                            "detected_brands",
-                            [],
+                        profile = engine.analyze(record)
+                        # =========================
+                        # Product Knowledge
+                        # 商品知识层
+                        # =========================
+                        
+                        product_knowledge = ProductKnowledgeBuilder.build(
+                            profile
                         )
-                        or profile.get("compatibility", {}).get(
-                            "brands",
-                            [],
+                        
+                        profile["product_knowledge"] = product_knowledge
+    
+                        seo_intent = generate_primary_search(profile)
+                        profile["seo_intent"] = seo_intent
+    
+                        seo_keywords = SEOKeywordEngine.generate(profile)
+                        profile["seo"] = seo_keywords
+    
+                        primary_search = seo_intent.get("primary_search", [])
+                        primary_text = primary_search[0] if primary_search else ""
+    
+                        detected_brands = (
+                            profile.get("brand_info", {}).get(
+                                "detected_brands",
+                                [],
+                            )
+                            or profile.get("compatibility", {}).get(
+                                "brands",
+                                [],
+                            )
                         )
-                    )
-
-                    profile["compliance_result"] = protect_text(
-                        primary_text,
-                        detected_brands=detected_brands,
-                    )
-
-                    # =========================
-                    # Highlight
-                    # 商品亮点提取
-                    # =========================
-                    
-                    highlight_result = HighlightGenerator.generate(
-                        profile
-                    )
-                    
-                    profile["highlight_result"] = highlight_result
-                    
-                    
-                    
-                    # =========================
-                    # Short Title
-                    # =========================
-                    
-                    short_title_result = ShortTitleGenerator.generate(
-                        profile
-                    )
-                    
-                    
-                    
-                    # =========================
-                    # Title
-                    # =========================
-                    
-                    title_result = TitleGenerator.generate(
-                        profile
-                    )
-                   
-                    models = ModelProtection.extract_models(
-                        profile
-                    )
-                    
-                    title_result = ModelProtection.protect_result(
-                        title_result,
-                        models,
-                    )
-                    short_title_result = ModelProtection.protect_result(
-                        short_title_result,
-                        models,
-                    )
-                    highlight_result = ModelProtection.protect_result(
-                        highlight_result,
-                        models,
-                    )
-                    
-                    profile["highlight_result"] = highlight_result
-                    st.write("DEBUG PROFILE TITLE")
-                    st.write(profile.get("title"))
-                    st.write(profile.get("original_title"))
-                    st.write(profile.get("basic_info"))
-                    st.write(profile.get("product_core"))
-                    bullet_result = BulletGenerator.generate(
-                        profile,
-                        highlight_result,
-                    )
-                    description_result = DescriptionGenerator.generate(
-                        profile,
-                        highlight_result,
-                    )
-
-                    profile["generated_title"] = ModelProtection.protect_result(
-                        title_result,
-                        models
-                    )
-
-
-                    profile["short_title_result"] = ModelProtection.protect_result(
-                        short_title_result,
-                        models
-                    )
-
-
-                    profile["highlight_result"] = ModelProtection.protect_result(
-                        highlight_result,
-                        models
-                    )
-
-
-                    profile["bullet_result"] = ModelProtection.protect_result(
-                        bullet_result,
-                        models
-                    )
-
-
-                    profile["description_result"] = ModelProtection.protect_result(
-                        description_result,
-                        models
-                    )
-
-                    profiles.append(profile)
+    
+                        profile["compliance_result"] = protect_text(
+                            primary_text,
+                            detected_brands=detected_brands,
+                        )
+    
+                        # =========================
+                        # Highlight
+                        # 商品亮点提取
+                        # =========================
+                        
+                        highlight_result = HighlightGenerator.generate(
+                            profile
+                        )
+                        
+                        profile["highlight_result"] = highlight_result
+                        
+                        
+                        
+                        # =========================
+                        # Short Title
+                        # =========================
+                        
+                        short_title_result = ShortTitleGenerator.generate(
+                            profile
+                        )
+                        
+                        
+                        
+                        # =========================
+                        # Title
+                        # =========================
+                        
+                        title_result = TitleGenerator.generate(
+                            profile
+                        )
+                       
+                        models = ModelProtection.extract_models(
+                            profile
+                        )
+                        
+                        title_result = ModelProtection.protect_result(
+                            title_result,
+                            models,
+                        )
+                        short_title_result = ModelProtection.protect_result(
+                            short_title_result,
+                            models,
+                        )
+                        highlight_result = ModelProtection.protect_result(
+                            highlight_result,
+                            models,
+                        )
+                        
+                        profile["highlight_result"] = highlight_result
+                        st.write("DEBUG PROFILE TITLE")
+                        st.write(profile.get("title"))
+                        st.write(profile.get("original_title"))
+                        st.write(profile.get("basic_info"))
+                        st.write(profile.get("product_core"))
+                        bullet_result = BulletGenerator.generate(
+                            profile,
+                            highlight_result,
+                        )
+                        description_result = DescriptionGenerator.generate(
+                            profile,
+                            highlight_result,
+                        )
+    
+                        profile["generated_title"] = ModelProtection.protect_result(
+                            title_result,
+                            models
+                        )
+    
+    
+                        profile["short_title_result"] = ModelProtection.protect_result(
+                            short_title_result,
+                            models
+                        )
+    
+    
+                        profile["highlight_result"] = ModelProtection.protect_result(
+                            highlight_result,
+                            models
+                        )
+    
+    
+                        profile["bullet_result"] = ModelProtection.protect_result(
+                            bullet_result,
+                            models
+                        )
+    
+    
+                        profile["description_result"] = ModelProtection.protect_result(
+                            description_result,
+                            models
+                        )
+    
+                        profiles.append(profile)
 
                     product_type = (
                         profile.get("basic_info", {}).get(
