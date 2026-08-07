@@ -435,6 +435,8 @@ if uploaded is not None:
             )
             profiles = []
 
+            failed_items = []
+
             progress = st.progress(0)
             
             status_text = st.empty()
@@ -830,16 +832,36 @@ if uploaded is not None:
                             f"分析失败：{exc}"
                         )
                     except Exception as exc:
-                        import traceback
-                        st.error(
-                            f"{record.sku or '第' + str(i + 1) + '个产品'}"
-                            f"处理失败: {exc}"
-                        )
+
+                    failed_items.append(
+                        {
+                            "index": i,
+                            "sku": record.sku,
+                            "error": str(exc)
+                        }
+                    )
                 st.code(
                     traceback.format_exc()
                 )
     
                 completed = i + 1
+
+                if completed % 10 == 0 or completed == total:
+                
+                    status_text.info(
+                        f"""
+                正在优化：
+                
+                {completed}/{total}
+                
+                成功：
+                {len(profiles)}
+                """
+                    )
+                
+                    progress.progress(
+                        completed / total
+                    )
                 
                 status_text.info(
                     f"""
