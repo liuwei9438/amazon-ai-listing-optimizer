@@ -503,10 +503,7 @@ if uploaded is not None:
                             profile["seo_intent"] = {}
                         
                             profile["seo"] = {}
-                        
-                            profile["seo"] = seo_keywords
-                        
-                    
+                                            
     
                         primary_search = seo_intent.get("primary_search", [])
                         primary_text = primary_search[0] if primary_search else ""
@@ -659,22 +656,46 @@ if uploaded is not None:
                             profile["short_title_result"] = {}
     
     
-                        profile["highlight_result"] = ModelProtection.protect_result(
-                            highlight_result,
-                            models
-                        )
+                        if enable_highlight:
+
+                            profile["highlight_result"] = (
+                                ModelProtection.protect_result(
+                                    highlight_result,
+                                    models
+                                )
+                            )
+                        
+                        else:
+                        
+                            profile["highlight_result"] = {}
     
     
-                        profile["bullet_result"] = ModelProtection.protect_result(
-                            bullet_result,
-                            models
-                        )
+                        if enable_bullet:
+
+                            profile["bullet_result"] = (
+                                ModelProtection.protect_result(
+                                    bullet_result,
+                                    models
+                                )
+                            )
+                        
+                        else:
+                        
+                            profile["bullet_result"] = {}
+                            
     
-    
-                        profile["description_result"] = ModelProtection.protect_result(
-                            description_result,
-                            models
-                        )
+                        if enable_description:
+
+                            profile["description_result"] = (
+                                ModelProtection.protect_result(
+                                    description_result,
+                                    models
+                                )
+                            )
+                        
+                        else:
+                        
+                            profile["description_result"] = {}
     
                         profiles.append(profile)
 
