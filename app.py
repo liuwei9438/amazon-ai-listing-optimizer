@@ -364,7 +364,7 @@ if uploaded is not None:
     st.info(
         f"当前文件共有 {record_count} 个产品，"
         f"将全部进行 AI 优化。"
-    ))
+    )
 
     if st.button("开始 AI 商品理解", type="primary"):
         if not api_key.strip():
