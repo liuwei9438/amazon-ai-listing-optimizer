@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 
@@ -71,9 +72,18 @@ def process_batch(
     for index, record in enumerate(records):
 
         try:
+            product_start = time.time()
+
+            timing = {}
+            start = time.time()
 
             profile = engine.analyze(
                 record
+            )
+            
+            timing["understanding"] = round(
+                time.time() - start,
+                2
             )
 
 
@@ -81,10 +91,17 @@ def process_batch(
             # Product Knowledge
             # =====================
 
+            start = time.time()
+
             product_knowledge = (
                 ProductKnowledgeBuilder.build(
                     profile
                 )
+            )
+            
+            timing["knowledge"] = round(
+                time.time() - start,
+                2
             )
 
             profile[
@@ -97,10 +114,17 @@ def process_batch(
             # SEO
             # =====================
 
+            start = time.time()
+
             seo_intent = (
                 generate_primary_search(
                     profile
                 )
+            )
+            
+            timing["seo_intent"] = round(
+                time.time() - start,
+                2
             )
 
             profile[
@@ -108,10 +132,17 @@ def process_batch(
             ] = seo_intent
 
 
+            start = time.time()
+
             seo_keywords = (
                 SEOKeywordEngine.generate(
                     profile
                 )
+            )
+            
+            timing["seo_keywords"] = round(
+                time.time() - start,
+                2
             )
 
             profile[
@@ -162,7 +193,7 @@ def process_batch(
             # =====================
             # Highlight
             # =====================
-
+            start = time.time()
             highlight_result = (
                 HighlightGenerator.generate(
                     profile
@@ -192,10 +223,17 @@ def process_batch(
             # Title
             # =====================
 
+            start = time.time()
+
             title_result = (
                 TitleGenerator.generate(
                     profile
                 )
+            )
+            
+            timing["title"] = round(
+                time.time() - start,
+                2
             )
 
 
@@ -229,11 +267,18 @@ def process_batch(
             # Bullet
             # =====================
 
+            start = time.time()
+
             bullet_result = (
                 BulletGenerator.generate(
                     profile,
                     highlight_result,
                 )
+            )
+            
+            timing["bullet"] = round(
+                time.time() - start,
+                2
             )
 
 
@@ -250,13 +295,19 @@ def process_batch(
             # Description
             # =====================
 
+            start = time.time()
+
             description_result = (
                 DescriptionGenerator.generate(
                     profile,
                     highlight_result,
                 )
             )
-
+            
+            timing["description"] = round(
+                time.time() - start,
+                2
+            )
 
             profile[
                 "description_result"
@@ -266,7 +317,7 @@ def process_batch(
             )
 
 
-
+            profile["performance"] = timing
             profiles.append(
                 profile
             )
