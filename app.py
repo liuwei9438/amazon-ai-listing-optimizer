@@ -24,11 +24,19 @@ from generator.short_title_generator import ShortTitleGenerator
 from generator.title_generator import TitleGenerator
 from services.config import get_openai_api_key
 from services.listing_exporter import ListingExporter
-
+from services.task_manager import (
+    create_task,
+    save_status,
+    load_status,
+)
 
 VERSION = "V2.4.0-Highlight-Pipeline"
 BATCH_SIZE = 10
 DEBUG_MODE = False
+current_task = st.session_state.get(
+    "current_task",
+    ""
+)
 
 def display_highlights(highlight_result) -> None:
     """
@@ -406,11 +414,25 @@ if uploaded is not None:
         if not api_key.strip():
             st.error("请先填写 OpenAI API Key。")
         else:
+        
+            task_id = create_task(
+                total_products=len(envelope.records),
+                filename=uploaded.name,
+            )
+        
+        
+            st.session_state["current_task"] = task_id
+        
+        
+            st.success(
+                f"任务创建成功：{task_id}"
+            )
+        
+        
             engine = ProductUnderstandingEngine(
                 api_key=api_key,
                 model=model,
             )
-
             profiles = []
 
             progress = st.progress(0)
@@ -420,6 +442,18 @@ if uploaded is not None:
             target_records = envelope.records
 
             total = len(target_records)
+            save_status(
+                task_id,
+                {
+                    "task_id": task_id,
+                    "filename": uploaded.name,
+                    "total_products": len(envelope.records),
+                    "completed": 0,
+                    "success": 0,
+                    "failed": 0,
+                    "status": "running",
+                }
+            )
 
             for batch_start in range(
                 0,
@@ -770,6 +804,18 @@ if uploaded is not None:
                 )
     
                 st.session_state["profiles"] = profiles
+                save_status(
+                    task_id,
+                    {
+                        "task_id": task_id,
+                        "filename": uploaded.name,
+                        "total_products": len(target_records),
+                        "completed": len(profiles),
+                        "success": len(profiles),
+                        "failed": 0,
+                        "status": "completed",
+                    }
+                )
                 st.success(
                     f"优化完成：共处理 {len(profiles)} 个产品"
                 )
