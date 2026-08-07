@@ -289,11 +289,17 @@ enable_seo = options.get(
 
             start = time.time()
 
-            title_result = (
-                TitleGenerator.generate(
-                    profile
+            if enable_title:
+
+                title_result = (
+                    TitleGenerator.generate(
+                        profile
+                    )
                 )
-            )
+            
+            else:
+            
+                title_result = {}
             
             timing["title"] = round(
                 time.time() - start,
