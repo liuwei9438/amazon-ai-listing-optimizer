@@ -402,9 +402,9 @@ if uploaded is not None:
                     start=batch_start
                 ):
             
-                    try:
-            
-                        profile = engine.analyze(record)
+                try:
+                
+                    profile = engine.analyze(record)
                     # =========================
                     # Product Knowledge
                     # 商品知识层
@@ -671,21 +671,21 @@ if uploaded is not None:
                         f"{record.sku or '第' + str(i + 1) + '个产品'}"
                         f"处理失败: {exc}"
                     )
-                    st.code(
-                        traceback.format_exc()
-                    )
+            st.code(
+                traceback.format_exc()
+            )
 
-                completed = i + 1
+            completed = i + 1
+            
+            status_text.write(
+                f"正在优化：{completed}/{total} "
+                f"成功：{len(profiles)}"
+            )
                 
-                status_text.write(
-                    f"正在优化：{completed}/{total} "
-                    f"成功：{len(profiles)}"
-                )
                 
-                
-                progress.progress(
-                    completed / total
-                )
+            progress.progress(
+                completed / total
+            )
 
             st.session_state["profiles"] = profiles
 
