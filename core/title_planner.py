@@ -46,58 +46,81 @@ class TitlePlanner:
 
         return {
 
-            "product_identity":
-                TitlePlanner.get_identity(
+            "main_product":
+                TitlePlanner.get_main_product(
                     identity
                 ),
-
-
-            "must_include":
-                TitlePlanner.get_must_include(
-                    identity,
+        
+        
+            "search_terms":
+                TitlePlanner.get_search_terms(
+                    product_knowledge
+                ),
+        
+        
+            "features":
+                TitlePlanner.get_features(
+                    product_knowledge
+                ),
+        
+        
+            "compatibility":
+                TitlePlanner.get_compatibility(
                     relationship
                 ),
-
-
-            "high_value_features":
-                TitlePlanner.get_features(
-                    features
+        
+        
+            "avoid":
+                TitlePlanner.get_avoid_terms(
+                    identity
                 ),
-
-
-            "avoid_terms":[],
-
+        
         }
 
 
     @staticmethod
-    def get_identity(identity):
-
+    def get_main_product(identity):
+    
         result=[]
-
-
+    
+    
         product_name = identity.get(
             "product_name",
             ""
         )
-
-
-        category = identity.get(
-            "category",
-            ""
-        )
-
-
+    
+    
         if product_name:
             result.append(product_name)
-
-
-        if category:
-            result.append(category)
-
-
+    
+    
         return result
-
+    @staticmethod
+    def get_search_terms(product_knowledge):
+    
+        result=[]
+    
+    
+        seo = product_knowledge.get(
+            "seo",
+            {}
+        )
+    
+    
+        keywords = seo.get(
+            "secondary_keywords",
+            []
+        )
+    
+    
+        if isinstance(keywords,list):
+    
+            result.extend(
+                keywords[:3]
+            )
+    
+    
+        return result
 
 
     @staticmethod
@@ -137,12 +160,37 @@ class TitlePlanner:
 
 
     @staticmethod
-    def get_features(features):
-
-        feature_list = features.get(
-            "features",
+    def get_features(product_knowledge):
+    
+        result=[]
+    
+    
+        classification = product_knowledge.get(
+            "feature_classification",
+            {}
+        )
+    
+    
+        design = classification.get(
+            "design_features",
             []
         )
-
-
-        return feature_list[:5]
+    
+    
+        functional = classification.get(
+            "functional_features",
+            []
+        )
+    
+    
+        result.extend(
+            design[:3]
+        )
+    
+    
+        result.extend(
+            functional[:2]
+        )
+    
+    
+        return result[:5]
