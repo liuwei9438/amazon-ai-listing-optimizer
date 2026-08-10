@@ -194,3 +194,39 @@ class TitlePlanner:
     
     
         return result[:5]
+    @staticmethod
+    def get_compatibility(relationship):
+    
+        brands = relationship.get(
+            "brands",
+            []
+        )
+    
+    
+        if brands:
+    
+            return [
+                "Compatible with "
+                + brands[0]
+            ]
+    
+    
+        return []
+    @staticmethod
+    def get_avoid_terms(identity):
+    
+        result=[]
+    
+    
+        category = identity.get(
+            "category",
+            ""
+        )
+    
+    
+        if category:
+    
+            result.append(category)
+    
+    
+        return result
