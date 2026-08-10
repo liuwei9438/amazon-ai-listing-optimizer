@@ -44,11 +44,6 @@ def process_batch(
 ):
 
   
-enable_seo = options.get(
-    "seo",
-    True
-)
-):
     if options is None:
     options = {}
     """
@@ -64,7 +59,10 @@ enable_seo = options.get(
     输出:
         profiles
     """
-
+enable_title = options.get(
+    "title",
+    True
+)
 
     engine = ProductUnderstandingEngine(
         api_key=api_key,
@@ -351,12 +349,20 @@ enable_seo = options.get(
             )
 
 
-            profile[
-                "bullet_result"
-            ] = ModelProtection.protect_result(
-                bullet_result,
-                models,
-            )
+            if enable_bullet:
+
+                profile[
+                    "bullet_result"
+                ] = ModelProtection.protect_result(
+                    bullet_result,
+                    models,
+                )
+            
+            else:
+            
+                profile[
+                    "bullet_result"
+                ] = {}
 
 
 
@@ -384,12 +390,20 @@ enable_seo = options.get(
                 2
             )
 
-            profile[
-                "description_result"
-            ] = ModelProtection.protect_result(
-                description_result,
-                models,
-            )
+            if enable_description:
+
+                profile[
+                    "description_result"
+                ] = ModelProtection.protect_result(
+                    description_result,
+                    models,
+                )
+            
+            else:
+            
+                profile[
+                    "description_result"
+                ] = {}
 
 
             profile["performance"] = timing
