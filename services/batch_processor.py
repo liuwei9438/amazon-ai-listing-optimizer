@@ -13,11 +13,9 @@ from analyzer.product_understanding import (
 from analyzer.model_protection import ModelProtection
 from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
-
 from compliance.brand_protection import protect_text
-
 from core.product_knowledge import ProductKnowledgeBuilder
-
+from core.title_planner import TitlePlanner
 from generator.highlight_generator import HighlightGenerator
 from generator.short_title_generator import ShortTitleGenerator
 from generator.title_generator import TitleGenerator
@@ -142,7 +140,12 @@ def process_batch(
             profile[
                 "product_knowledge"
             ] = product_knowledge
-
+            title_plan = TitlePlanner.plan(
+                product_knowledge
+            )
+            
+            
+            profile["title_plan"] = title_plan
 
 
             # =====================
