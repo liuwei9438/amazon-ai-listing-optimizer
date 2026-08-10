@@ -43,33 +43,7 @@ def process_batch(
     options=None,
 ):
 
-    if options is None:
-        options = {}
-        enable_title = options.get(
-    "title",
-    True
-)
-
-enable_short_title = options.get(
-    "short_title",
-    True
-)
-
-enable_highlight = options.get(
-    "highlight",
-    True
-)
-
-enable_bullet = options.get(
-    "bullet",
-    True
-)
-
-enable_description = options.get(
-    "description",
-    True
-)
-
+  
 enable_seo = options.get(
     "seo",
     True
@@ -320,20 +294,35 @@ enable_seo = options.get(
             )
 
 
-            profile[
-                "generated_title"
-            ] = ModelProtection.protect_result(
-                title_result,
-                models,
-            )
+            if enable_title:
 
+                profile[
+                    "generated_title"
+                ] = ModelProtection.protect_result(
+                    title_result,
+                    models,
+                )
+            
+            else:
+            
+                profile[
+                    "generated_title"
+                ] = {}
 
-            profile[
-                "short_title_result"
-            ] = ModelProtection.protect_result(
-                short_title_result,
-                models,
-            )
+            if enable_short_title:
+            
+                profile[
+                    "short_title_result"
+                ] = ModelProtection.protect_result(
+                    short_title_result,
+                    models,
+                )
+            
+            else:
+            
+                profile[
+                    "short_title_result"
+                ] = {}
 
 
 
@@ -478,6 +467,15 @@ enable_seo = options.get(
             }
 
         )
+    save_profiles(
+        task_id,
+        profiles
+    )
+    
+    save_failed_items(
+        task_id,
+        failed_items
+    )
 
 
     save_status(
