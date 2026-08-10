@@ -415,7 +415,14 @@ def process_batch(
                 task_id,
                 profiles
             )
-            
+            save_status(
+                task_id,
+                {
+                    "status": "running",
+                    "completed": len(profiles),
+                    "total": total,
+                }
+            )
             
             success += 1
 
