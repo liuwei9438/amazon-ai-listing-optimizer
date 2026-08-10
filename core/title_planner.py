@@ -98,7 +98,7 @@ class TitlePlanner:
     @staticmethod
     def get_search_terms(product_knowledge):
     
-        result=[]
+        result = []
     
     
         seo = product_knowledge.get(
@@ -113,14 +113,30 @@ class TitlePlanner:
         )
     
     
-        if isinstance(keywords,list):
+        if isinstance(keywords, list):
+            result.extend(keywords[:3])
+    
+    
+        classification = product_knowledge.get(
+            "feature_classification",
+            {}
+        )
+    
+    
+        functional = classification.get(
+            "functional_features",
+            []
+        )
+    
+    
+        if isinstance(functional, list):
     
             result.extend(
-                keywords[:3]
+                functional[:2]
             )
     
     
-        return result
+        return result[:5]
 
 
     @staticmethod
@@ -191,7 +207,11 @@ class TitlePlanner:
         result.extend(
             functional[:2]
         )
-    
+        blocked_features=[
+        "start washing machine",
+        "protects extruder",
+        "enhances heat retention"
+    ]
     
         return result[:5]
     @staticmethod
@@ -230,3 +250,12 @@ class TitlePlanner:
     
     
         return result
+        avoid_terms = [
+            category,
+        ]
+        
+        if "parts" in category.lower():
+        
+            avoid_terms.append(category)
+        
+        return avoid_terms
