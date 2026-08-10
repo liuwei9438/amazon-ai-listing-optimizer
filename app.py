@@ -29,6 +29,7 @@ from services.task_manager import (
     save_status,
     load_status,
 )
+from services.result_storage import load_profiles
 from services.batch_processor import process_batch
 from services.task_worker import start_worker
 
@@ -422,7 +423,26 @@ if uploaded is not None:
                 filename=uploaded.name,
             )
         
-        
+            if task_id:
+    
+                status = load_status(
+                    task_id
+                )
+            
+            
+                if status:
+            
+                    st.info(
+                        f"""
+            任务状态：
+            {status.get("status")}
+            
+            进度：
+            {status.get("completed")}
+            /
+            {status.get("total")}
+            """
+                    )
             st.session_state["current_task"] = task_id
         
         
