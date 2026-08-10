@@ -76,7 +76,23 @@ class TitleGenerator:
 
 
         title_parts = []
+        # =========================
+        # Title Planner Must Include
+        # 必须保留关键词
+        # =========================
 
+        if isinstance(
+            plan_must_include,
+            list,
+        ):
+
+            for item in plan_must_include[:2]:
+
+                item = str(item).strip()
+
+                if item:
+
+                    title_parts.append(item)
 
 
         # =========================
