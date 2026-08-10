@@ -367,7 +367,7 @@ def process_batch(
 
             start = time.time()
 
-           if enable_description:
+            if enable_description:
 
                 description_result = (
                     DescriptionGenerator.generate(
