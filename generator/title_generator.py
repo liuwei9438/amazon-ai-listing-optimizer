@@ -30,7 +30,10 @@ class TitleGenerator:
             "product_knowledge",
             {},
         )
-
+        title_plan = profile.get(
+            "title_plan",
+            {}
+        )
 
         if not isinstance(
             knowledge,
@@ -56,7 +59,20 @@ class TitleGenerator:
             "generation_strategy",
             {},
         )
-
+        plan_identity = title_plan.get(
+            "product_identity",
+            []
+        )
+        
+        plan_must_include = title_plan.get(
+            "must_include",
+            []
+        )
+        
+        plan_features = title_plan.get(
+            "high_value_features",
+            []
+        )
 
 
         title_parts = []
@@ -68,6 +84,8 @@ class TitleGenerator:
         # =========================
 
         title_identity_focus = (
+            plan_identity
+            or
             generation_strategy.get(
                 "title_identity_focus",
                 [],
@@ -251,7 +269,42 @@ class TitleGenerator:
         # Attribute
         # 高价值属性
         # =========================
-
+        # =========================
+        # Title Planner Features
+        # 高价值卖点
+        # =========================
+        
+        if isinstance(
+            plan_features,
+            list,
+        ):
+        
+            for feature in plan_features:
+        
+                feature = str(feature).strip()
+        
+                if not feature:
+                    continue
+        
+        
+                duplicate = False
+        
+        
+                for part in title_parts:
+        
+                    if feature.lower() in str(part).lower():
+        
+                        duplicate = True
+                        break
+        
+        
+                if not duplicate:
+        
+                    title_parts.append(
+                        feature
+                    )
+        
+                    break
         if isinstance(
             title_attribute_focus,
             list,
