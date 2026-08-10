@@ -634,9 +634,6 @@ if profiles:
         st.error(
             f"生成优化文件失败：{exc}"
         )
-
-
-
 # =====================================================
 # 原文件完整性测试
 # =====================================================
@@ -652,70 +649,65 @@ if uploaded is not None:
 
     try:
 
+
         unchanged_export = export_unchanged(
             envelope
         )
 
 
-    integrity = integrity_report(
-
-        envelope,
-
-        unchanged_export,
-
-    )
-
-
-
-    if integrity["byte_identical"]:
-
-
-        st.success(
-
-            "验证通过：原文件完整性保持一致"
-
+        integrity = integrity_report(
+            envelope,
+            unchanged_export,
         )
 
 
-        safe_stem = re.sub(
-
-            r"\.xlsx$",
-
-            "",
-
-            uploaded.name,
-
-            flags=re.I,
-
-        )
+        if integrity["byte_identical"]:
 
 
-        st.download_button(
-
-            "导出原文件完整性测试文件",
-
-            data=unchanged_export,
-
-            file_name=
-            f"{safe_stem}_{VERSION}_原样导出.xlsx",
-
-            mime=
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-
-        )
+            st.success(
+                "验证通过：原文件完整性保持一致"
+            )
 
 
-    else:
+            safe_stem = re.sub(
+
+                r"\.xlsx$",
+
+                "",
+
+                uploaded.name,
+
+                flags=re.I,
+
+            )
+
+
+            st.download_button(
+
+                "导出原文件完整性测试文件",
+
+                data=unchanged_export,
+
+                file_name=
+                f"{safe_stem}_{VERSION}_原样导出.xlsx",
+
+                mime=
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+            )
+
+
+        else:
+
+
+            st.error(
+                "原文件完整性验证失败"
+            )
+
+
+    except Exception as exc:
 
 
         st.error(
-            "原文件完整性验证失败"
+            f"完整性测试失败：{exc}"
         )
-
-
-except Exception as exc:
-
-
-    st.error(
-        f"完整性测试失败：{exc}"
-    )
