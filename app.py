@@ -5,6 +5,8 @@ import re
 import pandas as pd
 import streamlit as st
 
+from streamlit_autorefresh import st_autorefresh
+
 
 from core import (
     read_workbook,
@@ -442,13 +444,18 @@ current_task = st.session_state.get(
 if current_task:
 
 
+    st_autorefresh(
+        interval=3000,
+        key="task_refresh"
+    )
+
+
     status = load_status(
         current_task
     )
 
 
     if status:
-
 
         st.subheader(
             "任务状态"
@@ -476,7 +483,14 @@ profiles = []
 
 if current_task:
 
-    profiles = load_profiles(
+
+    st_autorefresh(
+        interval=3000,
+        key="task_status_refresh"
+    )
+
+
+    status = load_status(
         current_task
     )
 
