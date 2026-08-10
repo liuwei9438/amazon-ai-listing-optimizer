@@ -96,30 +96,20 @@ class TitlePlanner:
     
         return result
     @staticmethod
-    def get_search_terms(product_knowledge):
+    def get_features(product_knowledge):
     
-        result = []
-    
-    
-        seo = product_knowledge.get(
-            "seo",
-            {}
-        )
-    
-    
-        keywords = seo.get(
-            "secondary_keywords",
-            []
-        )
-    
-    
-        if isinstance(keywords, list):
-            result.extend(keywords[:3])
+        result=[]
     
     
         classification = product_knowledge.get(
             "feature_classification",
             {}
+        )
+    
+    
+        design = classification.get(
+            "design_features",
+            []
         )
     
     
@@ -129,51 +119,42 @@ class TitlePlanner:
         )
     
     
-        if isinstance(functional, list):
-    
-            result.extend(
-                functional[:2]
-            )
-    
-    
-        return result[:5]
-
-
-    @staticmethod
-    def get_must_include(
-        identity,
-        relationship
-    ):
-
-        result=[]
-
-
-        product_name = identity.get(
-            "product_name",
-            ""
+        result.extend(
+            design[:3]
         )
-
-        if product_name:
-            result.append(product_name)
-
-
-        brands = relationship.get(
-            "brands",
-            []
+    
+    
+        result.extend(
+            functional[:2]
         )
-
-
-        if brands:
-            result.append(
-                "Compatible with "
-                +
-                brands[0]
-            )
-
-
-        return result
-
-
+    
+    
+        blocked_features=[
+            "start washing machine",
+            "protects extruder",
+            "enhances heat retention"
+        ]
+    
+    
+        filtered=[]
+    
+    
+        for item in result:
+    
+            text = str(item).strip()
+    
+            if not text:
+                continue
+    
+    
+            if text.lower() in blocked_features:
+                continue
+    
+    
+            filtered.append(text)
+    
+    
+        return filtered[:5]
 
     @staticmethod
     def get_features(product_knowledge):
@@ -235,27 +216,38 @@ class TitlePlanner:
     @staticmethod
     def get_avoid_terms(identity):
     
-        result=[]
-    
-    
         category = identity.get(
             "category",
             ""
         )
     
     
+        if not category:
+    
+            return []
+    
+    
+        avoid_terms=[]
+    
+    
         if category:
     
-            result.append(category)
-    
-    
-        return result
-        avoid_terms = [
-            category,
-        ]
-        
-        if "parts" in category.lower():
-        
             avoid_terms.append(category)
-        
-        return avoid_terms
+    
+    
+        category_lower = category.lower()
+    
+    
+        if "parts" in category_lower:
+    
+            avoid_terms.append(category)
+    
+    
+        if "appliances" in category_lower:
+    
+            avoid_terms.append(category)
+    
+    
+        return list(
+            set(avoid_terms)
+        )
