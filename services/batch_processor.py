@@ -30,7 +30,10 @@ from services.task_manager import (
     save_status,
 )
 
-
+from services.result_storage import (
+    save_profiles,
+    save_failed_items,
+)
 
 def process_batch(
     records,
@@ -100,7 +103,8 @@ enable_seo = options.get(
     success = 0
 
     failed = 0
-
+        
+    failed_items = []
 
     total = len(records)
     enable_title = options.get(
@@ -400,11 +404,18 @@ enable_seo = options.get(
 
 
             profile["performance"] = timing
+
             profiles.append(
                 profile
             )
-
-
+            
+            
+            save_profiles(
+                task_id,
+                profiles
+            )
+            
+            
             success += 1
 
 
@@ -412,7 +423,23 @@ enable_seo = options.get(
         except Exception as exc:
 
             failed += 1
-
+        
+        
+            failed_items.append(
+                {
+                    "index": index,
+                    "sku": record.sku,
+                    "error": str(exc)
+                }
+            )
+        
+        
+            save_failed_items(
+                task_id,
+                failed_items
+            )
+        
+        
             print(
                 f"{record.sku} failed:",
                 exc
