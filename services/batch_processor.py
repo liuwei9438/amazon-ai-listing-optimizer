@@ -45,31 +45,26 @@ def process_batch(
 
   
     if options is None:
-    options = {}
+        options = {}
+
     """
     批量处理产品
-
+    
     输入:
         records:
-            ProductRecord列表
-
+        ProductRecord列表
+    
         task_id:
-            当前任务ID
-
+        当前任务ID
+    
     输出:
         profiles
     """
-enable_title = options.get(
-    "title",
-    True
-)
 
     engine = ProductUnderstandingEngine(
         api_key=api_key,
         model=model,
     )
-
-
     profiles = []
 
     success = 0
