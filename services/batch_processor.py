@@ -325,7 +325,7 @@ def process_batch(
 
             start = time.time()
 
-           if enable_bullet:
+            if enable_bullet:
 
                 bullet_result = (
                     BulletGenerator.generate(
