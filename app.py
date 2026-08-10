@@ -467,278 +467,239 @@ if current_task:
 """
         )
 # =====================================================
-# 页面主体
+# 读取任务结果
 # =====================================================
 
 
-st.title(
-    "Amazon AI Listing Optimizer"
-)
+profiles = []
 
 
-st.caption(
-    VERSION
-)
+if current_task:
 
-
-st.info(
-    "基于 AI 商品理解生成标题、五点、详情和商品亮点。"
-    "采用 Worker 后台任务模式，避免长任务导致页面阻塞。"
-)
+    profiles = load_profiles(
+        current_task
+    )
 
 
 
 # =====================================================
-# 上传文件
+# 显示优化结果
 # =====================================================
 
 
-uploaded = st.file_uploader(
-    "上传 Excel",
-    type=[
-        "xlsx"
-    ]
-)
+if profiles:
+
+
+    st.success(
+        f"已完成 {len(profiles)} 个产品优化"
+    )
+
+
+    st.subheader(
+        "AI优化结果预览"
+    )
+
+
+    # 默认展示前3个，避免页面卡顿
+
+    for index, profile in enumerate(
+        profiles[:3]
+    ):
+
+        with st.expander(
+            f"产品 {index + 1}"
+        ):
+
+            display_generated_content(
+                profile
+            )
 
 
 
-if uploaded is not None:
+    # =================================================
+    # 导出 JSON
+    # =================================================
+
+
+    st.download_button(
+
+        "下载 Product Profile JSON",
+
+        data=json.dumps(
+
+            profiles,
+
+            ensure_ascii=False,
+
+            indent=2,
+
+        ).encode(
+            "utf-8"
+        ),
+
+        file_name=
+        "product_profiles_v2.4.3.json",
+
+        mime=
+        "application/json",
+
+    )
+
+
+
+    # =================================================
+    # 导出 Excel
+    # =================================================
+
+
+    st.subheader(
+        "AI优化结果导出"
+    )
 
 
     try:
 
-        envelope = read_workbook(
+
+        optimized_export = ListingExporter.export(
+
+            envelope.dataframe,
+
+            profiles,
+
+        )
+
+
+        if hasattr(
+            optimized_export,
+            "getvalue"
+        ):
+
+            optimized_data = (
+                optimized_export.getvalue()
+            )
+
+        else:
+
+            optimized_data = optimized_export
+
+
+
+        safe_stem = re.sub(
+
+            r"\.xlsx$",
+
+            "",
+
             uploaded.name,
-            uploaded.getvalue(),
+
+            flags=re.I,
+
+        )
+
+
+        st.download_button(
+
+            "导出 AI 优化结果",
+
+            data=optimized_data,
+
+            file_name=
+            f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
+
+            mime=
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+            type="primary",
+
         )
 
 
     except Exception as exc:
 
+
         st.error(
-            f"读取文件失败：{exc}"
-        )
-
-        st.stop()
-
-
-
-    st.success(
-        f"读取成功："
-        f"{len(envelope.records)} 个产品"
-    )
-
-
-
-    # =================================================
-    # API KEY
-    # =================================================
-
-
-    saved_api_key = get_openai_api_key()
-
-
-    manual_api_key = st.text_input(
-        "OpenAI API Key",
-        type="password",
-    )
-
-
-    api_key = (
-        manual_api_key.strip()
-        or
-        saved_api_key
-    )
-
-
-    model = st.text_input(
-        "模型",
-        value="gpt-4.1-mini"
-    )
-
-
-
-    # =================================================
-    # 优化模块选择
-    # =================================================
-
-
-    st.subheader(
-        "优化内容选择"
-    )
-
-
-    enable_title = st.checkbox(
-        "优化标题",
-        True
-    )
-
-
-    enable_short_title = st.checkbox(
-        "优化短标题",
-        True
-    )
-
-
-    enable_highlight = st.checkbox(
-        "优化商品亮点",
-        True
-    )
-
-
-    enable_bullet = st.checkbox(
-        "优化五点描述",
-        True
-    )
-
-
-    enable_description = st.checkbox(
-        "优化详情描述",
-        True
-    )
-
-
-    enable_seo = st.checkbox(
-        "优化SEO关键词",
-        True
-    )
-
-
-
-    # =================================================
-    # 开始任务
-    # =================================================
-
-
-    if st.button(
-        "开始 AI 商品理解",
-        type="primary"
-    ):
-
-
-        if not api_key:
-
-
-            st.error(
-                "请输入 OpenAI API Key"
-            )
-
-
-            st.stop()
-
-
-
-        task_id = create_task(
-
-            total_products=len(
-                envelope.records
-            ),
-
-            filename=uploaded.name,
-
-        )
-
-
-
-        st.session_state[
-            "current_task"
-        ] = task_id
-
-
-
-        options = {
-
-
-            "title":
-                enable_title,
-
-
-            "short_title":
-                enable_short_title,
-
-
-            "highlight":
-                enable_highlight,
-
-
-            "bullet":
-                enable_bullet,
-
-
-            "description":
-                enable_description,
-
-
-            "seo":
-                enable_seo,
-
-        }
-
-
-
-        start_worker(
-
-            envelope.records,
-
-            task_id,
-
-            api_key,
-
-            model,
-
-            options,
-
-        )
-
-
-
-        st.success(
-            f"任务已启动：{task_id}"
-        )
-
-
-
-        st.info(
-            "AI 正在后台运行，可以刷新页面查看状态。"
+            f"生成优化文件失败：{exc}"
         )
 
 
 
 # =====================================================
-# 当前任务状态
+# 原文件完整性测试
 # =====================================================
 
 
-current_task = st.session_state.get(
-    "current_task",
-    "",
+st.subheader(
+    "原文件完整性导出"
 )
 
 
-if current_task:
+try:
 
 
-    status = load_status(
-        current_task
+    unchanged_export = export_unchanged(
+        envelope
     )
 
 
-    if status:
+    integrity = integrity_report(
+
+        envelope,
+
+        unchanged_export,
+
+    )
 
 
-        st.subheader(
-            "任务状态"
+
+    if integrity["byte_identical"]:
+
+
+        st.success(
+
+            "验证通过：原文件完整性保持一致"
+
         )
 
 
-        st.info(
-            f"""
-状态：
-{status.get("status")}
+        safe_stem = re.sub(
 
-进度：
-{status.get("completed")}
-/
-{status.get("total")}
-"""
+            r"\.xlsx$",
+
+            "",
+
+            uploaded.name,
+
+            flags=re.I,
+
         )
+
+
+        st.download_button(
+
+            "导出原文件完整性测试文件",
+
+            data=unchanged_export,
+
+            file_name=
+            f"{safe_stem}_{VERSION}_原样导出.xlsx",
+
+            mime=
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+        )
+
+
+    else:
+
+
+        st.error(
+            "原文件完整性验证失败"
+        )
+
+
+except Exception as exc:
+
+
+    st.error(
+        f"完整性测试失败：{exc}"
+    )
