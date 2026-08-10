@@ -30,6 +30,7 @@ from services.task_manager import (
     load_status,
 )
 from services.batch_processor import process_batch
+from services.task_worker import start_worker
 
 VERSION = "V2.4.0-Highlight-Pipeline"
 BATCH_SIZE = 10
@@ -444,9 +445,8 @@ if uploaded is not None:
         
         }
         
-        
-        profiles = process_batch(
-        
+        start_worker(
+
             envelope.records,
         
             task_id,
@@ -457,6 +457,11 @@ if uploaded is not None:
         
             options,
         
+        )
+        
+        
+        st.success(
+            f"任务已启动:{task_id}"
         )
         
         
