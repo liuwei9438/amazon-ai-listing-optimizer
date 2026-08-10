@@ -628,17 +628,19 @@ if profiles:
 # =====================================================
 
 
-st.subheader(
-    "原文件完整性导出"
-)
+if uploaded is not None:
 
 
-try:
-
-
-    unchanged_export = export_unchanged(
-        envelope
+    st.subheader(
+        "原文件完整性导出"
     )
+
+
+    try:
+
+        unchanged_export = export_unchanged(
+            envelope
+        )
 
 
     integrity = integrity_report(
