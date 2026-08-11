@@ -196,7 +196,15 @@ def process_batch(
             profile = engine.analyze(
                 record
             )
-
+            save_status(
+                task_id,
+                {
+                    "status": "processing",
+                    "message": f"第 {index+1}/{total} 个产品：AI商品理解",
+                    "completed": index,
+                    "total": total,
+                }
+            )
 
             timing["understanding"] = round(
                 time.time() - start,
@@ -404,7 +412,15 @@ def process_batch(
 
             if enable_title:
 
-
+                save_status(
+                    task_id,
+                    {
+                        "status": "processing",
+                        "message": f"第 {index+1}/{total} 个产品：生成标题",
+                        "completed": index,
+                        "total": total,
+                    }
+                )
                 title_result = (
                     TitleGenerator.generate(
                         profile
@@ -481,7 +497,15 @@ def process_batch(
 
             if enable_bullet:
 
-
+                save_status(
+                    task_id,
+                    {
+                        "status": "processing",
+                        "message": f"第 {index+1}/{total} 个产品：生成五点",
+                        "completed": index,
+                        "total": total,
+                    }
+                )
                 bullet_result = (
                     BulletGenerator.generate(
                         profile,
@@ -516,7 +540,15 @@ def process_batch(
 
 
             if enable_description:
-
+                save_status(
+                    task_id,
+                    {
+                        "status": "processing",
+                        "message": f"第 {index+1}/{total} 个产品：生成详情",
+                        "completed": index,
+                        "total": total,
+                    }
+                )
 
                 description_result = (
                     DescriptionGenerator.generate(
