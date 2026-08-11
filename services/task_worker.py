@@ -32,10 +32,18 @@ def run_task(
                 "total":len(records),
             }
         )
-        print(
-            f"WORKER START TASK: {task_id}"
+        save_status(
+            task_id,
+            {
+                "task_id": task_id,
+                "status": "processing",
+                "message": "进入批量处理阶段",
+                "completed": 0,
+                "total": len(records),
+            }
         )
-
+        
+        
         profiles = process_batch(
             records,
             task_id,
