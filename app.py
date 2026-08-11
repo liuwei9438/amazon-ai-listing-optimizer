@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+
 import json
 import re
+
 import pandas as pd
 import streamlit as st
+
 
 from core import (
     read_workbook,
@@ -11,34 +14,48 @@ from core import (
     integrity_report,
 )
 
+
 from services.config import get_openai_api_key
+
 
 from services.task_manager import (
     create_task,
     load_status,
 )
 
+
 from services.result_storage import (
     load_profiles,
 )
+
 
 from services.current_task import (
     save_current_task,
     load_current_task,
 )
+
+
 from services.task_worker import (
     start_worker,
 )
+
+
 from services.listing_exporter import (
     ListingExporter,
 )
 
 
+
 VERSION = "V2.4.3-Worker"
+
+
 TASK_RUNNING_STATUS = [
     "created",
     "running",
+    "processing",
 ]
+
+
 
 DEBUG_MODE = False
 
@@ -62,9 +79,27 @@ st.set_page_config(
 current_task = load_current_task()
 
 
+# 清理已经结束的旧任务
+if current_task:
+
+    old_status = load_status(
+        current_task
+    )
+
+
+    if old_status.get("status") in [
+        "completed",
+        "failed",
+    ]:
+
+        current_task = ""
+
+
+
 # =====================================================
 # Highlight展示
 # =====================================================
+
 
 def display_highlights(
     highlight_result
@@ -75,25 +110,27 @@ def display_highlights(
         return
 
 
+
     if isinstance(
         highlight_result,
-        list
+        list,
     ):
 
         for item in highlight_result:
 
             if isinstance(
                 item,
-                str
+                str,
             ):
 
                 st.write(
                     "• " + item
                 )
 
+
             elif isinstance(
                 item,
-                dict
+                dict,
             ):
 
                 text = (
@@ -103,6 +140,7 @@ def display_highlights(
                     or
                     ""
                 )
+
 
                 if text:
 
@@ -116,9 +154,11 @@ def display_highlights(
 # 内容展示
 # =====================================================
 
+
 def display_generated_content(
     profile
 ):
+
 
     title = profile.get(
         "generated_title",
@@ -133,6 +173,7 @@ def display_generated_content(
         st.write(
             "### AI标题"
         )
+
 
         st.write(
             title["title"]
@@ -158,6 +199,7 @@ def display_generated_content(
             "### AI五点"
         )
 
+
         for item in bullets:
 
             st.write(
@@ -182,9 +224,13 @@ def display_generated_content(
             "### AI详情"
         )
 
+
         st.write(
             description["description"]
         )
+
+
+
 # =====================================================
 # 页面主体
 # =====================================================
@@ -333,23 +379,38 @@ if uploaded is not None:
 
 
     if current_task:
-    
+
+
         current_status = load_status(
             current_task
         )
-    
-    
+
+
+
     button_disabled = False
-    
-    
+
+
+
+    if st.session_state.get(
+        "task_started",
+        False
+    ):
+
+        button_disabled = True
+
+
+
     if current_status:
-    
-        if current_status.get("status") in TASK_RUNNING_STATUS:
-    
+
+
+        if current_status.get(
+            "status"
+        ) in TASK_RUNNING_STATUS:
+
             button_disabled = True
-    
-    
-    
+
+
+
     if st.button(
         "开始 AI 商品理解",
         type="primary",
@@ -433,13 +494,21 @@ if uploaded is not None:
 
 
 
+        st.session_state[
+            "task_started"
+        ] = True
+
+
+
         st.success(
             f"任务已启动：{task_id}"
         )
-        
+
+
         st.info(
             "AI 正在后台运行，可以刷新页面查看状态。"
         )
+
 
 
 # =====================================================
@@ -447,13 +516,11 @@ if uploaded is not None:
 # =====================================================
 
 
-current_task = load_current_task()
-
-
 profiles = []
 
 
 if current_task:
+
 
     status = load_status(
         current_task
@@ -466,6 +533,7 @@ if current_task:
 
 
     if status:
+
 
         st.subheader(
             "任务状态"
@@ -520,7 +588,10 @@ if current_task:
         )
 
 
-        if status.get("traceback"):
+        if status.get(
+            "traceback"
+        ):
+
 
             st.error(
                 "任务运行错误"
@@ -532,9 +603,7 @@ if current_task:
                     "traceback"
                 )
             )
-
-
-# =====================================================
+            # =====================================================
 # 显示优化结果
 # =====================================================
 
@@ -552,15 +621,18 @@ if profiles and uploaded is not None:
     )
 
 
+
     # 默认展示前3个，避免页面卡顿
 
     for index, profile in enumerate(
         profiles[:3]
     ):
 
+
         with st.expander(
             f"产品 {index + 1}"
         ):
+
 
             display_generated_content(
                 profile
@@ -577,6 +649,7 @@ if profiles and uploaded is not None:
 
         "下载 Product Profile JSON",
 
+
         data=json.dumps(
 
             profiles,
@@ -589,8 +662,10 @@ if profiles and uploaded is not None:
             "utf-8"
         ),
 
+
         file_name=
         "product_profiles_v2.4.3.json",
+
 
         mime=
         "application/json",
@@ -626,11 +701,14 @@ if profiles and uploaded is not None:
             "getvalue"
         ):
 
+
             optimized_data = (
                 optimized_export.getvalue()
             )
 
+
         else:
+
 
             optimized_data = optimized_export
 
@@ -649,21 +727,27 @@ if profiles and uploaded is not None:
         )
 
 
+
         st.download_button(
 
             "导出 AI 优化结果",
 
+
             data=optimized_data,
+
 
             file_name=
             f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
 
+
             mime=
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
 
             type="primary",
 
         )
+
 
 
     except Exception as exc:
@@ -672,6 +756,9 @@ if profiles and uploaded is not None:
         st.error(
             f"生成优化文件失败：{exc}"
         )
+
+
+
 # =====================================================
 # 原文件完整性测试
 # =====================================================
@@ -707,6 +794,7 @@ if uploaded is not None:
             )
 
 
+
             safe_stem = re.sub(
 
                 r"\.xlsx$",
@@ -720,14 +808,18 @@ if uploaded is not None:
             )
 
 
+
             st.download_button(
 
                 "导出原文件完整性测试文件",
 
+
                 data=unchanged_export,
+
 
                 file_name=
                 f"{safe_stem}_{VERSION}_原样导出.xlsx",
+
 
                 mime=
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -741,6 +833,7 @@ if uploaded is not None:
             st.error(
                 "原文件完整性验证失败"
             )
+
 
 
     except Exception as exc:
