@@ -29,7 +29,9 @@ from services.current_task import (
     save_current_task,
     load_current_task,
 )
-
+from services.task_worker import (
+    start_worker,
+)
 from services.listing_exporter import (
     ListingExporter,
 )
