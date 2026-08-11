@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+
 import json
 import uuid
+
 from datetime import datetime
 from pathlib import Path
 
 
+
 TASK_ROOT = Path("tasks")
+
 
 
 def ensure_task_root():
@@ -17,10 +21,12 @@ def ensure_task_root():
     )
 
 
+
 def create_task(
     total_products: int,
     filename: str,
 ):
+
 
     ensure_task_root()
 
@@ -38,35 +44,55 @@ def create_task(
 
     task_dir = TASK_ROOT / task_id
 
+
     task_dir.mkdir(
         parents=True,
         exist_ok=True
     )
 
 
+
     status = {
 
-        "task_id": task_id,
+        "task_id":
+            task_id,
 
-        "filename": filename,
 
-        "total_products":
+        "filename":
+            filename,
+
+
+        # 统一字段
+        "total":
             total_products,
 
-        "completed": 0,
 
-        "success": 0,
+        "completed":
+            0,
 
-        "failed": 0,
+
+        "success":
+            0,
+
+
+        "failed":
+            0,
+
 
         "status":
             "created",
+
+
+        "message":
+            "任务已创建",
+
 
         "created_at":
             datetime.now()
             .isoformat(),
 
     }
+
 
 
     save_json(
@@ -79,9 +105,12 @@ def create_task(
 
 
 
+
+
 def get_task_dir(
     task_id: str
 ):
+
 
     return (
         TASK_ROOT
@@ -91,14 +120,33 @@ def get_task_dir(
 
 
 
+
+
 def save_status(
     task_id: str,
     status: dict
 ):
 
+
     task_dir = get_task_dir(
         task_id
     )
+
+
+    old_status = load_status(
+        task_id
+    )
+
+
+    if old_status:
+
+        old_status.update(
+            status
+        )
+
+        status = old_status
+
+
 
     save_json(
         task_dir / "status.json",
@@ -107,9 +155,12 @@ def save_status(
 
 
 
+
+
 def load_status(
     task_id: str
 ):
+
 
     path = (
         get_task_dir(task_id)
@@ -123,6 +174,7 @@ def load_status(
         return {}
 
 
+
     return json.loads(
         path.read_text(
             encoding="utf-8"
@@ -131,10 +183,13 @@ def load_status(
 
 
 
+
+
 def save_json(
     path: Path,
     data: dict
 ):
+
 
     path.write_text(
 
