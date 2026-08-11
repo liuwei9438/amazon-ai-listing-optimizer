@@ -132,9 +132,40 @@ class TitleGenerator:
             list,
         ) and title_identity_focus:
 
-            title_parts.extend(
-                title_identity_focus[:2]
-            )
+            identity_added = 0
+
+
+            for item in title_identity_focus:
+            
+            
+                item = str(item).strip()
+            
+            
+                if not item:
+            
+                    continue
+            
+            
+                # 分类词不要进入标题
+                if item.lower() in [
+                    "personal care",
+                    "personal care appliances",
+                    "washing machine parts",
+                    "3d printer parts",
+                ]:
+            
+                    continue
+            
+            
+                title_parts.append(item)
+            
+            
+                identity_added += 1
+            
+            
+                if identity_added >= 1:
+            
+                    break
 
 
         else:
@@ -254,7 +285,9 @@ class TitleGenerator:
 
 
         selected_models = selected_models[:1]
-
+        if len(value) <= 2:
+        
+            continue
 
         title_parts.extend(
             selected_models
@@ -454,6 +487,40 @@ class TitleGenerator:
         
         
         title_parts = clean_parts
+
+
+        # =========================
+        # Final Attribute Filter
+        # 删除材质等低价值词
+        # =========================
+        
+        final_parts = []
+        
+        
+        for part in title_parts:
+        
+            blocked = False
+        
+        
+            for attr in TitleGenerator.IGNORED_ATTRIBUTES:
+        
+                if str(part).lower() == attr.lower():
+        
+                    blocked = True
+        
+                    break
+        
+        
+            if not blocked:
+        
+                final_parts.append(part)
+        
+        
+        
+        title_parts = final_parts
+        
+        
+        
         unique_parts = []
 
 
