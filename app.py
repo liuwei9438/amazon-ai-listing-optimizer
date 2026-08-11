@@ -470,7 +470,7 @@ if current_task:
 进度：
 {status.get("completed")}
 /
-{status.get("total")}
+{status.get("total") or status.get("total_products")}
 """
         )
 # =====================================================
