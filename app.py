@@ -469,16 +469,6 @@ if current_task:
 {status.get("total") or status.get("total_products")}
 """
         )
-# =====================================================
-# 读取任务结果
-# =====================================================
-
-
-if current_task:
-
-    status = load_status(
-        current_task
-    )
 
 
 
@@ -487,7 +477,7 @@ if current_task:
 # =====================================================
 
 
-if profiles:
+if profiles and uploaded is not None:
 
 
     st.success(
