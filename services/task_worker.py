@@ -42,7 +42,15 @@ def run_task(
                 "total": len(records),
             }
         )
-        
+        save_status(
+            task_id,
+            {
+                "status": "processing",
+                "message": "进入batch_processor",
+                "completed":0,
+                "total":len(records),
+            }
+        )
         
         profiles = process_batch(
             records,
@@ -51,7 +59,15 @@ def run_task(
             model,
             options,
         )
-
+        save_status(
+            task_id,
+            {
+                "status":"processing",
+                "message":"batch_processor完成",
+                "completed":len(records),
+                "total":len(records),
+            }
+        )
 
         save_status(
             task_id,
