@@ -298,10 +298,36 @@ class TitleGenerator:
 
                 if not duplicate:
 
-                    title_parts.append(
-                        keyword
-                    )
 
+                    words = keyword.lower().split()
+                
+                
+                    existing_text = " ".join(
+                        [
+                            str(x).lower()
+                            for x in title_parts
+                        ]
+                    )
+                
+                
+                    overlap = 0
+                
+                
+                    for word in words:
+                
+                        if word in existing_text:
+                
+                            overlap += 1
+                
+                
+                
+                    if overlap < len(words) * 0.7:
+                
+                        title_parts.append(
+                            keyword
+                        )
+                
+                
                     break
         # =========================
         # Attribute
@@ -395,13 +421,10 @@ class TitleGenerator:
 
 
         if relationship_brands:
-
-            title_parts.append(
-                title_parts.extend(
+        
+            title_parts.extend(
                 relationship_brands
             )
-            )
-
 
 
         # =========================
@@ -454,30 +477,7 @@ class TitleGenerator:
         
         
         title_parts = unique_parts
-        filtered_parts = []
-
-
-        for item in title_parts:
-        
-            skip = False
-        
-        
-            for avoid in plan_avoid:
-        
-                if str(avoid).lower() in str(item).lower():
-        
-                    skip = True
-        
-                    break
-        
-        
-            if not skip:
-        
-                filtered_parts.append(item)
-        
-        
-        
-        title_parts = filtered_parts
+      
         title = " ".join(
             [
                 str(item)
