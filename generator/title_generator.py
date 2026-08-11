@@ -256,6 +256,12 @@ class TitleGenerator:
 
 
                 value = item.strip()
+
+                if len(value) <= 2:
+                
+                    continue
+                
+                
                 if not is_valid_model(value):
                 
                     continue
@@ -286,8 +292,7 @@ class TitleGenerator:
 
         selected_models = selected_models[:1]
         
-            continue
-
+        
         title_parts.extend(
             selected_models
         )
