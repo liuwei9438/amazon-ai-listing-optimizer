@@ -192,7 +192,15 @@ def process_batch(
 
             start = time.time()
 
-
+            save_status(
+                task_id,
+                {
+                    "status": "processing",
+                    "message": f"第 {index+1}/{total} 个产品：AI商品理解中",
+                    "completed": index,
+                    "total": total,
+                }
+            )
             profile = engine.analyze(
                 record
             )
