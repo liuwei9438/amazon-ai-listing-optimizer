@@ -538,7 +538,9 @@ if current_task:
         st.subheader(
             "任务状态"
         )
-
+        if st.button("刷新任务状态"):
+        
+            st.rerun()
 
         status_value = status.get(
             "status",
