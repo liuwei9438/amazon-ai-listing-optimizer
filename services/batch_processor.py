@@ -468,7 +468,7 @@ def process_batch(
                 "task_id":
                     task_id,
 
-                "total_products":
+                "total":
                     total,
 
                 "completed":
