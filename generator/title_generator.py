@@ -120,7 +120,12 @@ class TitleGenerator:
 
         title_search_focus = plan_search_terms
 
-
+        title_attribute_focus = (
+            generation_strategy.get(
+                "title_attribute_focus",
+                [],
+            )
+        )
 
         # =========================
         # Product Identity
