@@ -101,7 +101,9 @@ def process_batch(
         "seo",
         True
     )
-
+    print(
+        f"PROCESS PRODUCT {index+1}/{total}"
+    )
     for index, record in enumerate(records):
 
         try:
