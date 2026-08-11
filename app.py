@@ -729,26 +729,26 @@ if profiles:
 
 
 
-        st.download_button(
-
-            "导出 AI 优化结果",
-
-
-            data=optimized_data,
-
-
-            file_name=
-            f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
-
-
-            mime=
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-
-
-            type="primary",
-
-        )
-
+            st.download_button(
+    
+                "导出 AI 优化结果",
+    
+    
+                data=optimized_data,
+    
+    
+                file_name=
+                f"{safe_stem}_{VERSION}_AI优化结果.xlsx",
+    
+    
+                mime=
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    
+    
+                type="primary",
+    
+            )
+    
 
 
     except Exception as exc:
