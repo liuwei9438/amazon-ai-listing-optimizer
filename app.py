@@ -38,7 +38,10 @@ from services.listing_exporter import (
 
 
 VERSION = "V2.4.3-Worker"
-
+TASK_RUNNING_STATUS = [
+    "created",
+    "running",
+]
 
 DEBUG_MODE = False
 
@@ -329,9 +332,31 @@ if uploaded is not None:
     # =================================================
 
 
+    current_status = None
+
+
+    if current_task:
+    
+        current_status = load_status(
+            current_task
+        )
+    
+    
+    button_disabled = False
+    
+    
+    if current_status:
+    
+        if current_status.get("status") in TASK_RUNNING_STATUS:
+    
+            button_disabled = True
+    
+    
+    
     if st.button(
         "开始 AI 商品理解",
-        type="primary"
+        type="primary",
+        disabled=button_disabled,
     ):
 
 
@@ -414,12 +439,12 @@ if uploaded is not None:
         st.success(
             f"任务已启动：{task_id}"
         )
-
-
-
+        
         st.info(
             "AI 正在后台运行，可以刷新页面查看状态。"
         )
+        
+        st.stop()
 
 
 
