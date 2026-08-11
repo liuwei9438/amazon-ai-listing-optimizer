@@ -5,6 +5,7 @@ import re
 
 class TitleGenerator:
 
+
     BLOCKED_WORDS = [
         "best",
         "best seller",
@@ -20,6 +21,14 @@ class TitleGenerator:
         "oem",
     ]
 
+
+    IGNORED_ATTRIBUTES = [
+        "PP",
+        "ABS",
+        "plastic",
+        "metal",
+        "stainless steel",
+    ]
 
     @staticmethod
     def generate(
@@ -85,8 +94,7 @@ class TitleGenerator:
         
         plan_avoid = title_plan.get(
             "avoid",
-            []
-        )
+            [])
 
 
         title_parts = []    
@@ -110,12 +118,7 @@ class TitleGenerator:
         )
         
 
-        title_attribute_focus = (
-            generation_strategy.get(
-                "title_attribute_focus",
-                [],
-            )
-        )
+        title_search_focus = plan_search_terms
 
 
 
@@ -175,7 +178,31 @@ class TitleGenerator:
                 [],
             )
         )
-
+        def is_valid_model(value):
+        
+            value = str(value).strip()
+        
+        
+            # 功能参数，不是型号
+            blocked_patterns = [
+                r"^\d+D$",
+                r"^\d+-in-\d+$",
+                r"^IPX\d+$",
+            ]
+        
+        
+            for pattern in blocked_patterns:
+        
+                if re.match(
+                    pattern,
+                    value,
+                    re.I
+                ):
+        
+                    return False
+        
+        
+            return True
 
         selected_models = []
 
@@ -198,7 +225,9 @@ class TitleGenerator:
 
 
                 value = item.strip()
-
+                if not is_valid_model(value):
+                
+                    continue
 
                 if not value:
 
@@ -324,7 +353,12 @@ class TitleGenerator:
                 attribute = str(
                     attribute
                 ).strip()
-
+                if attribute.lower() in [
+                    x.lower()
+                    for x in TitleGenerator.IGNORED_ATTRIBUTES
+                ]:
+                
+                    continue
 
                 if not attribute:
 
@@ -397,6 +431,53 @@ class TitleGenerator:
         
         
         title_parts = clean_parts
+        unique_parts = []
+
+
+        for item in title_parts:
+        
+            exists = False
+        
+        
+            for old in unique_parts:
+        
+                if str(item).lower() == str(old).lower():
+        
+                    exists = True
+        
+                    break
+        
+        
+            if not exists:
+        
+                unique_parts.append(item)
+        
+        
+        title_parts = unique_parts
+        filtered_parts = []
+
+
+        for item in title_parts:
+        
+            skip = False
+        
+        
+            for avoid in plan_avoid:
+        
+                if str(avoid).lower() in str(item).lower():
+        
+                    skip = True
+        
+                    break
+        
+        
+            if not skip:
+        
+                filtered_parts.append(item)
+        
+        
+        
+        title_parts = filtered_parts
         title = " ".join(
             [
                 str(item)
