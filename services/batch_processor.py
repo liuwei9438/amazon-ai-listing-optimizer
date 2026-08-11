@@ -79,6 +79,8 @@ def process_batch(
             "status": "processing",
             "message": "正在初始化AI理解引擎",
             "completed": 0,
+            "updated_at":
+                datetime.now().isoformat()
             "total": total,
         }
     )
