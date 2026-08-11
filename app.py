@@ -5,9 +5,6 @@ import re
 import pandas as pd
 import streamlit as st
 
-from streamlit_autorefresh import st_autorefresh
-
-
 from core import (
     read_workbook,
     export_unchanged,
@@ -443,9 +440,6 @@ if uploaded is not None:
         st.info(
             "AI 正在后台运行，可以刷新页面查看状态。"
         )
-        
-        st.stop()
-
 
 
 # =====================================================
@@ -460,12 +454,6 @@ profiles = []
 
 
 if current_task:
-
-    st_autorefresh(
-        interval=3000,
-        key="task_refresh"
-    )
-
 
     status = load_status(
         current_task
