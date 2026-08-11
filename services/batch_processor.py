@@ -101,10 +101,11 @@ def process_batch(
         "seo",
         True
     )
-    print(
-        f"PROCESS PRODUCT {index+1}/{total}"
-    )
     for index, record in enumerate(records):
+
+        print(
+            f"PROCESS PRODUCT {index+1}/{total}"
+        )
 
         try:
             product_start = time.time()
