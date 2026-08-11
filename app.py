@@ -429,8 +429,10 @@ if uploaded is not None:
 current_task = load_current_task()
 
 
-if current_task:
+profiles = []
 
+
+if current_task:
 
     st_autorefresh(
         interval=3000,
@@ -441,6 +443,8 @@ if current_task:
     status = load_status(
         current_task
     )
+
+
     profiles = load_profiles(
         current_task
     )
