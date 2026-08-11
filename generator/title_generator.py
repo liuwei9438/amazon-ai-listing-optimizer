@@ -111,11 +111,6 @@ class TitleGenerator:
                 [],
             )
         )
-
-
-        title_search_focus = (
-            plan_search_terms
-        )
         
 
         title_search_focus = plan_search_terms
