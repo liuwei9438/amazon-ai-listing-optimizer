@@ -25,8 +25,9 @@ from services.result_storage import (
     load_profiles,
 )
 
-from services.task_worker import (
-    start_worker,
+from services.current_task import (
+    save_current_task,
+    load_current_task,
 )
 
 from services.listing_exporter import (
@@ -56,17 +57,7 @@ st.set_page_config(
 # 任务恢复
 # =====================================================
 
-if "current_task" not in st.session_state:
-
-    st.session_state["current_task"] = ""
-
-
-
-current_task = st.session_state.get(
-    "current_task",
-    "",
-)
-
+current_task = load_current_task()
 
 
 # =====================================================
@@ -366,9 +357,9 @@ if uploaded is not None:
 
 
 
-        st.session_state[
-            "current_task"
-        ] = task_id
+        save_current_task(
+            task_id
+        )
 
 
 
@@ -453,7 +444,9 @@ if current_task:
     status = load_status(
         current_task
     )
-
+    profiles = load_profiles(
+        current_task
+    )
 
     if status:
 
