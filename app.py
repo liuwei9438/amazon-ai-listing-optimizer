@@ -610,7 +610,7 @@ if current_task:
 # =====================================================
 
 
-if profiles and uploaded is not None:
+if profiles:
 
 
     st.success(
@@ -689,13 +689,12 @@ if profiles and uploaded is not None:
     try:
 
 
-        optimized_export = ListingExporter.export(
+       if uploaded is not None:
 
-            envelope.dataframe,
-
-            profiles,
-
-        )
+            optimized_export = ListingExporter.export(
+                envelope.dataframe,
+                profiles,
+            )
 
 
         if hasattr(
