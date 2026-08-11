@@ -32,7 +32,9 @@ def run_task(
                 "total":len(records),
             }
         )
-
+        print(
+            f"WORKER START TASK: {task_id}"
+        )
 
         profiles = process_batch(
             records,
