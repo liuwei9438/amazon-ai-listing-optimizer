@@ -58,11 +58,12 @@ def process_batch(
     输出:
         profiles
     """
-
+    print("CREATE PRODUCT UNDERSTANDING ENGINE")
     engine = ProductUnderstandingEngine(
         api_key=api_key,
         model=model,
     )
+    print("ENGINE READY")
     profiles = []
 
     success = 0
