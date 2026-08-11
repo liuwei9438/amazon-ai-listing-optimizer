@@ -60,40 +60,36 @@ class TitleGenerator:
             {},
         )
         plan_identity = title_plan.get(
-            "product_identity",
+            "main_product",
             []
         )
         
-        plan_must_include = title_plan.get(
-            "must_include",
+        
+        plan_search_terms = title_plan.get(
+            "search_terms",
             []
         )
+        
         
         plan_features = title_plan.get(
-            "high_value_features",
+            "features",
+            []
+        )
+        
+        
+        plan_compatibility = title_plan.get(
+            "compatibility",
+            []
+        )
+        
+        
+        plan_avoid = title_plan.get(
+            "avoid",
             []
         )
 
 
-        title_parts = []
-        # =========================
-        # Title Planner Must Include
-        # 必须保留关键词
-        # =========================
-
-        if isinstance(
-            plan_must_include,
-            list,
-        ):
-
-            for item in plan_must_include[:2]:
-
-                item = str(item).strip()
-
-                if item:
-
-                    title_parts.append(item)
-
+        title_parts = []    
 
         # =========================
         # Generation Strategy
@@ -110,12 +106,9 @@ class TitleGenerator:
 
 
         title_search_focus = (
-            generation_strategy.get(
-                "title_search_focus",
-                [],
-            )
+            plan_search_terms
         )
-
+        
 
         title_attribute_focus = (
             generation_strategy.get(
@@ -364,20 +357,15 @@ class TitleGenerator:
         # Compatibility Brand
         # =========================
 
-        relationship_brands = relationship.get(
-            "brands",
-            [],
-        )
+        relationship_brands = plan_compatibility
 
 
         if relationship_brands:
 
             title_parts.append(
-                "Compatible with "
-                +
-                ", ".join(
-                    relationship_brands[:2]
-                )
+                title_parts.extend(
+                relationship_brands
+            )
             )
 
 
@@ -385,7 +373,30 @@ class TitleGenerator:
         # =========================
         # Build Title
         # =========================
-
+        clean_parts = []
+        
+        
+        for part in title_parts:
+        
+            skip = False
+        
+        
+            for avoid in plan_avoid:
+        
+                if str(avoid).lower() in str(part).lower():
+        
+                    skip = True
+        
+                    break
+        
+        
+            if not skip:
+        
+                clean_parts.append(part)
+        
+        
+        
+        title_parts = clean_parts
         title = " ".join(
             [
                 str(item)
