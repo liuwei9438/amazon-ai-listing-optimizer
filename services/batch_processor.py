@@ -59,6 +59,15 @@ def process_batch(
         profiles
     """
     print("CREATE PRODUCT UNDERSTANDING ENGINE")
+    save_status(
+        task_id,
+        {
+            "status": "processing",
+            "message": "正在初始化AI理解引擎",
+            "completed": 0,
+            "total": total,
+        }
+    )
     engine = ProductUnderstandingEngine(
         api_key=api_key,
         model=model,
@@ -103,6 +112,15 @@ def process_batch(
         True
     )
     for index, record in enumerate(records):
+        save_status(
+            task_id,
+            {
+                "status": "processing",
+                "message": f"正在处理第 {index+1}/{total} 个产品",
+                "completed": index,
+                "total": total,
+            }
+        )
 
         print(
             f"PROCESS PRODUCT {index+1}/{total}"
