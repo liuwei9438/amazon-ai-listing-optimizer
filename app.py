@@ -426,10 +426,7 @@ if uploaded is not None:
 # =====================================================
 
 
-current_task = st.session_state.get(
-    "current_task",
-    "",
-)
+current_task = load_current_task()
 
 
 if current_task:
@@ -471,17 +468,7 @@ if current_task:
 # =====================================================
 
 
-profiles = []
-
-
 if current_task:
-
-
-    st_autorefresh(
-        interval=3000,
-        key="task_status_refresh"
-    )
-
 
     status = load_status(
         current_task
