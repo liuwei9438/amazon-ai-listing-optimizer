@@ -498,31 +498,31 @@ def process_batch(
 
 
     save_status(
-
+    
         task_id,
-
+    
         {
-
+    
             "task_id":
                 task_id,
-
-            "total_products":
+    
+            "total":
                 total,
-
+    
             "completed":
                 total,
-
+    
             "success":
                 success,
-
+    
             "failed":
                 failed,
-
+    
             "status":
                 "completed"
-
+    
         }
-
+    
     )
 
 
