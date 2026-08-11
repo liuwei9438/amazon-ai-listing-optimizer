@@ -76,7 +76,9 @@ st.set_page_config(
 # 任务恢复
 # =====================================================
 
-current_task = load_current_task()
+current_task = st.session_state.get(
+    "current_task"
+) or load_current_task()
 
 
 # 清理已经结束的旧任务
@@ -500,11 +502,19 @@ if uploaded is not None:
 
 
 
+        save_current_task(
+            task_id
+        )
+        
+        
+        st.session_state["current_task"] = task_id
+        
+        
         st.success(
             f"任务已启动：{task_id}"
         )
-
-
+        
+        
         st.info(
             "AI 正在后台运行，可以刷新页面查看状态。"
         )
