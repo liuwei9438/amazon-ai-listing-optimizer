@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import time
+
+from datetime import datetime
+
 from pathlib import Path
 
 
@@ -75,13 +78,12 @@ def process_batch(
     save_status(
         task_id,
         {
-            "task_id": task_id,
             "status": "processing",
             "message": "正在初始化AI理解引擎",
             "completed": 0,
-            "updated_at":
-                datetime.now().isoformat()
             "total": total,
+            "updated_at":
+                datetime.now().isoformat(),
         }
     )
 
