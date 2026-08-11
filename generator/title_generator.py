@@ -285,7 +285,6 @@ class TitleGenerator:
 
 
         selected_models = selected_models[:1]
-        if len(value) <= 2:
         
             continue
 
