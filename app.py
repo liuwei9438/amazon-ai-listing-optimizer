@@ -697,29 +697,29 @@ if profiles:
             )
 
 
-        if hasattr(
-            optimized_export,
-            "getvalue"
-        ):
+            if hasattr(
+                optimized_export,
+                "getvalue"
+            ):
 
 
-            optimized_data = (
-                optimized_export.getvalue()
-            )
+                optimized_data = (
+                    optimized_export.getvalue()
+                )
 
 
-        else:
+            else:
 
 
-            optimized_data = optimized_export
+                
 
 
 
-        safe_stem = re.sub(
+                safe_stem = re.sub(
 
-            r"\.xlsx$",
+                    r"\.xlsx$",
 
-            "",
+
 
             uploaded.name,
 
@@ -729,7 +729,7 @@ if profiles:
 
 
 
-        st.download_button(
+            st.download_button(
 
             "导出 AI 优化结果",
 
