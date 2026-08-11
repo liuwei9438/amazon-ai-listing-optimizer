@@ -464,6 +464,7 @@ if current_task:
         current_task
     )
 
+
     if status:
 
         st.subheader(
@@ -471,18 +472,66 @@ if current_task:
         )
 
 
+        status_value = status.get(
+            "status",
+            ""
+        )
+
+
+        message = status.get(
+            "message",
+            ""
+        )
+
+
+        completed = status.get(
+            "completed",
+            0
+        )
+
+
+        total = (
+            status.get("total")
+            or
+            status.get("total_products")
+            or
+            0
+        )
+
+
         st.info(
             f"""
 状态：
-{status.get("status")}
+
+{status_value}
+
+
+消息：
+
+{message}
+
 
 进度：
-{status.get("completed")}
+
+{completed}
 /
-{status.get("total") or status.get("total_products")}
+{total}
 """
         )
 
+
+        if status.get("traceback"):
+
+            st.error(
+                "任务运行错误"
+            )
+
+
+            st.code(
+                status.get(
+                    "traceback"
+                )
+            )
 
 
 # =====================================================
