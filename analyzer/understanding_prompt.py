@@ -157,7 +157,10 @@ Only supported usage situations.
 ## 3. Identifier Classification
 
 
-Analyze numbers and codes by product meaning.
+Analyze numbers, codes, and alphanumeric values according to their actual product role.
+
+
+Do not classify values only because they contain numbers, letters, or special characters.
 
 
 Classify into:
@@ -165,25 +168,46 @@ Classify into:
 
 model_number:
 
-Product model identifiers.
+A value that identifies a specific product model, device model, or compatible machine model.
+
+A model_number should help users distinguish one product identity from another.
 
 
 part_number:
 
-Replacement or manufacturer part identifiers.
+A manufacturer-defined or replacement part identifier.
 
 
 series_number:
 
-Product series identifiers.
+A product family or series identifier.
 
 
 unknown_code:
 
-Codes that cannot be confirmed.
+A code whose meaning cannot be safely determined.
 
 
-Do not classify specifications as models.
+Decision process:
+
+
+First determine whether the value identifies a specific product identity.
+
+
+If the value only describes:
+
+- product capability
+- technical performance
+- feature level
+- configuration count
+- protection level
+- operating parameter
+- measurable specification
+
+do not classify it as model_number.
+
+
+Classify those values as specification or unknown_code according to their meaning.
 
 
 Do not put:
@@ -192,8 +216,16 @@ Do not put:
 - power
 - dimensions
 - weight
+- technical specifications
 
 into identifiers.
+
+
+Only verified product identity information can enter:
+
+- model_numbers
+- part_numbers
+- series_numbers
 
 
 
@@ -321,7 +353,13 @@ Generate search strategy only from verified information.
 title_identifiers:
 
 Only high-value identifiers suitable for title.
+Title identifiers must come only from verified model_number, part_number, or series_number.
 
+Do not use:
+- specifications
+- features
+- performance values
+- marketing descriptions
 
 bullet_identifiers:
 
