@@ -262,16 +262,18 @@ st.info(
 
 uploaded = st.file_uploader(
     "上传 Excel",
-    type=[
-        "xlsx"
-    ]
+    type=["xlsx"],
+    key="main_excel_uploader"
 )
 
 
 
 if uploaded is not None:
 
+    st.session_state["excel_name"] = uploaded.name
 
+    st.session_state["excel_bytes"] = uploaded.getvalue()
+    
     try:
 
         envelope = read_workbook(
