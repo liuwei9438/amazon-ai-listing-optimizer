@@ -175,18 +175,29 @@ class ListingExporter:
     # =========================
     # 查找SKU
     # =========================
-
     @staticmethod
     def find_sku(profile):
-
+    
         return (
-
+    
             profile.get(
-                "sku"
+                "sku",
+                ""
             )
-
+    
             or
-
+    
+            profile.get(
+                "source_identity",
+                {}
+            )
+            .get(
+                "sku",
+                ""
+            )
+    
+            or
+    
             profile.get(
                 "product",
                 {}
@@ -195,9 +206,8 @@ class ListingExporter:
                 "sku",
                 ""
             )
-
+    
         )
-
 
 
     # =========================
@@ -210,86 +220,148 @@ class ListingExporter:
         dataframe,
         profiles
     ):
-
-
+    
+    
         df = dataframe.copy()
-
-
-
-        export_rows=[]
-
-
-        profile_map = {
-            cls.find_sku(p): p
-            for p in profiles
-        }
-
-        if not profile:
-
-        generated = cls.get_generated(
-            profile
-        )
-
-
-        export_rows.append(
-            generated
-        )
-
-
-
+    
+    
+        # =========================
+        # 建立 SKU -> profile 映射
+        # =========================
+    
+        profile_map = {}
+    
+        for profile in profiles:
+    
+            if not profile:
+                continue
+    
+            sku = cls.find_sku(profile)
+    
+            if sku:
+    
+                profile_map[sku] = profile
+    
+    
+    
+        export_rows = []
+    
+    
+        # =========================
+        # 按原 Excel 顺序匹配
+        # =========================
+    
+        for _, row in df.iterrows():
+    
+    
+            sku = ""
+    
+    
+            # 自动寻找SKU字段
+    
+            for key in [
+                "SKU",
+                "sku",
+                "Sku",
+                "商品SKU",
+                "父SKU"
+            ]:
+    
+                if key in row.index:
+    
+                    sku = str(
+                        row[key]
+                    )
+    
+                    break
+    
+    
+    
+            profile = profile_map.get(
+                sku
+            )
+    
+    
+            if not profile:
+    
+                export_rows.append(
+                    {
+                        "AI Title": "",
+                        "AI Short Title": "",
+                        "AI Highlights": "",
+                        "AI Short Highlights": "",
+                        "AI Bullet Points": "",
+                        "AI Description": "",
+                    }
+                )
+    
+                continue
+    
+    
+    
+            generated = cls.get_generated(
+                profile
+            )
+    
+    
+            export_rows.append(
+                generated
+            )
+    
+    
+    
         if not export_rows:
-
+    
             raise ValueError(
                 "没有可导出的AI优化结果"
             )
-
-
-
+    
+    
+    
         ai_df = pd.DataFrame(
             [
                 {
                     k: cls.safe_value(v)
-                    for k,v in row.items()
+                    for k, v in row.items()
                 }
-
+    
                 for row in export_rows
             ]
         )
-
-
-
-        # 保留原数据
-
+    
+    
+    
         result = pd.concat(
             [
                 df.reset_index(drop=True),
-
+    
                 ai_df.reset_index(drop=True)
-
+    
             ],
-
+    
             axis=1
         )
-
-
-
+    
+    
+    
         output = BytesIO()
-
-
+    
+    
         with pd.ExcelWriter(
             output,
             engine="openpyxl"
         ) as writer:
-
+    
+    
             result.to_excel(
                 writer,
                 index=False,
                 sheet_name="AI Optimized"
             )
-
-
-
+    
+    
+    
         output.seek(0)
-
-
+    
+    
         return output
