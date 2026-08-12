@@ -6,16 +6,17 @@ from typing import Dict, Any
 class TitlePlanner:
 
     """
-    标题策略规划器
+    标题策略规划器 V2.4.4
 
-    功能：
-    1. 提取标题核心产品词
-    2. 提取高价值搜索词
-    3. 提取标题可使用卖点
+    功能:
+
+    1. 提取标题核心产品身份
+    2. 提取标题搜索补充词
+    3. 筛选高价值标题卖点
     4. 提取兼容信息
-    5. 提取标题应该避免的信息
+    5. 提取标题避免信息
 
-    不生成最终标题
+    不生成最终标题。
     """
 
     @staticmethod
@@ -38,7 +39,7 @@ class TitlePlanner:
 
             "main_product":
                 TitlePlanner.get_main_product(
-                    identity
+                    product_knowledge
                 ),
 
 
@@ -68,50 +69,99 @@ class TitlePlanner:
         }
 
 
+
     # =====================================================
-    # 核心产品词
+    # 核心产品身份
     # =====================================================
 
     @staticmethod
     def get_main_product(
-        identity
+        product_knowledge
     ):
 
-        result = []
-
-
-        object_name = identity.get(
-            "object_name",
-            ""
+        identity = product_knowledge.get(
+            "identity",
+            {}
         )
 
 
-        product_name = identity.get(
-            "product_name",
-            ""
+        basic_info = product_knowledge.get(
+            "basic_info",
+            {}
         )
 
 
-        value = (
-            object_name
-            or
-            product_name
-        )
+        candidates = [
+
+            identity.get(
+                "object_name",
+                ""
+            ),
+
+            basic_info.get(
+                "product_type",
+                ""
+            ),
+
+            identity.get(
+                "product_name",
+                ""
+            ),
+
+        ]
 
 
-        if value:
+        for value in candidates:
 
-            result.append(
-                str(value).strip()
-            )
+            value = str(
+                value
+            ).strip()
 
 
-        return result
+            if not value:
+                continue
+
+
+            if TitlePlanner.is_low_value_identity(
+                value
+            ):
+                continue
+
+
+            return [
+                value
+            ]
+
+
+        return []
 
 
 
     # =====================================================
-    # 搜索关键词
+    # 判断低价值身份词
+    # =====================================================
+
+    @staticmethod
+    def is_low_value_identity(
+        value: str
+    ):
+
+        text = value.lower()
+
+
+        if text in [
+            "parts",
+            "accessories",
+            "replacement",
+            "replacement parts",
+        ]:
+            return True
+
+
+        return False
+    # =====================================================
+    # 搜索补充词
+    # 仅作为标题辅助，不直接堆砌
     # =====================================================
 
     @staticmethod
@@ -139,33 +189,26 @@ class TitlePlanner:
             list
         ):
 
-            result.extend(
-                keywords[:3]
-            )
+            for item in keywords:
+
+                text = str(
+                    item
+                ).strip()
 
 
-        classification = (
-            product_knowledge.get(
-                "feature_classification",
-                {}
-            )
-        )
+                if not text:
+                    continue
 
 
-        functional = classification.get(
-            "functional_features",
-            []
-        )
+                if TitlePlanner.is_low_value_keyword(
+                    text
+                ):
+                    continue
 
 
-        if isinstance(
-            functional,
-            list
-        ):
-
-            result.extend(
-                functional[:2]
-            )
+                result.append(
+                    text
+                )
 
 
         return TitlePlanner.clean_list(
@@ -174,17 +217,15 @@ class TitlePlanner:
 
 
 
+
     # =====================================================
-    # 高价值卖点
+    # 标题高价值卖点
     # =====================================================
 
     @staticmethod
     def get_features(
         product_knowledge
     ):
-
-        result = []
-
 
         classification = (
             product_knowledge.get(
@@ -194,55 +235,47 @@ class TitlePlanner:
         )
 
 
-        design = classification.get(
+        design_features = classification.get(
             "design_features",
             []
         )
 
 
-        functional = classification.get(
+        functional_features = classification.get(
             "functional_features",
             []
         )
 
 
+        candidates = []
+
+
         if isinstance(
-            design,
+            design_features,
             list
         ):
 
-            result.extend(
-                design[:3]
+            candidates.extend(
+                design_features
             )
 
 
         if isinstance(
-            functional,
+            functional_features,
             list
         ):
 
-            result.extend(
-                functional[:3]
+            candidates.extend(
+                functional_features
             )
 
-
-        blocked_features = [
-
-            "start washing machine",
-
-            "protects extruder",
-
-            "enhances heat retention",
-
-            "shaving and grooming",
-
-        ]
 
 
         filtered = []
 
 
-        for item in result:
+        for item in candidates:
+
 
             text = str(
                 item
@@ -250,33 +283,18 @@ class TitlePlanner:
 
 
             if not text:
-
                 continue
 
 
-            lower_text = text.lower()
 
-
-            blocked = False
-
-
-            for word in blocked_features:
-
-                if word in lower_text:
-
-                    blocked = True
-
-                    break
-
-
-            if blocked:
-
-                continue
-
-
-            filtered.append(
+            if TitlePlanner.is_title_feature(
                 text
-            )
+            ):
+
+                filtered.append(
+                    text
+                )
+
 
 
         return TitlePlanner.clean_list(
@@ -285,8 +303,119 @@ class TitlePlanner:
 
 
 
+
     # =====================================================
-    # 兼容品牌
+    # 判断是否适合作为标题卖点
+    # 通用逻辑，不写死产品
+    # =====================================================
+
+    @staticmethod
+    def is_title_feature(
+        text: str
+    ):
+
+        value = text.lower()
+
+
+
+        # 太短的信息通常价值低
+
+        if len(value) < 3:
+
+            return False
+
+
+
+        # 过于泛化的动作描述
+
+        generic_actions = [
+
+            "function",
+
+            "use",
+
+            "using",
+
+            "operation",
+
+            "works",
+
+            "working",
+
+        ]
+
+
+        for word in generic_actions:
+
+            if word in value:
+
+                return False
+
+
+
+        # 过于营销化描述
+
+        marketing_patterns = [
+
+            "high quality",
+
+            "premium",
+
+            "durable construction",
+
+            "easy to install",
+
+            "cost effective",
+
+        ]
+
+
+        for word in marketing_patterns:
+
+            if word in value:
+
+                return False
+
+
+
+        return True
+
+
+
+
+    @staticmethod
+    def is_low_value_keyword(
+        text: str
+    ):
+
+        value = text.lower()
+
+
+        low_value_patterns = [
+
+            "best",
+
+            "premium",
+
+            "quality",
+
+            "replacement part",
+
+            "repair solution",
+
+        ]
+
+
+        for word in low_value_patterns:
+
+            if word in value:
+
+                return True
+
+
+        return False
+    # =====================================================
+    # 兼容信息
     # =====================================================
 
     @staticmethod
@@ -300,29 +429,50 @@ class TitlePlanner:
         )
 
 
-        if isinstance(
+        if not isinstance(
             brands,
             list
-        ) and brands:
+        ):
+
+            return []
 
 
-            return [
 
+        result = []
+
+
+        for brand in brands:
+
+
+            brand = str(
+                brand
+            ).strip()
+
+
+            if not brand:
+                continue
+
+
+            result.append(
                 "Compatible with "
                 +
-                str(
-                    brands[0]
-                )
-
-            ]
+                brand
+            )
 
 
-        return []
+            # 亚马逊标题一般只保留一个主要兼容品牌
+
+            break
+
+
+
+        return result
+
 
 
 
     # =====================================================
-    # 避免进入标题的词
+    # 标题避免词
     # =====================================================
 
     @staticmethod
@@ -330,46 +480,50 @@ class TitlePlanner:
         identity
     ):
 
+        avoid = []
+
+
         category = identity.get(
             "category",
             ""
         )
 
 
-        if not category:
-
-            return []
-
-
-        avoid = []
-
-
-        category_lower = (
-            str(category)
-            .lower()
+        product_type = identity.get(
+            "product_type",
+            ""
         )
 
 
-        if category:
+        candidates = [
 
-            avoid.append(
-                category
-            )
+            category,
+
+            product_type,
+
+        ]
 
 
-        if (
-            "parts"
-            in
-            category_lower
-            or
-            "appliances"
-            in
-            category_lower
-        ):
+        for item in candidates:
 
-            avoid.append(
-                category
-            )
+
+            if not item:
+                continue
+
+
+            text = str(
+                item
+            ).strip()
+
+
+            if TitlePlanner.is_category_term(
+                text
+            ):
+
+                avoid.append(
+                    text
+                )
+
 
 
         return TitlePlanner.clean_list(
@@ -378,8 +532,52 @@ class TitlePlanner:
 
 
 
+
     # =====================================================
-    # 工具
+    # 判断是否属于低价值分类词
+    # 不针对具体类目
+    # =====================================================
+
+    @staticmethod
+    def is_category_term(
+        text: str
+    ):
+
+        value = text.lower()
+
+
+
+        category_patterns = [
+
+            "parts",
+
+            "accessories",
+
+            "component",
+
+            "replacement",
+
+            "supplies",
+
+            "appliance",
+
+            "personal care",
+
+        ]
+
+
+        for pattern in category_patterns:
+
+
+            if pattern in value:
+
+                return True
+
+
+
+        return False
+    # =====================================================
+    # 通用列表清理
     # =====================================================
 
     @staticmethod
@@ -392,7 +590,18 @@ class TitlePlanner:
         seen = set()
 
 
+
+        if not isinstance(
+            values,
+            list
+        ):
+
+            return result
+
+
+
         for value in values:
+
 
             text = str(
                 value
@@ -404,12 +613,15 @@ class TitlePlanner:
                 continue
 
 
+
             key = text.lower()
+
 
 
             if key in seen:
 
                 continue
+
 
 
             seen.add(
@@ -420,6 +632,7 @@ class TitlePlanner:
             result.append(
                 text
             )
+
 
 
         return result
