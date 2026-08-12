@@ -219,9 +219,10 @@ class ListingExporter:
         export_rows=[]
 
 
-        for index, profile in enumerate(
-            profiles
-        ):
+        profile_map = {
+            cls.find_sku(p): p
+            for p in profiles
+        }
 
             if not profile:
                 continue
