@@ -81,7 +81,8 @@ current_task = st.session_state.get(
 ) or load_current_task()
 
 
-# 清理已经结束的旧任务
+
+# 清理失败任务
 if current_task:
 
     old_status = load_status(
@@ -89,9 +90,11 @@ if current_task:
     )
 
 
-if old_status.get("status") == "failed":
+    if old_status.get(
+        "status"
+    ) == "failed":
 
-    current_task = ""
+        current_task = ""
 
 
 
