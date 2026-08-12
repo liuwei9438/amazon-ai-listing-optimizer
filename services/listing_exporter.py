@@ -225,8 +225,6 @@ class ListingExporter:
         }
 
         if not profile:
-            continue
-
 
         generated = cls.get_generated(
             profile
