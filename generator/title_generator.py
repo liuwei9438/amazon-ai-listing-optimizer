@@ -477,11 +477,27 @@ class TitleGenerator:
         relationship_brands = plan_compatibility
 
 
+        protected_compatibility = []
+
+
         if relationship_brands:
-        
-            title_parts.extend(
-                relationship_brands
-            )
+
+            for item in relationship_brands:
+
+                text = str(
+                    item
+                ).strip()
+
+
+                if text:
+
+                    protected_compatibility.append(
+                        text
+                    )
+
+                    title_parts.append(
+                        text
+                    )
 
 
         # =========================
@@ -569,6 +585,14 @@ class TitleGenerator:
         
         title_parts = unique_parts
       
+        title_parts = (
+            TitleGenerator.compress_title_parts(
+                title_parts,
+                75,
+            )
+        )
+
+
         title = " ".join(
             [
                 str(item)
@@ -820,7 +844,92 @@ class TitleGenerator:
 
         return " ".join(result)
 
+    @staticmethod
+    def compress_title_parts(
+        parts,
+        max_length=75,
+    ):
 
+        if len(
+            " ".join(parts)
+        ) <= max_length:
+
+            return parts
+
+
+
+        result = []
+
+
+        # 第一优先级：
+        # 产品身份
+
+        for part in parts:
+
+            if len(result) == 0:
+
+                result.append(
+                    part
+                )
+
+
+
+        # 第二优先级：
+        # 型号
+
+        for part in parts:
+
+            text = str(
+                part
+            )
+
+
+            if re.search(
+                r"[A-Za-z]+\d+",
+                text
+            ):
+
+                if text not in result:
+
+                    result.append(
+                        text
+                    )
+
+
+
+        # 第三优先级：
+        # Compatible with 品牌
+
+        for part in parts:
+
+            if "Compatible with" in str(part):
+
+                if part not in result:
+
+                    result.append(
+                        part
+                    )
+
+
+
+        # 第四优先级：
+        # 其他卖点
+
+        for part in parts:
+
+            if part not in result:
+
+                if len(
+                    " ".join(result+[part])
+                ) <= max_length:
+
+                    result.append(
+                        part
+                    )
+
+
+
+        return result
 
     @staticmethod
     def limit_length(
