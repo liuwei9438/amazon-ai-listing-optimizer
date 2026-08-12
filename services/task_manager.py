@@ -211,17 +211,24 @@ def save_json(
 ):
 
 
-    temp_path = path.with_suffix(".tmp")
+    temp_path = path.with_suffix(
+        ".tmp"
+    )
 
 
     temp_path.write_text(
+
         json.dumps(
-            status,
+            data,
             ensure_ascii=False,
-            indent=2
+            indent=2,
         ),
+
         encoding="utf-8"
+
     )
-    
-    
-    temp_path.replace(path)
+
+
+    temp_path.replace(
+        path
+    )
