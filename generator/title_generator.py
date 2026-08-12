@@ -285,6 +285,16 @@ class TitleGenerator:
 
                 if not duplicate:
 
+
+                    if TitleGenerator.has_semantic_overlap(
+                        value,
+                        title_parts,
+                    ):
+                
+                        continue
+                
+                
+                
                     selected_models.append(
                         value
                     )
@@ -400,11 +410,21 @@ class TitleGenerator:
         
         
                 if not duplicate:
-        
+
+
+                    if TitleGenerator.has_semantic_overlap(
+                        feature,
+                        title_parts,
+                    ):
+                
+                        continue
+                
+                
+                
                     title_parts.append(
                         feature
                     )
-        
+                
                     break
         if isinstance(
             title_attribute_focus,
@@ -622,7 +642,100 @@ class TitleGenerator:
         }
 
 
+    # =====================================================
+    # 语义重复检测
+    # 防止 Button / Cover / Shaver 等核心词重复
+    # =====================================================
 
+    @staticmethod
+    def has_semantic_overlap(
+        new_text,
+        existing_parts,
+    ):
+
+        if not new_text:
+            return False
+
+
+        if not existing_parts:
+            return False
+
+
+
+        def extract_words(text):
+
+            words = re.findall(
+                r"[a-zA-Z0-9]+",
+                str(text).lower()
+            )
+
+
+            ignore_words = {
+
+                "compatible",
+                "with",
+                "for",
+                "and",
+                "the",
+
+            }
+
+
+            result = set()
+
+
+            for word in words:
+
+                # 太短词忽略
+                if len(word) <= 2:
+                    continue
+
+
+                if word in ignore_words:
+                    continue
+
+
+                result.add(word)
+
+
+            return result
+
+
+
+        new_words = extract_words(
+            new_text
+        )
+
+
+        if not new_words:
+
+            return False
+
+
+
+        for old in existing_parts:
+
+
+            old_words = extract_words(
+                old
+            )
+
+
+            overlap = (
+                new_words
+                &
+                old_words
+            )
+
+
+            # 一个核心词重复即可认为可能重复
+            if overlap:
+
+                return True
+
+
+
+        return False
     @staticmethod
     def clean_title(
         text: str,
