@@ -89,12 +89,9 @@ if current_task:
     )
 
 
-    if old_status.get("status") in [
-        "completed",
-        "failed",
-    ]:
+   if old_status.get("status") == "failed":
 
-        current_task = ""
+    current_task = ""
 
 
 
@@ -399,8 +396,16 @@ if uploaded is not None:
         "task_started",
         False
     ):
-
-        button_disabled = True
+    
+        if current_status:
+    
+            if current_status.get("status") in [
+                "processing",
+                "running",
+                "created"
+            ]:
+    
+                button_disabled = True
 
 
 
