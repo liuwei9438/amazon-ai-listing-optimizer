@@ -89,7 +89,7 @@ if current_task:
     )
 
 
-   if old_status.get("status") == "failed":
+if old_status.get("status") == "failed":
 
     current_task = ""
 
