@@ -224,18 +224,18 @@ class ListingExporter:
             for p in profiles
         }
 
-            if not profile:
-                continue
+        if not profile:
+            continue
 
 
-            generated = cls.get_generated(
-                profile
-            )
+        generated = cls.get_generated(
+            profile
+        )
 
 
-            export_rows.append(
-                generated
-            )
+        export_rows.append(
+            generated
+        )
 
 
 
