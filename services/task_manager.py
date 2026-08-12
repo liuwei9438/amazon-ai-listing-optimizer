@@ -175,11 +175,31 @@ def load_status(
 
 
 
-    return json.loads(
-        path.read_text(
+    try:
+
+        content = path.read_text(
             encoding="utf-8"
         )
-    )
+    
+    
+        if not content.strip():
+    
+            return {}
+    
+    
+        return json.loads(
+            content
+        )
+    
+    
+    except json.JSONDecodeError:
+    
+        return {}
+    
+    
+    except Exception:
+
+        return {}
 
 
 
@@ -191,14 +211,17 @@ def save_json(
 ):
 
 
-    path.write_text(
+    temp_path = path.with_suffix(".tmp")
 
+
+    temp_path.write_text(
         json.dumps(
-            data,
+            status,
             ensure_ascii=False,
             indent=2
         ),
-
         encoding="utf-8"
-
     )
+    
+    
+    temp_path.replace(path)
