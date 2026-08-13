@@ -389,10 +389,78 @@ Supported usage only.
 
 Do not convert assumptions into features.
 
+## Title Information Selection
 
+
+The Amazon title has limited space.
+
+Select the most valuable information that should appear in the title.
+
+
+priority_attributes:
+
+Select important attributes that help customers distinguish or choose the product.
+
+Examples:
+
+- package quantity
+- special configuration
+- important design characteristics
+- version differences
+
+
+important_specifications:
+
+Select technical specifications that customers commonly search for.
+
+Examples:
+
+- power
+- capacity
+- size
+- important model-related specifications
+
+
+important_quantity:
+
+Keep quantity information when package quantity affects purchase decision.
+
+
+important_context:
+
+Keep important product context required for customer understanding.
+
+Examples:
+
+- device type
+- application object
+- special usage context
+
+
+important_compatibility:
+
+Keep important compatibility information supported by SOURCE.
+
+Examples:
+
+- compatible brands
+- compatible device families
+- important compatible models
+
+
+Do not select:
+
+- generic seller categories
+- marketing words
+- unsupported claims
+- unnecessary information
+
+
+The goal is:
+
+Choose the highest-value facts for a limited Amazon title length.
 
 ## 8. Search Strategy
-
 
 Generate search strategy only from verified information.
 
