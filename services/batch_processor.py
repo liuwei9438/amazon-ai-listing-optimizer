@@ -33,6 +33,8 @@ from services.task_manager import (
     save_status,
 )
 
+from services.task_control import load_control
+
 from services.result_storage import (
     save_profiles,
     save_failed_items,
@@ -159,6 +161,53 @@ def process_batch(
     for index, record in enumerate(records):
 
 
+        # =====================
+        # 检查任务控制状态
+        # =====================
+    
+        action = load_control(
+            task_id
+        )
+    
+    
+        if action == "pause":
+    
+            save_status(
+                task_id,
+                {
+                    "task_id": task_id,
+                    "status": "paused",
+                    "message": "任务已暂停",
+                    "completed": len(profiles),
+                    "total": total,
+                }
+            )
+    
+    
+            return profiles
+    
+    
+    
+        if action == "cancel":
+    
+            save_status(
+                task_id,
+                {
+                    "task_id": task_id,
+                    "status": "cancelled",
+                    "message": "任务已取消",
+                    "completed": len(profiles),
+                    "total": total,
+                }
+            )
+    
+    
+            return profiles
+    
+    
+    
+        # 原来的状态更新保持
+    
         save_status(
             task_id,
             {
@@ -169,7 +218,6 @@ def process_batch(
                 "total": total,
             }
         )
-
 
         print(
             f"PROCESS PRODUCT {index + 1}/{total}"
