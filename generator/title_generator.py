@@ -325,51 +325,43 @@ class TitleGenerator:
         # Attribute
         # 高价值属性
         # =========================
-        
+
         if isinstance(
             title_attribute_focus,
             list,
         ):
-        
+
             for attribute in title_attribute_focus:
-        
+
                 attribute = str(
                     attribute
                 ).strip()
-        
+
+
                 if attribute.lower() in [
                     x.lower()
                     for x in TitleGenerator.IGNORED_ATTRIBUTES
                 ]:
-        
-                    continue
-        
-                if not attribute:
-        
-                    continue
-        
-        
-                duplicate = False
-        
-        
-               for part in title_parts:
 
-                    if TitleGenerator.has_semantic_overlap(
-                        attribute,
-                        title_parts,
-                    ):
-                
-                        duplicate = True
-                
-                        break
-        
-        
+                    continue
+
+
+                if not attribute:
+
+                    continue
+
+
+                duplicate = TitleGenerator.has_semantic_overlap(
+                    attribute,
+                    title_parts,
+                )
+
+
                 if not duplicate:
-        
+
                     title_parts.append(
                         attribute
                     )
-    
 
 
         # =========================
