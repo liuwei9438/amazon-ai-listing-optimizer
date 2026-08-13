@@ -235,7 +235,7 @@ class TitlePlanner:
 
         return TitlePlanner.clean_list(
             result
-        )[:8]
+        )[:5]
 
 
 
@@ -380,7 +380,9 @@ class TitlePlanner:
                 []
             )
         )
-
+        return TitlePlanner.clean_list(
+            result
+        )[:8]
 
     # =====================================================
     # 判断是否适合作为标题卖点
