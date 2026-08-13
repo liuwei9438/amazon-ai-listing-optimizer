@@ -552,6 +552,20 @@ if current_task:
     )
 
 
+    # ===== 调试信息 =====
+
+    st.write(
+        "DEBUG 当前任务ID:",
+        current_task
+    )
+
+
+    st.write(
+        "DEBUG 优化结果数量:",
+        len(profiles)
+    )
+
+
     if status:
 
 
@@ -559,6 +573,11 @@ if current_task:
             "任务状态"
         )
         if st.button("刷新任务状态"):
+
+            st.session_state.pop(
+                "current_task",
+                None
+            )
         
             st.rerun()
         col1, col2, col3 = st.columns(3)
