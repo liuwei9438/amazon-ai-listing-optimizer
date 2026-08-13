@@ -352,12 +352,15 @@ class TitleGenerator:
                 duplicate = False
         
         
-                for part in title_parts:
-        
-                    if attribute.lower() in str(part).lower():
-        
+               for part in title_parts:
+
+                    if TitleGenerator.has_semantic_overlap(
+                        attribute,
+                        title_parts,
+                    ):
+                
                         duplicate = True
-        
+                
                         break
         
         
@@ -391,16 +394,17 @@ class TitleGenerator:
                     continue
 
 
-                duplicate = False
-
-
-                for part in title_parts:
-
-                    if keyword.lower() in str(part).lower():
-
-                        duplicate = True
-
-                        break
+                duplicate = TitleGenerator.has_semantic_overlap(
+                    attribute,
+                    title_parts,
+                )
+                
+                
+                if not duplicate:
+                
+                    title_parts.append(
+                        attribute
+                    )
 
 
                 if not duplicate:
