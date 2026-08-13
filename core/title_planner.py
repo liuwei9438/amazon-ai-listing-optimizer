@@ -265,7 +265,7 @@ class TitlePlanner:
 
         return TitlePlanner.clean_list(
             result
-        )[:5]
+        )[:8]
 
 
 
