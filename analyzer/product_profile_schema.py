@@ -688,7 +688,19 @@ _EMPTY_PROFILE: dict[str, Any] = {
         "package_contents": [],
 
     },
-
+    "title_information": {
+    
+        "priority_attributes": [],
+    
+        "important_specifications": [],
+    
+        "important_quantity": "",
+    
+        "important_context": [],
+    
+        "important_compatibility": [],
+    
+    },
 
     "brand_info": {
 
