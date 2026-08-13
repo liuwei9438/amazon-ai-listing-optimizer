@@ -78,61 +78,79 @@ class TitlePlanner:
     def get_main_product(
         product_knowledge
     ):
-
+    
         identity = product_knowledge.get(
             "identity",
             {}
         )
-
-
+    
+    
         basic_info = product_knowledge.get(
             "basic_info",
             {}
         )
-
-
+    
+    
         candidates = [
-
+    
+            # 第一优先级：
+            # 买家搜索身份
+            identity.get(
+                "buyer_search_identity",
+                ""
+            ),
+    
+    
+            # 第二优先级：
+            # 产品本体名称
             identity.get(
                 "object_name",
                 ""
             ),
-
+    
+    
+            # 第三优先级：
+            # 产品类型
             basic_info.get(
                 "product_type",
                 ""
             ),
-
+    
+    
+            # 最后备用
             identity.get(
                 "product_name",
                 ""
             ),
-
+    
         ]
-
-
+    
+    
         for value in candidates:
-
+    
+    
             value = str(
                 value
             ).strip()
-
-
+    
+    
             if not value:
+    
                 continue
-
-
+    
+    
             if TitlePlanner.is_low_value_identity(
                 value
             ):
+    
                 continue
-
-
+    
+    
             return [
                 value
             ]
-
-
+    
+    
         return []
 
 
