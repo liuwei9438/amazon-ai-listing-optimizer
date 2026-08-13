@@ -84,7 +84,13 @@ class TitleGenerator:
             "features",
             []
         )
+
         
+        plan_title_attributes = title_plan.get(
+            "title_attributes",
+            []
+        )
+
         
         plan_compatibility = title_plan.get(
             "compatibility",
@@ -116,6 +122,8 @@ class TitleGenerator:
         title_search_focus = plan_search_terms
 
         title_attribute_focus = (
+            plan_title_attributes
+            or
             generation_strategy.get(
                 "title_attribute_focus",
                 [],
