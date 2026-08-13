@@ -316,6 +316,54 @@ class TitleGenerator:
         )
 
 
+        # =========================
+        # Attribute
+        # 高价值属性
+        # =========================
+        
+        if isinstance(
+            title_attribute_focus,
+            list,
+        ):
+        
+            for attribute in title_attribute_focus:
+        
+                attribute = str(
+                    attribute
+                ).strip()
+        
+                if attribute.lower() in [
+                    x.lower()
+                    for x in TitleGenerator.IGNORED_ATTRIBUTES
+                ]:
+        
+                    continue
+        
+                if not attribute:
+        
+                    continue
+        
+        
+                duplicate = False
+        
+        
+                for part in title_parts:
+        
+                    if attribute.lower() in str(part).lower():
+        
+                        duplicate = True
+        
+                        break
+        
+        
+                if not duplicate:
+        
+                    title_parts.append(
+                        attribute
+                    )
+        
+                    break
+
 
         # =========================
         # Search Keyword
@@ -384,100 +432,8 @@ class TitleGenerator:
                 
                 
                     break
-        # =========================
-        # Attribute
-        # 高价值属性
-        # =========================
-        # =========================
-        # Title Planner Features
-        # 高价值卖点
-        # =========================
-        
-        if isinstance(
-            plan_features,
-            list,
-        ):
-        
-            for feature in plan_features:
-        
-                feature = str(feature).strip()
-        
-                if not feature:
-                    continue
-        
-        
-                duplicate = False
-        
-        
-                for part in title_parts:
-        
-                    if feature.lower() in str(part).lower():
-        
-                        duplicate = True
-                        break
-        
-        
-                if not duplicate:
-
-
-                    if TitleGenerator.has_semantic_overlap(
-                        feature,
-                        title_parts,
-                    ):
-                
-                        continue
-                
-                
-                
-                    title_parts.append(
-                        feature
-                    )
-                
-                    break
-        if isinstance(
-            title_attribute_focus,
-            list,
-        ):
-
-            for attribute in title_attribute_focus:
-
-                attribute = str(
-                    attribute
-                ).strip()
-                if attribute.lower() in [
-                    x.lower()
-                    for x in TitleGenerator.IGNORED_ATTRIBUTES
-                ]:
-                
-                    continue
-
-                if not attribute:
-
-                    continue
-
-
-                duplicate = False
-
-
-                for part in title_parts:
-
-                    if attribute.lower() in str(part).lower():
-
-                        duplicate = True
-
-                        break
-
-
-                if not duplicate:
-
-                    title_parts.append(
-                        attribute
-                    )
-
-                    break
-
-
-
+       
+     
         # =========================
         # Compatibility Brand
         # =========================
@@ -597,6 +553,7 @@ class TitleGenerator:
             TitleGenerator.compress_title_parts(
                 title_parts,
                 75,
+                title_attribute_focus,
             )
         )
 
@@ -856,6 +813,7 @@ class TitleGenerator:
     def compress_title_parts(
         parts,
         max_length=75,
+        priority_parts=None,
     ):
 
         if len(
