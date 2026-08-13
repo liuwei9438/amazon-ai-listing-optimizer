@@ -36,6 +36,8 @@ _SCHEMA: dict[str, Any] = {
             "properties": {
 
                 "name": _string(),
+                
+                "buyer_search_identity": _string(),
 
                 "category": _string(),
 
@@ -54,6 +56,8 @@ _SCHEMA: dict[str, Any] = {
             "required": [
 
                 "name",
+
+                "buyer_search_identity",
 
                 "category",
 
@@ -589,6 +593,8 @@ _EMPTY_PROFILE: dict[str, Any] = {
     "product_identity": {
 
         "name": "",
+
+        "buyer_search_identity": "",
 
         "category": "",
 
