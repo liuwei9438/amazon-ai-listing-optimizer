@@ -137,10 +137,37 @@ Do not include:
 - application descriptions
 
 
+title_product_identity:
 
-buyer_search_identity:
+Generate the concise product identity used for Amazon title generation.
 
-Generate the product identity that best matches how customers search for this product on Amazon.
+This field represents only what the product is.
+
+Include:
+- core product type
+- necessary application object
+
+Do not include:
+- compatible brands
+- compatibility wording
+- replacement wording
+- marketing words
+- seller categories
+
+Examples:
+
+Source:
+"Vacuum cleaner filter compatible with Kar-cher vacuum cleaners"
+
+title_product_identity:
+"Vacuum Cleaner Filter"
+
+
+Source:
+"Projector lamp compatible with Epson projectors"
+
+title_product_identity:
+"Projector Lamp"
 
 This field should combine:
 
