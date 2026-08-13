@@ -22,7 +22,7 @@ from services.task_manager import (
     create_task,
     load_status,
 )
-
+from services.task_control import save_control
 
 from services.result_storage import (
     load_profiles,
@@ -561,7 +561,57 @@ if current_task:
         if st.button("刷新任务状态"):
         
             st.rerun()
-
+        col1, col2, col3 = st.columns(3)
+        
+        
+        with col1:
+        
+            if st.button(
+                "暂停任务"
+            ):
+        
+                save_control(
+                    current_task,
+                    "pause"
+                )
+        
+                st.warning(
+                    "暂停请求已发送"
+                )
+        
+        
+        
+        with col2:
+        
+            if st.button(
+                "继续任务"
+            ):
+        
+                save_control(
+                    current_task,
+                    "running"
+                )
+        
+                st.success(
+                    "继续请求已发送"
+                )
+        
+        
+        
+        with col3:
+        
+            if st.button(
+                "取消任务"
+            ):
+        
+                save_control(
+                    current_task,
+                    "cancel"
+                )
+        
+                st.error(
+                    "取消请求已发送"
+                )
         status_value = status.get(
             "status",
             ""
