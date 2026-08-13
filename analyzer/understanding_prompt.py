@@ -115,9 +115,17 @@ Use:
 Separate information into:
 
 
+## 2. Product Identity Classification
+
+
+Separate product identity information into different levels.
+
+
 product_identity.name:
 
 The core product name only.
+
+This is the direct name of the product itself.
 
 Do not include:
 
@@ -125,7 +133,46 @@ Do not include:
 - target users
 - materials
 - marketing words
+- compatibility claims
 - application descriptions
+
+
+
+buyer_search_identity:
+
+Generate the product identity that best matches how customers search for this product on Amazon.
+
+This field should combine:
+
+- the core product type
+- necessary device/application context
+
+The purpose is to answer:
+
+"What is this product for?"
+
+
+Important:
+
+Do not make it a category label.
+
+Do not use broad seller categories.
+
+Do not use:
+
+- parts
+- accessories
+- replacement parts
+
+
+Only include context that helps customers identify the product.
+
+
+Examples of logic:
+
+A product name alone may describe the component,
+but buyer_search_identity should describe the searchable product identity.
+
 
 
 context:
@@ -349,6 +396,7 @@ Do not convert assumptions into features.
 
 Generate search strategy only from verified information.
 
+Primary search identity should be derived from buyer_search_identity when available.
 
 title_identifiers:
 
