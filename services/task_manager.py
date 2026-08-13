@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from services.task_control import save_control
 
 
 TASK_ROOT = Path("tasks")
@@ -94,12 +95,14 @@ def create_task(
     }
 
 
-
     save_json(
         task_dir / "status.json",
         status
     )
-
+    save_control(
+        task_id,
+        "running"
+    )
 
     return task_id
 
