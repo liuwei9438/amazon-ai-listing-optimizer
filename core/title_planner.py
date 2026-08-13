@@ -150,10 +150,11 @@ class TitlePlanner:
                 continue
     
     
-            return [
-                value
+           return [
+                TitlePlanner.normalize_main_product_identity(
+                    value
+                )
             ]
-    
     
         return []
 
@@ -181,6 +182,35 @@ class TitlePlanner:
 
 
         return False
+    @staticmethod
+    def normalize_main_product_identity(
+        text: str
+    ):
+    
+        remove_patterns = [
+            "compatible with",
+            "replacement",
+            "for",
+        ]
+    
+    
+        result = text.lower()
+    
+    
+        for pattern in remove_patterns:
+    
+            result = result.replace(
+                pattern,
+                ""
+            )
+    
+    
+        words = result.split()
+    
+    
+        return " ".join(
+            words[:4]
+        ).title()
     # =====================================================
     # 搜索补充词
     # 仅作为标题辅助，不直接堆砌
@@ -356,13 +386,32 @@ class TitlePlanner:
         
         
         # 2. 产品使用场景/搜索上下文
-        result.extend(
-            title_information.get(
-                "important_context",
-                []
-            )
+        specifications = title_information.get(
+            "important_specifications",
+            []
         )
         
+        
+        for item in specifications:
+        
+            text = str(item).lower()
+        
+        
+            if any(
+                word in text
+                for word in [
+                    "diameter",
+                    "width",
+                    "length",
+                    "height",
+                    "dimension",
+                    "size"
+                ]
+            ):
+                continue
+        
+        
+            result.append(item)
         
         # 3. 高价值属性
         result.extend(
