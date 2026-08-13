@@ -449,6 +449,8 @@ important_quantity:
 
 Always keep package quantity when quantity is clearly provided in SOURCE.
 
+Package quantity should be considered a high-priority title attribute when it affects customer purchase decisions.
+
 Quantity is especially important for:
 
 - replacement parts
