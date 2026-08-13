@@ -165,7 +165,12 @@ class TitleGenerator:
                     continue
             
             
-                title_parts.append(item)
+                if not TitleGenerator.has_semantic_overlap(
+                    item,
+                    title_parts
+                ):
+                
+                    title_parts.append(item)
             
             
                 identity_added += 1
