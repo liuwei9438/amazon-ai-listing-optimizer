@@ -158,7 +158,7 @@ class TitlePlanner:
                 continue
     
     
-           return [
+            return [
                 TitlePlanner.normalize_main_product_identity(
                     value
                 )
