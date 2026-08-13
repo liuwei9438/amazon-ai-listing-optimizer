@@ -167,6 +167,43 @@ _SCHEMA: dict[str, Any] = {
         },
 
 
+        "title_information": {
+
+            "type": "object",
+
+            "additionalProperties": False,
+
+            "properties": {
+
+                "priority_attributes": _string_list(),
+
+                "important_specifications": _string_list(),
+
+                "important_quantity": _string(),
+
+                "important_context": _string_list(),
+
+                "important_compatibility": _string_list(),
+
+            },
+
+            "required": [
+
+                "priority_attributes",
+
+                "important_specifications",
+
+                "important_quantity",
+
+                "important_context",
+
+                "important_compatibility",
+
+            ],
+
+        },
+
+
         "brand_info": {
 
             "type": "object",
@@ -559,13 +596,15 @@ _SCHEMA: dict[str, Any] = {
         "required": [
 
         "product_identity",
-
+    
         "identifiers",
-
+    
         "basic_info",
-
+    
+        "title_information",
+    
         "brand_info",
-
+    
         "compatibility",
 
         "specifications",
