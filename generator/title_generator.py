@@ -361,8 +361,7 @@ class TitleGenerator:
                     title_parts.append(
                         attribute
                     )
-        
-                    break
+    
 
 
         # =========================
@@ -860,10 +859,23 @@ class TitleGenerator:
                     result.append(
                         text
                     )
-
-
-
         # 第三优先级：
+        # 标题高价值属性
+
+        if priority_parts:
+
+            for part in priority_parts:
+
+                if part in parts:
+
+                    if part not in result:
+
+                        result.append(
+                            part
+                        )
+
+
+        # 第四优先级：
         # Compatible with 品牌
 
         for part in parts:
@@ -878,7 +890,7 @@ class TitleGenerator:
 
 
 
-        # 第四优先级：
+        # 第五优先级：
         # 其他卖点
 
         for part in parts:
