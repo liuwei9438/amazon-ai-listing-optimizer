@@ -235,8 +235,7 @@ class TitlePlanner:
 
         return TitlePlanner.clean_list(
             result
-        )[:5]
-
+        )[:8]
 
 
 
@@ -343,45 +342,44 @@ class TitlePlanner:
         result = []
 
 
-        result.extend(
-            title_information.get(
-                "priority_attributes",
-                []
-            )
-        )
-
-
-        result.extend(
-            title_information.get(
-                "important_specifications",
-                []
-            )
-        )
-
-
+        # 1. 数量
         quantity = title_information.get(
             "important_quantity",
             ""
         )
-        
         
         if quantity:
         
             result.append(
                 quantity
             )
-
+        
+        
+        # 2. 产品使用场景/搜索上下文
         result.extend(
             title_information.get(
                 "important_context",
                 []
             )
         )
-
-
-        return TitlePlanner.clean_list(
-            result
-        )[:5]
+        
+        
+        # 3. 高价值属性
+        result.extend(
+            title_information.get(
+                "priority_attributes",
+                []
+            )
+        )
+        
+        
+        # 4. 重要规格
+        result.extend(
+            title_information.get(
+                "important_specifications",
+                []
+            )
+        )
 
 
     # =====================================================
