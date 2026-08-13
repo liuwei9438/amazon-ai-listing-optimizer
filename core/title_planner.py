@@ -209,7 +209,7 @@ class TitlePlanner:
     
     
         return " ".join(
-            words[:4]
+            words[:3]
         ).title()
     # =====================================================
     # 搜索补充词
@@ -421,18 +421,7 @@ class TitlePlanner:
             )
         )
         
-        
-        # 4. 重要规格
-        result.extend(
-            title_information.get(
-                "important_specifications",
-                []
-            )
-        )
-        return TitlePlanner.clean_list(
-            result
-        )[:8]
-
+    
     # =====================================================
     # 判断是否适合作为标题卖点
     # 通用逻辑，不写死产品
