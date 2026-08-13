@@ -566,14 +566,25 @@ class TitleGenerator:
         )
 
 
+        protected_parts = (
+            TitleGenerator.protect_compatibility_phrases(
+                title_parts
+            )
+        )
+        
+        
         title = " ".join(
             [
                 str(item)
-                for item in title_parts
+                for item in protected_parts
                 if item
             ]
         )
-
+        
+        title = title.replace(
+            "_",
+            " "
+        )
 
         title = TitleGenerator.clean_title(
             title
@@ -917,7 +928,35 @@ class TitleGenerator:
 
 
         return result
+    @staticmethod
+    def protect_compatibility_phrases(
+        parts
+    ):
 
+        protected = []
+
+        for part in parts:
+
+            text = str(part)
+
+            if text.startswith(
+                "Compatible with"
+            ):
+
+                protected.append(
+                    text.replace(
+                        " ",
+                        "_",
+                    )
+                )
+
+            else:
+
+                protected.append(
+                    text
+                )
+
+        return protected
     @staticmethod
     def limit_length(
         text: str,
