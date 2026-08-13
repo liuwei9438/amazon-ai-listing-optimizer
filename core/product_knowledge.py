@@ -69,6 +69,9 @@ class ProductKnowledgeBuilder:
             profile.get("specifications")
         )
         
+        title_information = ProductKnowledgeBuilder.ensure_dict(
+            profile.get("title_information")
+        )
         
         search_strategy = ProductKnowledgeBuilder.ensure_dict(
             profile.get("search_strategy")
@@ -214,7 +217,9 @@ class ProductKnowledgeBuilder:
             "specifications":
                 knowledge_specifications,
         
-        
+            "title_information":
+                title_information,
+            
             "purpose":
                 purpose,
         
