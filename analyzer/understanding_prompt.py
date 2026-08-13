@@ -234,6 +234,28 @@ unknown_code:
 
 A code whose meaning cannot be safely determined.
 
+Important quantity classification rule:
+
+Do not classify package quantity as identifiers.
+
+Examples:
+
+- 2PCS
+- 4PCS
+- 6PCS
+- 12 pieces
+- 3 sets
+
+These values represent package quantity and must be classified as quantity information.
+
+They should not enter:
+
+- model_numbers
+- part_numbers
+- series_numbers
+- unknown_codes
+
+Only classify values as identifiers when they identify a specific product model, part number, or product code.
 
 Decision process:
 
@@ -425,7 +447,20 @@ Examples:
 
 important_quantity:
 
-Keep quantity information when package quantity affects purchase decision.
+Always keep package quantity when quantity is clearly provided in SOURCE.
+
+Quantity is especially important for:
+
+- replacement parts
+- accessories
+- multi-piece packages
+- consumable products
+
+Examples:
+
+- 2PCS Filter
+- 6PCS Tuning Pegs
+- 4PCS Replacement Blades
 
 
 important_context:
