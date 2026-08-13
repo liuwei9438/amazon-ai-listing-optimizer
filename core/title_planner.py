@@ -53,7 +53,11 @@ class TitlePlanner:
                 TitlePlanner.get_features(
                     product_knowledge
                 ),
-
+            
+            "title_attributes":
+                TitlePlanner.get_title_attributes(
+                    product_knowledge
+                ),
 
             "compatibility":
                 TitlePlanner.get_compatibility(
@@ -319,7 +323,69 @@ class TitlePlanner:
             filtered
         )[:5]
 
+    # =====================================================
+    # 标题高价值属性
+    # =====================================================
 
+    @staticmethod
+    def get_title_attributes(
+        product_knowledge
+    ):
+
+        title_information = (
+            product_knowledge.get(
+                "title_information",
+                {}
+            )
+        )
+
+
+        result = []
+
+
+        result.extend(
+            title_information.get(
+                "priority_attributes",
+                []
+            )
+        )
+
+
+        result.extend(
+            title_information.get(
+                "important_specifications",
+                []
+            )
+        )
+
+
+        result.extend(
+            title_information.get(
+                "important_quantity",
+                []
+            )
+            if isinstance(
+                title_information.get(
+                    "important_quantity",
+                    []
+                ),
+                list
+            )
+            else []
+        )
+
+
+        result.extend(
+            title_information.get(
+                "important_context",
+                []
+            )
+        )
+
+
+        return TitlePlanner.clean_list(
+            result
+        )[:5]
 
 
     # =====================================================
