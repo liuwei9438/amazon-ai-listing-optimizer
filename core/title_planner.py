@@ -359,21 +359,17 @@ class TitlePlanner:
         )
 
 
-        result.extend(
-            title_information.get(
-                "important_quantity",
-                []
-            )
-            if isinstance(
-                title_information.get(
-                    "important_quantity",
-                    []
-                ),
-                list
-            )
-            else []
+        quantity = title_information.get(
+            "important_quantity",
+            ""
         )
-
+        
+        
+        if quantity:
+        
+            result.append(
+                quantity
+            )
 
         result.extend(
             title_information.get(
