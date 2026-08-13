@@ -26,6 +26,7 @@ from services.task_control import save_control
 
 from services.result_storage import (
     load_profiles,
+    load_failed_items,
 )
 
 
@@ -701,6 +702,39 @@ if current_task:
 st.write(
     "DEBUG profiles:",
     profiles
+)
+failed_items = load_failed_items(
+    current_task
+)
+
+
+st.write(
+    "DEBUG failed数量:",
+    len(failed_items)
+)
+
+
+if failed_items:
+
+    st.json(
+        failed_items
+    )
+from services.result_storage import load_failed_items
+
+
+failed_items = load_failed_items(
+    current_task
+)
+
+
+st.write(
+    "DEBUG failed数量:",
+    len(failed_items)
+)
+
+
+st.json(
+    failed_items
 )
 if profiles:
 
