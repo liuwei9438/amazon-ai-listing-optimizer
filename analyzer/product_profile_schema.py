@@ -59,6 +59,8 @@ _SCHEMA: dict[str, Any] = {
 
                 "buyer_search_identity",
 
+                "title_product_identity"
+
                 "category",
 
                 "parent_product",
@@ -634,6 +636,8 @@ _EMPTY_PROFILE: dict[str, Any] = {
         "name": "",
 
         "buyer_search_identity": "",
+
+        "title_product_identity",
 
         "category": "",
 
