@@ -39,6 +39,8 @@ _SCHEMA: dict[str, Any] = {
                 
                 "buyer_search_identity": _string(),
 
+                "title_product_identity": _string(),
+
                 "category": _string(),
 
                 "parent_product": _string(),
