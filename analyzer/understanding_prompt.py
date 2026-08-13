@@ -401,6 +401,8 @@ priority_attributes:
 
 Select important attributes that help customers distinguish or choose the product.
 
+Prioritize information that is difficult to recover after removing it from the title.
+
 Examples:
 
 - package quantity
@@ -453,7 +455,7 @@ Do not select:
 - generic seller categories
 - marketing words
 - unsupported claims
-- unnecessary information
+- low-value information that does not help search relevance or purchase decision
 
 
 The goal is:
