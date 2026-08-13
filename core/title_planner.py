@@ -96,37 +96,45 @@ class TitlePlanner:
     
     
         candidates = [
-    
+
             # 第一优先级：
-            # 买家搜索身份
+            # 标题专用产品身份
             identity.get(
-                "buyer_search_identity",
+                "title_product_identity",
                 ""
             ),
-    
-    
+        
+        
             # 第二优先级：
             # 产品本体名称
             identity.get(
                 "object_name",
                 ""
             ),
-    
-    
+        
+        
             # 第三优先级：
             # 产品类型
             basic_info.get(
                 "product_type",
                 ""
             ),
-    
-    
+        
+        
+            # 第四优先级：
+            # 买家搜索身份（备用）
+            identity.get(
+                "buyer_search_identity",
+                ""
+            ),
+        
+        
             # 最后备用
             identity.get(
                 "product_name",
                 ""
             ),
-    
+        
         ]
     
     
@@ -189,7 +197,9 @@ class TitlePlanner:
     
         remove_patterns = [
             "compatible with",
+            "compatible",
             "replacement",
+            "replacement for",
             "for",
         ]
     
@@ -209,7 +219,7 @@ class TitlePlanner:
     
     
         return " ".join(
-            words[:3]
+            words[:5]
         ).title()
     # =====================================================
     # 搜索补充词
