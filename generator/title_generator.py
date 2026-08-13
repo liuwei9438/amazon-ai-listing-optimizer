@@ -352,16 +352,9 @@ class TitleGenerator:
         
         
                 duplicate = TitleGenerator.has_semantic_overlap(
-                    attribute,
+                    keyword,
                     title_parts,
                 )
-        
-        
-                if not duplicate:
-        
-                    title_parts.append(
-                        attribute
-                    )
 
         # =========================
         # Search Keyword
