@@ -23,8 +23,10 @@ Determine the core product by identifying the actual item being sold.
 The core product should represent:
 
 - the actual item being sold
-- the main item identity
+- the main product identity
 - the search term that directly describes the item
+
+Do not select a broad category when a more specific product identity exists.
 
 Brand names should only be included when:
 
@@ -33,24 +35,32 @@ Brand names should only be included when:
 - including the brand does not create trademark or compliance issues
 
 
-The core product should NOT be based on:
+Brand handling rules:
+
+Evaluate brand names separately from the core product.
+
+Brand names may be included when:
+
+- customers commonly search the brand together with the product
+- the brand helps identify compatibility
+- the brand has clear search value
+
+Do not use:
 
 - seller names
 - unknown product series names
 - marketing names
 
-- customers commonly search the brand together with the product
-- the brand helps identify compatibility or product category
-- including the brand does not create trademark or compliance issues
+as the core product.
 
-Do not use seller names or unknown product series names as the core product.
+
+The core product should NOT be based on:
+
 - user groups
 - customer types
 - usage scenarios
 - application environments
-- marketing names
 - seller-created names
-- product series names
 
 The core product should answer:
 
@@ -100,6 +110,13 @@ Higher priority:
 - features customers actively compare
 - specifications that affect purchase decisions
 - compatibility or model information when relevant
+For replacement parts and compatible products:
+
+Model numbers, part numbers, and compatibility information may have higher priority because customers often search by identifiers.
+
+For general consumer products:
+
+Only include models or codes when they provide clear search value.
 For replacement parts and compatible products:
 
 Model numbers, part numbers, and compatibility information may have higher priority because customers often search by these identifiers.
@@ -186,15 +203,13 @@ must_include:
 
 Information that is essential for the title because removing it would significantly reduce product understanding, search relevance, or purchase confidence.
 
-Usually limit must_include to the highest-value elements.
+Usually limit must_include to around 3-5 highest-value elements.
 
 Do not put every valuable feature into must_include.
 
-Normally select around 3-5 must_include elements.
+If multiple elements are valuable, rank them by search value, purchase impact, and character efficiency.
 
-If too many elements are valuable, rank them and move lower-ranked items into optional_include.
-
-Lower priority but useful information should go to optional_include.
+Move lower-priority but useful information into optional_include.
 
 optional_include:
 
@@ -240,7 +255,14 @@ The order in which title elements should be considered.
 
 title_length_strategy:
 How to maximize valuable information within the title character limit.
+Title structure should usually follow:
 
+1. Product identity
+2. Highest-value differentiating features
+3. Important specifications
+4. Quantity, model, or compatibility when relevant
+
+Adjust the structure according to product type and buyer search behavior.
 Title structure should usually follow:
 
 1. Product identity
