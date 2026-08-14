@@ -45,7 +45,9 @@ from services.listing_exporter import (
     ListingExporter,
 )
 
-
+from analyzer.title_strategy_generator import (
+    TitleStrategyGenerator,
+)
 
 VERSION = "V2.4.3-Worker"
 
@@ -731,7 +733,50 @@ st.write(
     "DEBUG failed数量:",
     len(failed_items)
 )
+# =====================================================
+# Title Strategy 测试
+# 临时验证 AI 标题策略能力
+# =====================================================
 
+with st.expander(
+    "Title Strategy 测试"
+):
+
+    if profiles:
+
+        if st.button(
+            "生成 Title Strategy",
+            key="title_strategy_test",
+        ):
+
+            test_profile = profiles[2]
+
+
+            try:
+
+                strategy_result = (
+                    TitleStrategyGenerator.generate(
+                        test_profile,
+                        get_openai_api_key(),
+                    )
+                )
+
+
+                st.subheader(
+                    "Title Strategy 输出"
+                )
+
+
+                st.json(
+                    strategy_result
+                )
+
+
+            except Exception as exc:
+
+                st.error(
+                    f"Title Strategy 测试失败：{exc}"
+                )
 
 st.json(
     failed_items
