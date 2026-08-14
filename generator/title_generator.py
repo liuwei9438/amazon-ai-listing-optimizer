@@ -147,7 +147,11 @@ class TitleGenerator:
         )
         
 
-        title_search_focus = plan_search_terms
+        title_search_focus = (
+            strategy_search_terms
+            or
+            plan_search_terms
+        )
 
         strategy_must_include = (
             title_strategy.get(
@@ -365,31 +369,7 @@ class TitleGenerator:
             selected_models
         )
 
-        # =========================
-        # Optional Include
-        # =========================
         
-        if isinstance(
-            strategy_optional_include,
-            list,
-        ):
-        
-            for item in strategy_optional_include:
-        
-                item = str(item).strip()
-        
-                if not item:
-                    continue
-        
-        
-                if TitleGenerator.has_semantic_overlap(
-                    item,
-                    title_parts,
-                ):
-                    continue
-        
-        
-                title_parts.append(item)
         # =========================
         # Attribute
         # 高价值属性
@@ -424,6 +404,36 @@ class TitleGenerator:
                     attribute,
                     title_parts,
                 )
+                if not duplicate:
+
+                    title_parts.append(
+                        attribute
+                    )
+        # =========================
+        # Optional Include
+        # =========================
+        
+        if isinstance(
+            strategy_optional_include,
+            list,
+        ):
+        
+            for item in strategy_optional_include:
+        
+                item = str(item).strip()
+        
+                if not item:
+                    continue
+        
+        
+                if TitleGenerator.has_semantic_overlap(
+                    item,
+                    title_parts,
+                ):
+                    continue
+        
+        
+                title_parts.append(item)
         # =========================
         # Search Keyword
         # 搜索补充词
@@ -498,7 +508,14 @@ class TitleGenerator:
         # Compatibility Brand
         # =========================
 
-        relationship_brands = plan_compatibility
+        relationship_brands = (
+            title_strategy.get(
+                "compatibility_priority",
+                []
+            )
+            or
+            plan_compatibility
+        )
 
 
         protected_compatibility = []
