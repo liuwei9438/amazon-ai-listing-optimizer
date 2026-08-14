@@ -234,6 +234,10 @@ Separate information into three groups.
 
 must_include:
 
+Do not place specifications that are useful but not essential into must_include.
+
+Reserve must_include for the strongest search and purchase drivers.
+
 Information that is essential for the title.
 
 Removing it would significantly reduce:
@@ -243,7 +247,11 @@ Removing it would significantly reduce:
 - purchase confidence
 
 
-Normally select around 3-5 highest-value elements.
+Normally select around 3 highest-value elements.
+
+Only include additional elements when they are critical for customer purchase decisions.
+
+Lower-priority but useful features should go into optional_include.
 
 
 Do not include:
