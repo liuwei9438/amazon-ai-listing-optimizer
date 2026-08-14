@@ -24,10 +24,16 @@ The core product should represent:
 
 - the product category
 - the main item identity
-- the term customers use to search for the item
+- the search term that directly describes the item
 
 The core product should NOT be based on:
+Brand names should only be included when:
 
+- customers commonly search the brand together with the product
+- the brand helps identify compatibility or product category
+- including the brand does not create trademark or compliance issues
+
+Do not use seller names or unknown product series names as the core product.
 - user groups
 - customer types
 - usage scenarios
@@ -49,6 +55,14 @@ not:
 "Where is it used?"
 
 Title space is limited.
+
+For Amazon titles, optimize information within the allowed character limit.
+
+Use available space efficiently.
+
+Avoid both:
+- unnecessarily short titles
+- keyword stuffing titles
 
 Title optimization principle:
 
@@ -156,6 +170,11 @@ must_include:
 
 Information that is essential for the title because removing it would significantly reduce product understanding, search relevance, or purchase confidence.
 
+Usually limit must_include to the highest-value elements.
+
+Do not put every valuable feature into must_include.
+
+Lower priority but useful information should go to optional_include.
 
 optional_include:
 
@@ -201,4 +220,18 @@ The order in which title elements should be considered.
 
 title_length_strategy:
 How to maximize valuable information within the title character limit.
+
+Title structure should usually follow:
+
+1. Product identity
+2. Highest-value differentiating features
+3. Important specifications
+4. Quantity/model/compatibility when relevant
+
+Adjust the order according to product type.
+Exclude does not mean the information is false.
+
+It only means the information is not valuable enough for the title.
+
+Important facts should still be preserved for bullets or description.
 """
