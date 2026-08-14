@@ -13,9 +13,7 @@ class TitleStrategyError(Exception):
     pass
 
 
-
 class TitleStrategyGenerator:
-
 
     @staticmethod
     def generate(
@@ -31,42 +29,64 @@ class TitleStrategyGenerator:
 
         product_context = {
 
+            # 产品身份
             "product_identity":
                 profile.get(
                     "product_identity",
                     {}
                 ),
 
+
+            # 基础信息
             "basic_info":
                 profile.get(
                     "basic_info",
                     {}
                 ),
 
+
+            # 标题相关信息
             "title_information":
                 profile.get(
                     "title_information",
                     {}
                 ),
 
+
+            # 兼容信息
             "compatibility":
                 profile.get(
                     "compatibility",
                     {}
                 ),
 
+
+            # 规格参数
             "specifications":
                 profile.get(
                     "specifications",
                     {}
                 ),
 
+
+            # 产品属性
             "attributes":
                 profile.get(
                     "attributes",
                     {}
                 ),
 
+
+            # 事实锁定
+            # 防止AI遗漏数量、型号、尺寸等事实
+            "fact_lock":
+                profile.get(
+                    "fact_lock",
+                    {}
+                ),
+
+
+            # SEO信息
             "seo":
                 profile.get(
                     "seo",
@@ -80,48 +100,53 @@ class TitleStrategyGenerator:
 
             model=model,
 
+
             messages=[
 
                 {
-                    "role":
-                    "system",
+                    "role": "system",
 
                     "content":
-                    TITLE_STRATEGY_SYSTEM_PROMPT,
+                        TITLE_STRATEGY_SYSTEM_PROMPT,
                 },
 
 
                 {
-                    "role":
-                    "user",
+                    "role": "user",
 
                     "content":
-                    json.dumps(
-                        product_context,
-                        ensure_ascii=False,
-                    )
-                }
+                        json.dumps(
+                            product_context,
+                            ensure_ascii=False,
+                            indent=2,
+                        ),
+                },
 
             ],
 
+
             response_format={
                 "type":
-                "json_object"
-            }
+                    "json_object"
+            },
 
         )
 
 
         try:
 
-            return json.loads(
+            result = json.loads(
                 response.choices[0]
                 .message
                 .content
             )
 
+
+            return result
+
+
         except Exception as exc:
 
             raise TitleStrategyError(
-                str(exc)
+                f"Title strategy parse failed: {exc}"
             )
