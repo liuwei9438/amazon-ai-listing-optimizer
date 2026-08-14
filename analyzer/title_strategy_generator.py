@@ -29,8 +29,10 @@ class TitleStrategyGenerator:
 
         # =================================================
         # 产品身份整理
-        # 不直接把原始identity全部交给AI
-        # 避免品牌名、用户群体、场景污染
+        #
+        # 目标：
+        # 给AI提供干净的产品身份信息
+        # 避免卖家名称、系列名称污染标题判断
         # =================================================
 
         raw_identity = (
@@ -62,15 +64,16 @@ class TitleStrategyGenerator:
         )
 
 
+        # 不直接发送：
+        # product_name
+        # object_name
+        #
+        # 因为这些字段可能包含：
+        # 卖家命名、系列名称、营销名称
+
         identity_candidates = {
 
-            "product_name":
-                raw_identity.get(
-                    "name",
-                    ""
-                ),
-
-
+            # AI需要判断的真实产品身份
             "title_product_identity":
                 raw_identity.get(
                     "title_product_identity",
@@ -78,6 +81,8 @@ class TitleStrategyGenerator:
                 ),
 
 
+            # 买家搜索表达
+            # 可能包含场景，需要AI过滤
             "buyer_search_identity":
                 raw_identity.get(
                     "buyer_search_identity",
@@ -85,20 +90,15 @@ class TitleStrategyGenerator:
                 ),
 
 
-            "knowledge_product_type":
+            # 产品类型
+            "product_type":
                 knowledge_identity.get(
                     "product_type",
                     ""
                 ),
 
 
-            "knowledge_object_name":
-                knowledge_identity.get(
-                    "object_name",
-                    ""
-                ),
-
-
+            # 类目
             "category":
                 raw_identity.get(
                     "category",
@@ -108,20 +108,16 @@ class TitleStrategyGenerator:
         }
 
 
-        # =================================================
-        # 构造Title Strategy输入
-        # =================================================
-
         product_context = {
 
 
             # 产品身份候选
-            # 让AI判断，而不是直接相信某一个字段
             "product_identity_candidates":
                 identity_candidates,
 
 
-            # 商品知识
+            # 产品知识
+            # 保留用于理解功能和特征
             "product_knowledge":
                 product_knowledge,
 
@@ -135,6 +131,7 @@ class TitleStrategyGenerator:
 
 
             # 标题信息
+            # 包含高价值卖点
             "title_information":
                 profile.get(
                     "title_information",
@@ -182,7 +179,7 @@ class TitleStrategyGenerator:
                 ),
 
 
-            # 标题约束
+            # 标题限制
             "title_constraints":
                 {
                     "marketplace":
