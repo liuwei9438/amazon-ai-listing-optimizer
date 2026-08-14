@@ -411,9 +411,9 @@ class TitleGenerator:
                 )
                 if not duplicate:
 
-                title_parts.append(
-                    keyword
-                )
+                    title_parts.append(
+                        keyword
+                    )
         # =========================
         # Optional Include
         # =========================
