@@ -27,14 +27,56 @@ class TitleStrategyGenerator:
         )
 
 
+        # ==========================================
+        # 优先使用 Product Knowledge
+        # 因为它经过结构化整理
+        # 避免直接使用原始身份字段造成污染
+        # ==========================================
+
+        product_knowledge = (
+            profile.get(
+                "product_knowledge",
+                {}
+            )
+        )
+
+
+        knowledge_identity = (
+            product_knowledge.get(
+                "identity",
+                {}
+            )
+            if isinstance(
+                product_knowledge,
+                dict
+            )
+            else {}
+        )
+
+
+        product_identity = (
+            knowledge_identity
+            if knowledge_identity
+            else
+            profile.get(
+                "product_identity",
+                {}
+            )
+        )
+
+
         product_context = {
+
 
             # 产品身份
             "product_identity":
-                profile.get(
-                    "product_identity",
-                    {}
-                ),
+                product_identity,
+
+
+            # Product Knowledge
+            # 提供完整商品理解
+            "product_knowledge":
+                product_knowledge,
 
 
             # 基础信息
