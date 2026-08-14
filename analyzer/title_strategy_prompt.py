@@ -316,6 +316,10 @@ Always prioritize based on customer search behavior and purchase decisions.
 
 Plan the title structure according to the product type.
 
+Do not prioritize or recommend customer groups, target users, or usage scenarios as title structure elements unless they are a necessary part of the product identity.
+
+Customer groups and usage scenarios should normally be considered supporting information, not core title elements.
+
 
 Normally consider:
 
