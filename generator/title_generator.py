@@ -37,8 +37,16 @@ class TitleGenerator:
 
         knowledge = profile.get(
             "product_knowledge",
-            {},
+            {}
         )
+        
+        
+        title_strategy = profile.get(
+            "title_strategy",
+            {}
+        )
+        
+        
         title_plan = profile.get(
             "title_plan",
             {}
@@ -109,7 +117,27 @@ class TitleGenerator:
         # Generation Strategy
         # =========================
 
+        strategy_core_product = (
+            title_strategy.get(
+                "core_product",
+                ""
+            )
+        )
+        
+        
+        strategy_title_identity = []
+        
+        
+        if strategy_core_product:
+        
+            strategy_title_identity.append(
+                strategy_core_product
+            )
+        
+        
         title_identity_focus = (
+            strategy_title_identity
+            or
             plan_identity
             or
             generation_strategy.get(
@@ -121,7 +149,25 @@ class TitleGenerator:
 
         title_search_focus = plan_search_terms
 
+        strategy_must_include = (
+            title_strategy.get(
+                "must_include",
+                []
+            )
+        )
+        
+        
+        strategy_optional_include = (
+            title_strategy.get(
+                "optional_include",
+                []
+            )
+        )
+        
+        
         title_attribute_focus = (
+            strategy_must_include
+            or
             plan_title_attributes
             or
             generation_strategy.get(
@@ -129,7 +175,6 @@ class TitleGenerator:
                 [],
             )
         )
-
         # =========================
         # Product Identity
         # 商品身份
@@ -320,7 +365,31 @@ class TitleGenerator:
             selected_models
         )
 
-
+        # =========================
+        # Optional Include
+        # =========================
+        
+        if isinstance(
+            strategy_optional_include,
+            list,
+        ):
+        
+            for item in strategy_optional_include:
+        
+                item = str(item).strip()
+        
+                if not item:
+                    continue
+        
+        
+                if TitleGenerator.has_semantic_overlap(
+                    item,
+                    title_parts,
+                ):
+                    continue
+        
+        
+                title_parts.append(item)
         # =========================
         # Attribute
         # 高价值属性
@@ -352,10 +421,9 @@ class TitleGenerator:
         
         
                 duplicate = TitleGenerator.has_semantic_overlap(
-                    keyword,
+                    attribute,
                     title_parts,
                 )
-
         # =========================
         # Search Keyword
         # 搜索补充词
