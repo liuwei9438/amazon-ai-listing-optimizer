@@ -27,11 +27,19 @@ class TitleStrategyGenerator:
         )
 
 
-        # ==========================================
-        # 优先使用 Product Knowledge
-        # 因为它经过结构化整理
-        # 避免直接使用原始身份字段造成污染
-        # ==========================================
+        # =================================================
+        # 产品身份整理
+        # 不直接把原始identity全部交给AI
+        # 避免品牌名、用户群体、场景污染
+        # =================================================
+
+        raw_identity = (
+            profile.get(
+                "product_identity",
+                {}
+            )
+        )
+
 
         product_knowledge = (
             profile.get(
@@ -54,27 +62,66 @@ class TitleStrategyGenerator:
         )
 
 
-        product_identity = (
-            knowledge_identity
-            if knowledge_identity
-            else
-            profile.get(
-                "product_identity",
-                {}
-            )
-        )
+        identity_candidates = {
 
+            "product_name":
+                raw_identity.get(
+                    "name",
+                    ""
+                ),
+
+
+            "title_product_identity":
+                raw_identity.get(
+                    "title_product_identity",
+                    ""
+                ),
+
+
+            "buyer_search_identity":
+                raw_identity.get(
+                    "buyer_search_identity",
+                    ""
+                ),
+
+
+            "knowledge_product_type":
+                knowledge_identity.get(
+                    "product_type",
+                    ""
+                ),
+
+
+            "knowledge_object_name":
+                knowledge_identity.get(
+                    "object_name",
+                    ""
+                ),
+
+
+            "category":
+                raw_identity.get(
+                    "category",
+                    ""
+                ),
+
+        }
+
+
+        # =================================================
+        # 构造Title Strategy输入
+        # =================================================
 
         product_context = {
 
 
-            # 产品身份
-            "product_identity":
-                product_identity,
+            # 产品身份候选
+            # 让AI判断，而不是直接相信某一个字段
+            "product_identity_candidates":
+                identity_candidates,
 
 
-            # Product Knowledge
-            # 提供完整商品理解
+            # 商品知识
             "product_knowledge":
                 product_knowledge,
 
@@ -87,7 +134,7 @@ class TitleStrategyGenerator:
                 ),
 
 
-            # 标题相关信息
+            # 标题信息
             "title_information":
                 profile.get(
                     "title_information",
@@ -103,7 +150,7 @@ class TitleStrategyGenerator:
                 ),
 
 
-            # 规格参数
+            # 规格
             "specifications":
                 profile.get(
                     "specifications",
@@ -111,7 +158,7 @@ class TitleStrategyGenerator:
                 ),
 
 
-            # 产品属性
+            # 属性
             "attributes":
                 profile.get(
                     "attributes",
@@ -120,7 +167,6 @@ class TitleStrategyGenerator:
 
 
             # 事实锁定
-            # 防止AI遗漏数量、型号、尺寸等事实
             "fact_lock":
                 profile.get(
                     "fact_lock",
@@ -128,12 +174,26 @@ class TitleStrategyGenerator:
                 ),
 
 
-            # SEO信息
+            # SEO
             "seo":
                 profile.get(
                     "seo",
                     {}
                 ),
+
+
+            # 标题约束
+            "title_constraints":
+                {
+                    "marketplace":
+                        "Amazon",
+
+                    "max_title_length":
+                        75,
+
+                    "objective":
+                        "maximize purchase-relevant information within the title limit",
+                },
 
         }
 
@@ -146,7 +206,8 @@ class TitleStrategyGenerator:
             messages=[
 
                 {
-                    "role": "system",
+                    "role":
+                        "system",
 
                     "content":
                         TITLE_STRATEGY_SYSTEM_PROMPT,
@@ -154,7 +215,8 @@ class TitleStrategyGenerator:
 
 
                 {
-                    "role": "user",
+                    "role":
+                        "user",
 
                     "content":
                         json.dumps(
