@@ -23,6 +23,24 @@ Analyze the product information and decide:
 
 Determine the core product by identifying the actual item being sold.
 
+When selecting the core product:
+
+Do not choose an overly broad category if the product has a meaningful differentiating identity.
+
+The core product should balance:
+
+- product category
+- specific product identity
+- important differentiating characteristics
+
+Remove:
+- customer groups
+- usage scenarios
+
+But keep:
+- important product-defining features
+when they are commonly used to identify the product.
+
 The core product should represent:
 
 - the actual item being sold
@@ -192,6 +210,8 @@ Separate information into three groups.
 
 
 must_include:
+
+Do not include seller-created product names or unknown series names in must_include unless they have verified search value.
 
 Information that is essential for the title.
 
