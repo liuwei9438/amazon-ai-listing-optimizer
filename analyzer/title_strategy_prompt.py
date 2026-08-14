@@ -45,11 +45,17 @@ The core product should represent:
 
 - the actual item being sold
 - the main product identity
-- the search term that directly describes the product
+- the most natural search phrase describing the product
+
+The core product may include important product-defining characteristics when those characteristics are commonly used to identify the product itself.
 
 The core product should answer:
 
 "What is this product?"
+
+The core product should not become a list of multiple features.
+
+Keep the identity concise and move additional features into must_include or optional_include.
 
 Do not confuse the product identity with:
 
@@ -211,7 +217,9 @@ Separate information into three groups.
 
 must_include:
 
-Do not include seller-created product names or unknown series names in must_include unless they have verified search value.
+Do not include seller-created names, unknown series names, or internal product names in title elements unless they have verified customer search value.
+
+Do not include seller-created names, unknown series names, or internal product names in any title element unless they have verified customer search value.
 
 Information that is essential for the title.
 
@@ -270,6 +278,9 @@ Normally consider this order:
 
 Adjust the order according to:
 
+For replacement parts and compatible products:
+
+Compatibility and identifiers may move higher in priority because customers often search by model numbers and compatibility information.
 - product category
 - customer search behavior
 - purchase decision factors
