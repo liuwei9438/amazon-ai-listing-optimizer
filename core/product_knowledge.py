@@ -274,6 +274,7 @@ class ProductKnowledgeBuilder:
         seo_intent: Dict[str, Any],
     ) -> Dict[str, Any]:
     
+    
         product_type = ProductKnowledgeBuilder.clean_text(
             basic_info.get("product_type")
         )
@@ -283,6 +284,11 @@ class ProductKnowledgeBuilder:
             product_identity
         )
     
+    
+        # ===============================
+        # 原始商品名称
+        # 保留，不用于AI产品身份判断
+        # ===============================
     
         product_name = ProductKnowledgeBuilder.first_text(
     
@@ -294,13 +300,36 @@ class ProductKnowledgeBuilder:
     
             basic_info.get("product_name"),
     
-            basic_info.get("normalized_product_name"),
-    
         )
     
     
-        object_name = ProductKnowledgeBuilder.clean_text(
-            product_name
+        # ===============================
+        # 标准化商品身份
+        #
+        # 优先使用 AI 已经识别的
+        # title_product_identity
+        #
+        # 避免：
+        # Bawldy Shaver Pro
+        # 这类卖家名称污染
+        # ===============================
+    
+        object_name = ProductKnowledgeBuilder.first_text(
+    
+            product_identity.get(
+                "title_product_identity"
+            ),
+    
+            product_identity.get(
+                "buyer_search_identity"
+            ),
+    
+            basic_info.get(
+                "normalized_product_name"
+            ),
+    
+            product_type,
+    
         )
     
     
@@ -319,17 +348,24 @@ class ProductKnowledgeBuilder:
     
         return {
     
+    
+            # AI理解使用
             "object_name":
                 object_name,
     
+    
+            # 原始商品名保存
             "product_name":
-                object_name,
+                product_name,
+    
     
             "product_type":
                 product_type,
     
+    
             "category":
                 category,
+    
     
             "parent_product":
                 parent_product,
@@ -369,6 +405,7 @@ class ProductKnowledgeBuilder:
                         []
                     )
                 ),
+    
         }
     # =========================================================
     # Product Name Normalizer
