@@ -123,8 +123,13 @@ class TitleGenerator:
                 ""
             )
         )
-        
-        
+        strategy_search_terms = (
+            title_strategy.get(
+                "search_terms",
+                []
+            )
+        )
+                
         strategy_title_identity = []
         
         
@@ -401,14 +406,14 @@ class TitleGenerator:
         
         
                 duplicate = TitleGenerator.has_semantic_overlap(
-                    attribute,
+                    keyword,
                     title_parts,
                 )
                 if not duplicate:
 
-                    title_parts.append(
-                        attribute
-                    )
+                title_parts.append(
+                    keyword
+                )
         # =========================
         # Optional Include
         # =========================
