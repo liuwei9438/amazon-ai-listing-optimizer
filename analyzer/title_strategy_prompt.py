@@ -22,12 +22,22 @@ Determine the core product by identifying the actual item being sold.
 
 The core product should represent:
 
-- the product category
+- the actual item being sold
 - the main item identity
 - the search term that directly describes the item
 
-The core product should NOT be based on:
 Brand names should only be included when:
+
+- customers commonly search the brand together with the product
+- the brand helps identify compatibility or product category
+- including the brand does not create trademark or compliance issues
+
+
+The core product should NOT be based on:
+
+- seller names
+- unknown product series names
+- marketing names
 
 - customers commonly search the brand together with the product
 - the brand helps identify compatibility or product category
@@ -90,7 +100,13 @@ Higher priority:
 - features customers actively compare
 - specifications that affect purchase decisions
 - compatibility or model information when relevant
+For replacement parts and compatible products:
 
+Model numbers, part numbers, and compatibility information may have higher priority because customers often search by these identifiers.
+
+For general consumer products:
+
+Only include models or codes when they provide real search value.
 
 Lower priority:
 
@@ -173,6 +189,10 @@ Information that is essential for the title because removing it would significan
 Usually limit must_include to the highest-value elements.
 
 Do not put every valuable feature into must_include.
+
+Normally select around 3-5 must_include elements.
+
+If too many elements are valuable, rank them and move lower-ranked items into optional_include.
 
 Lower priority but useful information should go to optional_include.
 
