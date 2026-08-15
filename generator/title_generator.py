@@ -377,71 +377,94 @@ class TitleGenerator:
         
         # =========================
         # Attribute
-        # 高价值属性
+        # Strategy must_include
+        # 高价值标题属性
         # =========================
-        
+
         if isinstance(
             title_attribute_focus,
             list,
         ):
-        
+
             for attribute in title_attribute_focus:
-        
+
                 attribute = str(
                     attribute
                 ).strip()
-        
-        
+
+
+                if not attribute:
+
+                    continue
+
+
                 if attribute.lower() in [
                     x.lower()
                     for x in TitleGenerator.IGNORED_ATTRIBUTES
                 ]:
-        
+
                     continue
-        
-        
-                if not attribute:
-        
-                    continue
-        
-        
-                duplicate = TitleGenerator.has_semantic_overlap(
-                    keyword,
-                    title_parts,
+
+
+                duplicate = (
+                    TitleGenerator.has_semantic_overlap(
+                        attribute,
+                        title_parts,
+                    )
                 )
+
+
                 if not duplicate:
 
                     title_parts.append(
-                        keyword
+                        attribute
                     )
+
+
         # =========================
         # Optional Include
+        # Strategy optional_include
         # =========================
-        
+
         if isinstance(
             strategy_optional_include,
             list,
         ):
-        
+
             for item in strategy_optional_include:
-        
-                item = str(item).strip()
-        
+
+                item = str(
+                    item
+                ).strip()
+
+
                 if not item:
+
                     continue
-        
-        
-                if TitleGenerator.has_semantic_overlap(
-                    item,
-                    title_parts,
-                ):
+
+
+                duplicate = (
+                    TitleGenerator.has_semantic_overlap(
+                        item,
+                        title_parts,
+                    )
+                )
+
+
+                if duplicate:
+
                     continue
-        
-        
-                title_parts.append(item)
+
+
+                title_parts.append(
+                    item
+                )
+
+
         # =========================
         # Search Keyword
         # 搜索补充词
+        # 最低优先级补位
         # =========================
 
         if isinstance(
@@ -461,54 +484,59 @@ class TitleGenerator:
                     continue
 
 
-                duplicate = TitleGenerator.has_semantic_overlap(
-                    attribute,
-                    title_parts,
+                duplicate = (
+                    TitleGenerator.has_semantic_overlap(
+                        keyword,
+                        title_parts,
+                    )
                 )
-                
-                
-                if not duplicate:
-                
+
+
+                if duplicate:
+
+                    continue
+
+
+                words = (
+                    keyword
+                    .lower()
+                    .split()
+                )
+
+
+                existing_text = " ".join(
+                    [
+                        str(x).lower()
+                        for x in title_parts
+                    ]
+                )
+
+
+                overlap = 0
+
+
+                for word in words:
+
+                    if word in existing_text:
+
+                        overlap += 1
+
+
+                if (
+                    overlap
+                    <
+                    len(words) * 0.7
+                ):
+
                     title_parts.append(
-                        attribute
+                        keyword
                     )
 
 
-                if not duplicate:
+                # 搜索补充词最多使用一个
+                break
 
 
-                    words = keyword.lower().split()
-                
-                
-                    existing_text = " ".join(
-                        [
-                            str(x).lower()
-                            for x in title_parts
-                        ]
-                    )
-                
-                
-                    overlap = 0
-                
-                
-                    for word in words:
-                
-                        if word in existing_text:
-                
-                            overlap += 1
-                
-                
-                
-                    if overlap < len(words) * 0.7:
-                
-                        title_parts.append(
-                            keyword
-                        )
-                
-                
-                    break
-       
-     
         # =========================
         # Compatibility Brand
         # =========================
