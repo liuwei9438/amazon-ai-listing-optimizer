@@ -485,7 +485,144 @@ class TitleStrategyGenerator:
 
                 priority = "C"
 
+            raw_scores = candidate.get(
+                "scores",
+                {}
+            )
 
+
+            if not isinstance(
+                raw_scores,
+                dict,
+            ):
+
+                raw_scores = {}
+
+
+            def normalize_score(
+                value,
+            ) -> int:
+                """
+                Score Schema保护。
+
+                这里只负责：
+                - 转数字
+                - 限制0~100
+
+                不重新判断产品价值。
+                """
+
+                try:
+
+                    score_value = float(
+                        value
+                    )
+
+                except (
+                    TypeError,
+                    ValueError,
+                ):
+
+                    score_value = 0.0
+
+
+                score_value = max(
+                    0.0,
+                    min(
+                        100.0,
+                        score_value,
+                    ),
+                )
+
+
+                return int(
+                    round(
+                        score_value
+                    )
+                )
+
+
+            scores = {
+
+                "search_value":
+                    normalize_score(
+                        raw_scores.get(
+                            "search_value",
+                            0,
+                        )
+                    ),
+
+                "purchase_impact":
+                    normalize_score(
+                        raw_scores.get(
+                            "purchase_impact",
+                            0,
+                        )
+                    ),
+
+                "identity_value":
+                    normalize_score(
+                        raw_scores.get(
+                            "identity_value",
+                            0,
+                        )
+                    ),
+
+                "differentiation_value":
+                    normalize_score(
+                        raw_scores.get(
+                            "differentiation_value",
+                            0,
+                        )
+                    ),
+
+                "character_efficiency":
+                    normalize_score(
+                        raw_scores.get(
+                            "character_efficiency",
+                            0,
+                        )
+                    ),
+            }
+                        final_score = round(
+
+                (
+                    scores[
+                        "search_value"
+                    ]
+                    * 0.30
+                )
+                +
+                (
+                    scores[
+                        "purchase_impact"
+                    ]
+                    * 0.25
+                )
+                +
+                (
+                    scores[
+                        "identity_value"
+                    ]
+                    * 0.20
+                )
+                +
+                (
+                    scores[
+                        "differentiation_value"
+                    ]
+                    * 0.15
+                )
+                +
+                (
+                    scores[
+                        "character_efficiency"
+                    ]
+                    * 0.10
+                ),
+
+                1,
+            )
             required = candidate.get(
                 "required",
                 False
@@ -539,6 +676,12 @@ class TitleStrategyGenerator:
                     "priority":
                         priority,
 
+                    "scores":
+                        scores,
+
+                    "final_score":
+                        final_score,
+
                     "required":
                         required,
 
@@ -559,7 +702,7 @@ class TitleStrategyGenerator:
 
         result[
             "schema_version"
-        ] = "2.6-title-strategy-short-text"
+        ] = "2.7-title-strategy-scoring"
 
 
         return result
