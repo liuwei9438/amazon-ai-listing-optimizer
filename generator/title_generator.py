@@ -160,76 +160,104 @@ class TitleGenerator:
         existing_parts,
     ):
         """
-        检查 new_text 的有效词是否已经全部包含
-        在已有标题元素中。
+        判断候选信息是否已经被已有标题表达。
 
-        这是通用文本去重，
-        不针对任何具体产品。
+        只做通用文本包含判断，
+        不包含具体产品规则。
         """
 
         if not new_text:
-
             return False
 
 
-        new_words = set(
-            re.findall(
-                r"[A-Za-z0-9]+",
-                str(new_text).lower(),
+        def normalize_words(text):
+
+            words = re.findall(
+                r"[A-Za-z0-9\-]+",
+                str(text).lower(),
             )
+
+
+            ignore_words = {
+                "with",
+                "for",
+                "and",
+                "the",
+                "a",
+                "an",
+            }
+
+
+            result = set()
+
+
+            for word in words:
+
+                if not word:
+                    continue
+
+
+                if word in ignore_words:
+                    continue
+
+
+                # 轻量单复数归一化
+                # heads -> head
+                # buttons -> button
+                if (
+                    len(word) > 4
+                    and
+                    word.endswith("s")
+                    and
+                    not word.endswith(
+                        (
+                            "ss",
+                            "us",
+                            "is",
+                        )
+                    )
+                ):
+
+                    word = word[:-1]
+
+
+                result.add(
+                    word
+                )
+
+
+            return result
+
+
+        new_words = normalize_words(
+            new_text
         )
 
 
         if not new_words:
-
-            return False
-
-
-        ignore_words = {
-            "with",
-            "for",
-            "and",
-            "the",
-            "a",
-            "an",
-        }
-
-
-        new_words = {
-            word
-            for word in new_words
-            if word not in ignore_words
-        }
-
-
-        if not new_words:
-
             return False
 
 
         for existing in existing_parts:
 
-            existing_words = set(
-                re.findall(
-                    r"[A-Za-z0-9]+",
-                    str(existing).lower(),
-                )
+            existing_words = normalize_words(
+                existing
             )
 
 
-            existing_words = {
-                word
-                for word in existing_words
-                if word not in ignore_words
-            }
+            if not existing_words:
+                continue
 
 
-            if (
-                new_words
-                and
-                new_words.issubset(
-                    existing_words
-                )
+            # 完全一致
+            if new_words == existing_words:
+
+                return True
+
+
+            # 新信息已经完整包含于已有信息
+            if new_words.issubset(
+                existing_words
             ):
 
                 return True
@@ -425,19 +453,23 @@ class TitleGenerator:
                     continue
             
             
-                TitleGenerator.add_budget_part(
-                    title_parts=title_parts,
-                    text=item,
-                    max_length=75,
-                    required=True,
+                added = (
+                    TitleGenerator.add_budget_part(
+                        title_parts=title_parts,
+                        text=item,
+                        max_length=75,
+                        required=True,
+                    )
                 )
-            
-            
-                identity_added += 1
-            
-            
+
+
+                if added:
+
+                    identity_added += 1
+
+
                 if identity_added >= 1:
-            
+
                     break
 
 
@@ -577,37 +609,56 @@ class TitleGenerator:
 
 
         selected_models = selected_models[:1]
+
+
+        for model in selected_models:
+
+            TitleGenerator.add_budget_part(
+                title_parts=title_parts,
+                text=model,
+                max_length=75,
+            )
         
-        
-        title_parts.extend(
-            selected_models
+        # =========================
+        # Strategy Must Include
+        # AI决定优先级
+        # Generator只执行字符预算
+        # =========================
+
+        must_candidates = (
+            strategy_must_include
+            if (
+                isinstance(
+                    strategy_must_include,
+                    list,
+                )
+                and
+                strategy_must_include
+            )
+            else
+            title_attribute_focus
         )
 
-        
-        # =========================
-        # Attribute
-        # Strategy must_include
-        # 高价值标题属性
-        # =========================
 
         if isinstance(
-            title_attribute_focus,
+            must_candidates,
             list,
         ):
 
-            for attribute in title_attribute_focus:
+            for item in must_candidates:
 
-                attribute = str(
-                    attribute
+                item = str(
+                    item
                 ).strip()
 
 
-                if not attribute:
+                if not item:
 
                     continue
 
 
-                if attribute.lower() in [
+                # 保留当前通用低价值材质过滤
+                if item.lower() in [
                     x.lower()
                     for x in TitleGenerator.IGNORED_ATTRIBUTES
                 ]:
@@ -615,20 +666,11 @@ class TitleGenerator:
                     continue
 
 
-                duplicate = (
-                    TitleGenerator.has_semantic_overlap(
-                        attribute,
-                        title_parts,
-                    )
+                TitleGenerator.add_budget_part(
+                    title_parts=title_parts,
+                    text=item,
+                    max_length=75,
                 )
-
-
-                if not duplicate:
-
-                    title_parts.append(
-                        attribute
-                    )
-
 
         # =========================
         # Optional Include
