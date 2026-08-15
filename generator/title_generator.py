@@ -458,12 +458,12 @@ class TitleGenerator:
 
             if product_name:
 
-            TitleGenerator.add_budget_part(
-                title_parts=title_parts,
-                text=product_name,
-                max_length=75,
-                required=True,
-            )
+                TitleGenerator.add_budget_part(
+                    title_parts=title_parts,
+                    text=product_name,
+                    max_length=75,
+                    required=True,
+                )
 
 
 
