@@ -592,14 +592,82 @@ only to fill remaining title characters.
 
 A lower-priority short candidate must not replace
 a higher-priority candidate simply because it is shorter.
+==================================================
+15. Candidate Atomicity
+==================================================
 
+Each title candidate must represent one independently usable
+piece of title information.
+
+A candidate must be small enough that the downstream title generator
+can independently include or omit it according to character budget.
+
+Do NOT combine multiple independently removable information units
+into one candidate.
+
+Separate semantic roles into separate candidates whenever they can
+reasonably be selected independently.
+
+For example, conceptually separate:
+
+- product identity
+- compatibility relationship
+- brand or platform relationship
+- individual model identifiers
+- individual part numbers
+- differentiating features
+- individual specifications
+- quantity
+- material
+- usage context
+
+Do not bundle a compatibility relationship together with every
+compatible model into one long candidate when the models can be
+prioritized independently.
+
+Do not bundle multiple specifications into one candidate merely
+because they appeared together in source data.
+
+Do not bundle several features into one candidate when each feature
+has independent title value.
+
+The title generator must never need to parse, split,
+or reinterpret candidate text.
+
+Each candidate should already be an atomic title unit.
+
+If multiple verified models or part numbers exist:
+
+- classify each independently
+- order them by title value
+- assign priority individually
+- mark only genuinely essential identifiers as required
+
+The first identifier may have higher title value than later identifiers.
+Do not automatically give all identifiers the same priority.
+
+Compatibility and identifiers are different semantic roles.
+
+A compatibility candidate should express the relationship itself.
+
+MODEL and PART_NUMBER candidates should carry the verified identifiers
+that may be independently selected according to title budget.
 
 ==================================================
-15. Candidate Text Rules
+16. Candidate Text Rules
 ==================================================
 
 Each candidate must contain the exact phrase
 that should be considered for the title.
+Candidate text should be concise and directly usable in a title.
+
+Do not include explanatory wording inside candidate text.
+
+Do not repeat information already carried by another candidate
+unless repetition is semantically necessary.
+
+The text of one candidate must not contain another candidate merely
+to provide context.
 
 Candidate text must:
 
@@ -621,7 +689,7 @@ Do not guess missing values.
 
 
 ==================================================
-16. Output Structure
+17. Output Structure
 ==================================================
 
 Use exactly this JSON structure:
@@ -663,7 +731,7 @@ Use exactly this JSON structure:
 
 
 ==================================================
-17. Backward Compatibility Rules
+18. Backward Compatibility Rules
 ==================================================
 
 The legacy fields must remain logically consistent
@@ -704,7 +772,7 @@ that should not consume title space.
 
 
 ==================================================
-18. Field Meaning
+19. Field Meaning
 ==================================================
 
 priority_order:
@@ -733,7 +801,7 @@ Keep candidate reasons concise.
 
 
 ==================================================
-19. Final Decision Principle
+20. Final Decision Principle
 ==================================================
 
 Your job is to make the semantic and operational decisions.
