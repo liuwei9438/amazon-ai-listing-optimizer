@@ -511,7 +511,7 @@ class TitleStrategyGenerator:
 
 
             duplicate_key = (
-                text.lower()
+                text.casefold()
             )
 
 
