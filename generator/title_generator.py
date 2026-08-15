@@ -29,7 +29,213 @@ class TitleGenerator:
         "metal",
         "stainless steel",
     ]
+    @staticmethod
+    def add_budget_part(
+        title_parts,
+        text,
+        max_length=75,
+        required=False,
+    ):
+        """
+        将一个候选标题元素加入 title_parts。
 
+        统一负责：
+
+        1. 空值过滤
+        2. 完全重复过滤
+        3. 语义包含重复过滤
+        4. 75字符预算检查
+        5. required 信息保护
+
+        返回：
+            True  -> 已加入
+            False -> 未加入
+        """
+
+        if text is None:
+            return False
+
+
+        text = str(
+            text
+        ).strip()
+
+
+        if not text:
+            return False
+
+
+        # ==========================================
+        # 1. 完全重复检查
+        # ==========================================
+
+        for existing in title_parts:
+
+            if (
+                str(existing)
+                .strip()
+                .lower()
+                ==
+                text.lower()
+            ):
+
+                return False
+
+
+        # ==========================================
+        # 2. 语义包含检查
+        #
+        # 例如：
+        #
+        # 已有：
+        # 9D Floating Head Shaver
+        #
+        # 新：
+        # 9D Floating Head
+        #
+        # 不再重复加入。
+        # ==========================================
+
+        if TitleGenerator.is_contained_information(
+            text,
+            title_parts,
+        ):
+
+            return False
+
+
+        # ==========================================
+        # 3. 计算加入后的标题长度
+        # ==========================================
+
+        candidate_parts = (
+            list(title_parts)
+            +
+            [text]
+        )
+
+
+        candidate_title = " ".join(
+            str(item).strip()
+            for item in candidate_parts
+            if str(item).strip()
+        )
+
+
+        # ==========================================
+        # 4. 预算检查
+        # ==========================================
+
+        if len(candidate_title) <= max_length:
+
+            title_parts.append(
+                text
+            )
+
+            return True
+
+
+        # ==========================================
+        # 5. Required
+        #
+        # required=True 不代表强行超过75字符。
+        #
+        # 它表示：
+        # 这是高价值信息，但当前剩余预算不足。
+        #
+        # 先返回False。
+        # 后续V2第二阶段会加入：
+        # lower priority replacement。
+        # ==========================================
+
+        if required:
+
+            return False
+
+
+        return False
+    @staticmethod
+    def is_contained_information(
+        new_text,
+        existing_parts,
+    ):
+        """
+        检查 new_text 的有效词是否已经全部包含
+        在已有标题元素中。
+
+        这是通用文本去重，
+        不针对任何具体产品。
+        """
+
+        if not new_text:
+
+            return False
+
+
+        new_words = set(
+            re.findall(
+                r"[A-Za-z0-9]+",
+                str(new_text).lower(),
+            )
+        )
+
+
+        if not new_words:
+
+            return False
+
+
+        ignore_words = {
+            "with",
+            "for",
+            "and",
+            "the",
+            "a",
+            "an",
+        }
+
+
+        new_words = {
+            word
+            for word in new_words
+            if word not in ignore_words
+        }
+
+
+        if not new_words:
+
+            return False
+
+
+        for existing in existing_parts:
+
+            existing_words = set(
+                re.findall(
+                    r"[A-Za-z0-9]+",
+                    str(existing).lower(),
+                )
+            )
+
+
+            existing_words = {
+                word
+                for word in existing_words
+                if word not in ignore_words
+            }
+
+
+            if (
+                new_words
+                and
+                new_words.issubset(
+                    existing_words
+                )
+            ):
+
+                return True
+
+
+        return False
     @staticmethod
     def generate(
         profile: dict,
@@ -219,12 +425,12 @@ class TitleGenerator:
                     continue
             
             
-                if not TitleGenerator.has_semantic_overlap(
-                    item,
-                    title_parts
-                ):
-                
-                    title_parts.append(item)
+                TitleGenerator.add_budget_part(
+                    title_parts=title_parts,
+                    text=item,
+                    max_length=75,
+                    required=True,
+                )
             
             
                 identity_added += 1
@@ -252,9 +458,12 @@ class TitleGenerator:
 
             if product_name:
 
-                title_parts.append(
-                    product_name
-                )
+            TitleGenerator.add_budget_part(
+                title_parts=title_parts,
+                text=product_name,
+                max_length=75,
+                required=True,
+            )
 
 
 
