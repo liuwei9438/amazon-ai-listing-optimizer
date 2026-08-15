@@ -243,6 +243,14 @@ class TitleStrategyGenerator:
             )
 
 
+            result = (
+                TitleStrategyGenerator
+                .normalize_strategy_result(
+                    result
+                )
+            )
+
+
             return result
 
 
@@ -251,3 +259,296 @@ class TitleStrategyGenerator:
             raise TitleStrategyError(
                 f"Title strategy parse failed: {exc}"
             )
+    @staticmethod
+    def normalize_strategy_result(
+        result: dict,
+    ) -> dict:
+        """
+        对 Title Strategy AI 输出做结构标准化。
+
+        注意：
+
+        这里只做 Schema 保护。
+
+        不重新判断：
+        - 什么信息重要
+        - 什么是型号
+        - 什么是规格
+        - 什么应该进入标题
+
+        这些判断必须由 AI Strategy 完成。
+        """
+
+        if not isinstance(
+            result,
+            dict,
+        ):
+
+            raise TitleStrategyError(
+                "Title strategy result must be a dictionary"
+            )
+
+
+        # =============================================
+        # Legacy Fields
+        # =============================================
+
+        legacy_list_fields = [
+            "must_include",
+            "optional_include",
+            "exclude",
+            "model_priority",
+            "compatibility_priority",
+            "title_structure",
+            "priority_order",
+        ]
+
+
+        for field in legacy_list_fields:
+
+            value = result.get(
+                field,
+                []
+            )
+
+
+            if not isinstance(
+                value,
+                list,
+            ):
+
+                value = []
+
+
+            cleaned = []
+
+
+            for item in value:
+
+                text = str(
+                    item
+                ).strip()
+
+
+                if not text:
+                    continue
+
+
+                if text not in cleaned:
+
+                    cleaned.append(
+                        text
+                    )
+
+
+            result[
+                field
+            ] = cleaned
+
+
+        legacy_text_fields = [
+            "core_product",
+            "buyer_search_intent",
+            "title_length_strategy",
+            "reasoning",
+        ]
+
+
+        for field in legacy_text_fields:
+
+            value = result.get(
+                field,
+                ""
+            )
+
+
+            if value is None:
+
+                value = ""
+
+
+            result[
+                field
+            ] = str(
+                value
+            ).strip()
+
+
+        # =============================================
+        # Title Candidates
+        # =============================================
+
+        candidates = result.get(
+            "title_candidates",
+            []
+        )
+
+
+        if not isinstance(
+            candidates,
+            list,
+        ):
+
+            candidates = []
+
+
+        allowed_types = {
+            "IDENTITY",
+            "MODEL",
+            "PART_NUMBER",
+            "COMPATIBILITY",
+            "FEATURE",
+            "SPECIFICATION",
+            "QUANTITY",
+            "MATERIAL",
+            "USAGE",
+            "SEARCH_TERM",
+            "OTHER",
+        }
+
+
+        allowed_priorities = {
+            "S",
+            "A",
+            "B",
+            "C",
+            "D",
+        }
+
+
+        normalized_candidates = []
+
+
+        seen = set()
+
+
+        for candidate in candidates:
+
+            if not isinstance(
+                candidate,
+                dict,
+            ):
+
+                continue
+
+
+            text = str(
+                candidate.get(
+                    "text",
+                    ""
+                )
+            ).strip()
+
+
+            if not text:
+
+                continue
+
+
+            candidate_type = str(
+                candidate.get(
+                    "type",
+                    "OTHER"
+                )
+            ).strip().upper()
+
+
+            if (
+                candidate_type
+                not in allowed_types
+            ):
+
+                candidate_type = "OTHER"
+
+
+            priority = str(
+                candidate.get(
+                    "priority",
+                    "C"
+                )
+            ).strip().upper()
+
+
+            if (
+                priority
+                not in allowed_priorities
+            ):
+
+                priority = "C"
+
+
+            required = candidate.get(
+                "required",
+                False
+            )
+
+
+            if not isinstance(
+                required,
+                bool,
+            ):
+
+                required = False
+
+
+            reason = str(
+                candidate.get(
+                    "reason",
+                    ""
+                )
+                or
+                ""
+            ).strip()
+
+
+            duplicate_key = (
+                text.lower(),
+                candidate_type,
+            )
+
+
+            if duplicate_key in seen:
+
+                continue
+
+
+            seen.add(
+                duplicate_key
+            )
+
+
+            normalized_candidates.append(
+                {
+                    "text":
+                        text,
+
+                    "type":
+                        candidate_type,
+
+                    "priority":
+                        priority,
+
+                    "required":
+                        required,
+
+                    "reason":
+                        reason,
+                }
+            )
+
+
+        result[
+            "title_candidates"
+        ] = normalized_candidates
+
+
+        # =============================================
+        # Schema Version
+        # =============================================
+
+        result[
+            "schema_version"
+        ] = "2.5-title-strategy"
+
+
+        return result
