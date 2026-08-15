@@ -332,6 +332,14 @@ class TitleStrategyGenerator:
 
                 if not text:
                     continue
+                short_text = str(
+                    candidate.get(
+                        "short_text",
+                        ""
+                    )
+                    or
+                    ""
+                ).strip()
 
 
                 if text not in cleaned:
@@ -521,6 +529,9 @@ class TitleStrategyGenerator:
                     "text":
                         text,
 
+                    "short_text":
+                        short_text,
+
                     "type":
                         candidate_type,
 
@@ -547,7 +558,7 @@ class TitleStrategyGenerator:
 
         result[
             "schema_version"
-        ] = "2.5-title-strategy"
+        ] = "2.6-title-strategy-short-text"
 
 
         return result
