@@ -268,692 +268,555 @@ class TitleGenerator:
     def generate(
         profile: dict,
     ) -> dict:
+        """
+        TitleGenerator V3
 
-        knowledge = profile.get(
-            "product_knowledge",
-            {}
-        )
-        
-        
-        title_strategy = profile.get(
-            "title_strategy",
-            {}
-        )
-        
-        
-        title_plan = profile.get(
-            "title_plan",
-            {}
-        )
+        设计原则：
+
+        1. Title Strategy 负责理解产品
+        2. title_candidates 负责给出已经排序好的运营决策
+        3. Generator 不重新判断产品价值
+        4. Generator 不猜型号、规格、兼容关系或功能
+        5. Generator 不重新排序 candidates
+        6. Generator 只负责：
+           - Schema读取
+           - 精确去重
+           - 75字符预算
+           - 合规清理
+           - 输出
+
+        title_candidates 是唯一正式标题输入。
+        """
+
+        # =================================================
+        # 1. 基础输入
+        # =================================================
 
         if not isinstance(
-            knowledge,
+            profile,
             dict,
         ):
-            knowledge = {}
+            raise ValueError(
+                "TitleGenerator profile must be a dictionary"
+            )
 
 
-
-        identity = knowledge.get(
-            "identity",
+        title_strategy = profile.get(
+            "title_strategy",
             {},
         )
 
 
-        relationship = knowledge.get(
-            "relationship",
-            {},
+        if not isinstance(
+            title_strategy,
+            dict,
+        ):
+            title_strategy = {}
+
+
+        candidates = title_strategy.get(
+            "title_candidates",
+            [],
         )
 
 
-        generation_strategy = knowledge.get(
-            "generation_strategy",
-            {},
-        )
-        plan_identity = title_plan.get(
-            "main_product",
-            []
-        )
-        
-        
-        plan_search_terms = title_plan.get(
-            "search_terms",
-            []
-        )
-        
-        
-        plan_features = title_plan.get(
-            "features",
-            []
-        )
+        # =================================================
+        # 2. V3 Schema保护
+        #
+        # 不再静默回退到：
+        #
+        # must_include
+        # optional_include
+        # model_priority
+        # compatibility_priority
+        #
+        # 否则旧Generator逻辑会重新进入主链路。
+        # =================================================
 
-        
-        plan_title_attributes = title_plan.get(
-            "title_attributes",
-            []
-        )
-
-        
-        plan_compatibility = title_plan.get(
-            "compatibility",
-            []
-        )
-        
-        
-        plan_avoid = title_plan.get(
-            "avoid",
-            [])
-
-
-        title_parts = []    
-
-        # =========================
-        # Generation Strategy
-        # =========================
-
-        strategy_core_product = (
-            title_strategy.get(
-                "core_product",
-                ""
-            )
-        )
-        strategy_search_terms = (
-            title_strategy.get(
-                "search_terms",
-                []
-            )
-        )
-                
-        strategy_title_identity = []
-        
-        
-        if strategy_core_product:
-        
-            strategy_title_identity.append(
-                strategy_core_product
-            )
-        
-        
-        title_identity_focus = (
-            strategy_title_identity
-            or
-            plan_identity
-            or
-            generation_strategy.get(
-                "title_identity_focus",
-                [],
-            )
-        )
-        
-
-        title_search_focus = (
-            strategy_search_terms
-            or
-            plan_search_terms
-        )
-
-        strategy_must_include = (
-            title_strategy.get(
-                "must_include",
-                []
-            )
-        )
-        
-        
-        strategy_optional_include = (
-            title_strategy.get(
-                "optional_include",
-                []
-            )
-        )
-        
-        
-        title_attribute_focus = (
-            strategy_must_include
-            or
-            plan_title_attributes
-            or
-            generation_strategy.get(
-                "title_attribute_focus",
-                [],
-            )
-        )
-        # =========================
-        # Product Identity
-        # 商品身份
-        # =========================
-
-        if isinstance(
-            title_identity_focus,
+        if not isinstance(
+            candidates,
             list,
-        ) and title_identity_focus:
+        ):
 
-            identity_added = 0
-
-
-            for item in title_identity_focus:
-            
-            
-                item = str(item).strip()
-            
-            
-                if not item:
-            
-                    continue
-            
-            
-                # 分类词不要进入标题
-                if item.lower() in [
-                    "personal care",
-                    "personal care appliances",
-                    "washing machine parts",
-                    "3d printer parts",
-                ]:
-            
-                    continue
-            
-            
-                added = (
-                    TitleGenerator.add_budget_part(
-                        title_parts=title_parts,
-                        text=item,
-                        max_length=75,
-                        required=True,
-                    )
-                )
+            candidates = []
 
 
-                if added:
+        if not candidates:
 
-                    identity_added += 1
-
-
-                if identity_added >= 1:
-
-                    break
-
-
-        else:
-
-            product_name = (
-                identity.get(
-                    "product_name"
-                )
-                or
-                identity.get(
-                    "object_name"
-                )
-                or
-                ""
+            raise ValueError(
+                "TitleGenerator V3 requires title_strategy.title_candidates"
             )
 
 
-            if product_name:
+        # =================================================
+        # 3. 输出容器
+        # =================================================
 
-                TitleGenerator.add_budget_part(
-                    title_parts=title_parts,
-                    text=product_name,
-                    max_length=75,
-                    required=True,
-                )
+        title_parts = []
 
+        accepted_candidates = []
 
-
-        # =========================
-        # Identifier
-        # 型号/零件号
-        # 只使用 search_strategy.title_identifiers
-        # =========================
-
-        search_strategy = knowledge.get(
-            "search_strategy",
-            {},
-        )
-
-
-        title_identifiers = (
-            search_strategy.get(
-                "title_identifiers",
-                [],
-            )
-        )
-        def is_valid_model(value):
-        
-            value = str(value).strip()
-        
-        
-            # 功能参数，不是型号
-            blocked_patterns = [
-                r"^\d+D$",
-                r"^\d+-in-\d+$",
-                r"^IPX\d+$",
-            ]
-        
-        
-            for pattern in blocked_patterns:
-        
-                if re.match(
-                    pattern,
-                    value,
-                    re.I
-                ):
-        
-                    return False
-        
-        
-            return True
+        rejected_candidates = []
 
         selected_models = []
-
 
         removed_models = []
 
 
-        if isinstance(
-            title_identifiers,
-            list,
+        # =================================================
+        # 4. 结构级文本标准化
+        #
+        # 注意：
+        #
+        #这里只处理空格。
+        #
+        # 不修改：
+        # 大小写
+        # 型号
+        # 数字
+        # 规格
+        # 品牌
+        # 连字符
+        #
+        # Candidate text 已经应该是可直接用于标题的文本。
+        # =================================================
+
+        def normalize_text(
+            value,
         ):
 
-            for item in title_identifiers:
+            if value is None:
 
-                if not isinstance(
-                    item,
-                    str,
-                ):
-                    continue
+                return ""
 
 
-                value = item.strip()
-
-                if len(value) <= 2:
-                
-                    continue
-                
-                
-                if not is_valid_model(value):
-                
-                    continue
-
-                if not value:
-
-                    continue
+            text = str(
+                value
+            ).strip()
 
 
-                duplicate = False
-
-
-                for part in title_parts:
-
-                    if value.lower() == str(part).lower():
-
-                        duplicate = True
-
-                        break
-
-
-                if not duplicate:
-
-
-                    if TitleGenerator.has_semantic_overlap(
-                        value,
-                        title_parts,
-                    ):
-                
-                        continue
-                
-                
-                
-                    selected_models.append(
-                        value
-                    )
-
-
-        selected_models = selected_models[:1]
-
-
-        for model in selected_models:
-
-            TitleGenerator.add_budget_part(
-                title_parts=title_parts,
-                text=model,
-                max_length=75,
+            text = re.sub(
+                r"\s+",
+                " ",
+                text,
             )
-        
-        # =========================
-        # Strategy Must Include
-        # AI决定优先级
-        # Generator只执行字符预算
-        # =========================
 
-        must_candidates = (
-            strategy_must_include
-            if (
-                isinstance(
-                    strategy_must_include,
-                    list,
+
+            return text
+
+
+        # =================================================
+        # 5. 精确去重
+        #
+        # Generator只判断：
+        #
+        # 文本是否完全重复。
+        #
+        # 不做语义推断。
+        #
+        # 语义重复应由Strategy层解决。
+        # =================================================
+
+        def already_exists(
+            text,
+        ):
+
+            normalized = (
+                normalize_text(
+                    text
                 )
-                and
-                strategy_must_include
+                .casefold()
             )
-            else
-            title_attribute_focus
-        )
 
 
-        if isinstance(
-            must_candidates,
-            list,
-        ):
+            if not normalized:
 
-            for item in must_candidates:
-
-                item = str(
-                    item
-                ).strip()
+                return True
 
 
-                if not item:
-
-                    continue
-
-
-                # 保留当前通用低价值材质过滤
-                if item.lower() in [
-                    x.lower()
-                    for x in TitleGenerator.IGNORED_ATTRIBUTES
-                ]:
-
-                    continue
-
-
-                TitleGenerator.add_budget_part(
-                    title_parts=title_parts,
-                    text=item,
-                    max_length=75,
-                )
-
-        # =========================
-        # Optional Include
-        # Strategy optional_include
-        # =========================
-
-        if isinstance(
-            strategy_optional_include,
-            list,
-        ):
-
-            for item in strategy_optional_include:
-
-                item = str(
-                    item
-                ).strip()
-
-
-                if not item:
-
-                    continue
-
-
-                duplicate = (
-                    TitleGenerator.has_semantic_overlap(
-                        item,
-                        title_parts,
-                    )
-                )
-
-
-                if duplicate:
-
-                    continue
-
-
-                title_parts.append(
-                    item
-                )
-
-
-        # =========================
-        # Search Keyword
-        # 搜索补充词
-        # 最低优先级补位
-        # =========================
-
-        if isinstance(
-            title_search_focus,
-            list,
-        ):
-
-            for keyword in title_search_focus:
-
-                keyword = str(
-                    keyword
-                ).strip()
-
-
-                if not keyword:
-
-                    continue
-
-
-                duplicate = (
-                    TitleGenerator.has_semantic_overlap(
-                        keyword,
-                        title_parts,
-                    )
-                )
-
-
-                if duplicate:
-
-                    continue
-
-
-                words = (
-                    keyword
-                    .lower()
-                    .split()
-                )
-
-
-                existing_text = " ".join(
-                    [
-                        str(x).lower()
-                        for x in title_parts
-                    ]
-                )
-
-
-                overlap = 0
-
-
-                for word in words:
-
-                    if word in existing_text:
-
-                        overlap += 1
-
+            for existing in title_parts:
 
                 if (
-                    overlap
-                    <
-                    len(words) * 0.7
+                    normalize_text(
+                        existing
+                    )
+                    .casefold()
+                    ==
+                    normalized
                 ):
 
-                    title_parts.append(
-                        keyword
-                    )
+                    return True
 
 
-                # 搜索补充词最多使用一个
-                break
+            return False
 
 
-        # =========================
-        # Compatibility Brand
-        # =========================
+        # =================================================
+        # 6. 当前标题字符数
+        # =================================================
 
-        relationship_brands = (
-            title_strategy.get(
-                "compatibility_priority",
-                []
+        def current_title():
+
+            return " ".join(
+                normalize_text(
+                    part
+                )
+                for part in title_parts
+                if normalize_text(
+                    part
+                )
             )
-            or
-            plan_compatibility
-        )
 
 
-        protected_compatibility = []
+        # =================================================
+        # 7. 逐个执行 title_candidates
+        #
+        # 极其重要：
+        #
+        # 不排序。
+        #
+        # Strategy已经按标题价值排序。
+        #
+        # Generator只执行这个顺序。
+        # =================================================
+
+        for index, candidate in enumerate(
+            candidates
+        ):
+
+            # ---------------------------------------------
+            # Candidate必须是dict
+            # ---------------------------------------------
+
+            if not isinstance(
+                candidate,
+                dict,
+            ):
+
+                rejected_candidates.append(
+                    {
+                        "index":
+                            index,
+
+                        "reason":
+                            "invalid_candidate",
+
+                        "candidate":
+                            candidate,
+                    }
+                )
+
+                continue
 
 
-        if relationship_brands:
+            # ---------------------------------------------
+            # 读取Schema字段
+            # ---------------------------------------------
 
-            for item in relationship_brands:
+            text = normalize_text(
+                candidate.get(
+                    "text",
+                    "",
+                )
+            )
 
-                text = str(
-                    item
-                ).strip()
+
+            candidate_type = normalize_text(
+                candidate.get(
+                    "type",
+                    "OTHER",
+                )
+            ).upper()
 
 
-                if text:
+            priority = normalize_text(
+                candidate.get(
+                    "priority",
+                    "C",
+                )
+            ).upper()
 
-                    protected_compatibility.append(
+
+            required = candidate.get(
+                "required",
+                False,
+            )
+
+
+            if not isinstance(
+                required,
+                bool,
+            ):
+
+                required = False
+
+
+            # ---------------------------------------------
+            # 空Candidate
+            # ---------------------------------------------
+
+            if not text:
+
+                rejected_candidates.append(
+                    {
+                        "index":
+                            index,
+
+                        "text":
+                            "",
+
+                        "type":
+                            candidate_type,
+
+                        "priority":
+                            priority,
+
+                        "required":
+                            required,
+
+                        "reason":
+                            "empty_text",
+                    }
+                )
+
+                continue
+
+
+            # ---------------------------------------------
+            # 完全重复
+            # ---------------------------------------------
+
+            if already_exists(
+                text
+            ):
+
+                rejected_candidates.append(
+                    {
+                        "index":
+                            index,
+
+                        "text":
+                            text,
+
+                        "type":
+                            candidate_type,
+
+                        "priority":
+                            priority,
+
+                        "required":
+                            required,
+
+                        "reason":
+                            "exact_duplicate",
+                    }
+                )
+
+                continue
+
+
+            # ---------------------------------------------
+            # 尝试加入后的标题
+            # ---------------------------------------------
+
+            candidate_parts = (
+                list(title_parts)
+                +
+                [
+                    text
+                ]
+            )
+
+
+            candidate_title = " ".join(
+                normalize_text(
+                    part
+                )
+                for part in candidate_parts
+                if normalize_text(
+                    part
+                )
+            )
+
+
+            # ---------------------------------------------
+            # 75字符预算
+            # ---------------------------------------------
+
+            if len(
+                candidate_title
+            ) <= 75:
+
+                title_parts.append(
+                    text
+                )
+
+
+                accepted_candidates.append(
+                    {
+                        "index":
+                            index,
+
+                        "text":
+                            text,
+
+                        "type":
+                            candidate_type,
+
+                        "priority":
+                            priority,
+
+                        "required":
+                            required,
+
+                        "character_count_after":
+                            len(
+                                candidate_title
+                            ),
+                    }
+                )
+
+
+                # -----------------------------------------
+                # 保留旧返回Schema兼容
+                #
+                # 这里不是猜型号。
+                #
+                # 只使用Strategy已经提供的type。
+                # -----------------------------------------
+
+                if candidate_type in {
+                    "MODEL",
+                    "PART_NUMBER",
+                }:
+
+                    selected_models.append(
                         text
                     )
 
-                    title_parts.append(
-                        text
-                    )
+
+                continue
 
 
-        # =========================
-        # Build Title
-        # =========================
-        clean_parts = []
-        
-        
-        for part in title_parts:
-        
-            skip = False
-        
-        
-            for avoid in plan_avoid:
-        
-                if str(avoid).lower() in str(part).lower():
-        
-                    skip = True
-        
-                    break
-        
-        
-            if not skip:
-        
-                clean_parts.append(part)
-        
-        
-        
-        title_parts = clean_parts
+            # =================================================
+            # 8. 当前高优先级Candidate放不下
+            #
+            # STOP，而不是跳过去找更短的低价值Candidate。
+            #
+            # 这是V3最核心的预算规则。
+            # =================================================
+
+            rejected_candidates.append(
+                {
+                    "index":
+                        index,
+
+                    "text":
+                        text,
+
+                    "type":
+                        candidate_type,
+
+                    "priority":
+                        priority,
+
+                    "required":
+                        required,
+
+                    "reason":
+                        "character_budget",
+
+                    "current_length":
+                        len(
+                            current_title()
+                        ),
+
+                    "candidate_length":
+                        len(
+                            text
+                        ),
+                }
+            )
 
 
-        # =========================
-        # Final Attribute Filter
-        # 删除材质等低价值词
-        # =========================
-        
-        final_parts = []
-        
-        
-        for part in title_parts:
-        
-            blocked = False
-        
-        
-            for attr in TitleGenerator.IGNORED_ATTRIBUTES:
-        
-                if str(part).lower() == attr.lower():
-        
-                    blocked = True
-        
-                    break
-        
-        
-            if not blocked:
-        
-                final_parts.append(part)
-        
-        
-        
-        title_parts = final_parts
-        
-        
-        
-        unique_parts = []
+            if candidate_type in {
+                "MODEL",
+                "PART_NUMBER",
+            }:
+
+                removed_models.append(
+                    text
+                )
 
 
-        for item in title_parts:
-        
-            exists = False
-        
-        
-            for old in unique_parts:
-        
-                if str(item).lower() == str(old).lower():
-        
-                    exists = True
-        
-                    break
-        
-        
-            if not exists:
-        
-                unique_parts.append(item)
-        
-        
-        title_parts = unique_parts
-      
-        title_parts = (
-            TitleGenerator.compress_title_parts(
-                title_parts,
-                75,
-                title_attribute_focus,
+            # ---------------------------------------------
+            # 严格执行Strategy排序。
+            #
+            # 当前candidate放不下以后，
+            # 不允许更低价值的短信息抢占空间。
+            # ---------------------------------------------
+
+            break
+
+
+        # =================================================
+        # 9. 构建最终标题
+        # =================================================
+
+        title = current_title()
+
+
+        # =================================================
+        # 10. 合规清理
+        #
+        # 保留已有blocked word机制。
+        # =================================================
+
+        title = (
+            TitleGenerator.clean_title(
+                title
             )
         )
 
 
-        protected_parts = (
-            TitleGenerator.protect_compatibility_phrases(
-                title_parts
+        # =================================================
+        # 11. 不再调用 format_title_case()
+        #
+        # 原因：
+        #
+        # Strategy candidate text 已经是可直接使用的文本。
+        #
+        # Generator再次capitalize会破坏：
+        # - 型号格式
+        # - 技术规格格式
+        # - 缩写格式
+        #
+        # V3保持Strategy提供的文本形式。
+        # =================================================
+
+
+        # =================================================
+        # 12. 最终长度保险
+        #
+        # 正常情况下绝不会超过75。
+        # 这里只防未来其他清理逻辑异常。
+        # =================================================
+
+        if len(
+            title
+        ) > 75:
+
+            title = (
+                TitleGenerator.limit_length(
+                    title,
+                    75,
+                )
             )
-        )
-        
-        
-        title = " ".join(
-            [
-                str(item)
-                for item in protected_parts
-                if item
-            ]
-        )
-        
-        title = title.replace(
-            "_",
-            " "
-        )
-
-        title = TitleGenerator.clean_title(
-            title
-        )
 
 
-        title = TitleGenerator.format_title_case(
-            title
-        )
-
-
-        title = TitleGenerator.limit_length(
-            title,
-            75,
-        )
-
+        # =================================================
+        # 13. 合规验证
+        # =================================================
 
         blocked_words = (
             TitleGenerator.check_blocked_words(
@@ -962,46 +825,83 @@ class TitleGenerator:
         )
 
 
+        # =================================================
+        # 14. 返回
+        #
+        # 保留旧返回字段，
+        # 避免影响 batch_processor / export / preview。
+        #
+        # 同时增加V3调试字段。
+        # =================================================
+
         return {
 
             "title":
                 title,
 
-
             "selected_models":
                 selected_models,
-
 
             "removed_models":
                 removed_models,
 
-
             "character_count":
-                len(title),
-
+                len(
+                    title
+                ),
 
             "validation":
             {
 
                 "length_ok":
-                    len(title) <= 75,
-
+                    len(
+                        title
+                    ) <= 75,
 
                 "compliance_ok":
-                    len(blocked_words) == 0,
+                    len(
+                        blocked_words
+                    ) == 0,
 
             },
-
 
             "blocked_words":
                 blocked_words,
 
-
             "brand_check":
                 "passed",
 
-        }
+            # =============================================
+            # V3 Debug
+            # =============================================
 
+            "generator_version":
+                "V3-title-candidates",
+
+            "budget_parts":
+                title_parts,
+
+            "accepted_candidates":
+                accepted_candidates,
+
+            "rejected_candidates":
+                rejected_candidates,
+
+            "budget_used":
+                len(
+                    title
+                ),
+
+            "budget_remaining":
+                max(
+                    0,
+                    75
+                    -
+                    len(
+                        title
+                    ),
+                ),
+        }
 
     # =====================================================
     # 语义重复检测
