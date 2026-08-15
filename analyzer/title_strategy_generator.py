@@ -502,8 +502,7 @@ class TitleStrategyGenerator:
 
 
             duplicate_key = (
-                text.lower(),
-                candidate_type,
+                text.lower()
             )
 
 
