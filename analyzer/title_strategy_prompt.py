@@ -845,7 +845,180 @@ short_text
 
 without reinterpreting the product.
 ==================================================
-19. Output Structure
+19. Candidate Scoring
+==================================================
+
+Every title candidate must be evaluated across five independent
+title-value dimensions.
+
+Each dimension must be scored from 0 to 100.
+
+Return these scores inside:
+
+"scores"
+
+
+The five dimensions are:
+
+
+1. search_value
+
+How strongly this information contributes to realistic customer
+search behavior for the current product.
+
+Consider whether customers are likely to use this information
+when searching for, identifying, comparing, or selecting the product.
+
+Do not assign a high search score simply because a term appears
+frequently in the source data.
+
+
+2. purchase_impact
+
+How strongly this information can influence a customer's
+purchase decision.
+
+Consider whether the information helps customers determine:
+
+- whether the product is suitable
+- whether it solves the intended need
+- whether it has an important functional advantage
+- whether it reduces purchase uncertainty
+
+
+3. identity_value
+
+How important this information is for understanding exactly
+what the sold product is.
+
+Core product identity should receive very high identity value.
+
+Information that only adds supporting detail should receive
+lower identity value.
+
+Do not confuse product identity with a feature merely because
+the feature is prominent.
+
+
+4. differentiation_value
+
+How strongly this information distinguishes the current product
+from common alternatives or otherwise helps customers compare products.
+
+Generic information shared by most comparable products should
+receive a lower differentiation score.
+
+Verified distinctive information may receive a higher score.
+
+
+5. character_efficiency
+
+How much useful title value this information provides relative
+to the number of characters it consumes.
+
+Short information is not automatically valuable.
+
+Long information is not automatically inefficient.
+
+Judge whether the candidate communicates meaningful search,
+identity, compatibility, purchase, or differentiation value
+for the title space it consumes.
+
+
+==================================================
+20. Scoring Rules
+==================================================
+
+Scores must be based only on the current verified product information.
+
+Do not score candidates based on:
+
+- product-specific hardcoded examples
+- memorized keyword lists
+- fixed category assumptions
+- seller marketing language
+- unsupported claims
+- source repetition alone
+
+
+The scoring dimensions are independent.
+
+Do not automatically give every required candidate 100 in every dimension.
+
+Do not automatically give every A-priority candidate similar scores.
+
+Two candidates with the same priority may have substantially
+different title value.
+
+
+Use the full 0-100 range when appropriate.
+
+General interpretation:
+
+90-100:
+Exceptional value for this dimension.
+
+75-89:
+Strong value.
+
+55-74:
+Meaningful but secondary value.
+
+30-54:
+Limited value.
+
+0-29:
+Low or negligible value.
+
+
+Do not calculate the final weighted score yourself.
+
+The downstream Strategy normalizer will calculate final_score
+deterministically from the five dimension scores.
+
+Your responsibility is to evaluate the five dimensions accurately.
+
+
+==================================================
+21. Relationship Between Priority and Score
+==================================================
+
+priority and scores serve different purposes.
+
+priority represents the broad strategic tier:
+
+S
+A
+B
+C
+D
+
+scores provide finer ranking within and across similar candidates.
+
+S should remain reserved for essential product identity.
+
+A represents major title value.
+
+B represents useful secondary title value.
+
+C represents supporting title value.
+
+D represents low title value.
+
+
+Candidates should already be returned in sensible title order.
+
+The primary product identity must remain first when it is essential
+to correctly identify the sold item, even if another candidate has
+a slightly higher weighted score.
+
+After essential identity information, higher-value candidates
+should generally appear before lower-value candidates.
+
+When candidates have similar strategic importance,
+the five scoring dimensions should determine their relative order.
+==================================================
+22. Output Structure
 ==================================================
 
 Use exactly this JSON structure:
@@ -873,22 +1046,27 @@ Use exactly this JSON structure:
     "title_length_strategy": "",
 
     "reasoning": "",
-
     "title_candidates": [
         {
             "text": "",
             "short_text": "",
             "type": "",
             "priority": "",
+            "scores": {
+                "search_value": 0,
+                "purchase_impact": 0,
+                "identity_value": 0,
+                "differentiation_value": 0,
+                "character_efficiency": 0
+            },
             "required": false,
             "reason": ""
         }
     ]
-}
 
 
 ==================================================
-20. Backward Compatibility Rules
+23. Backward Compatibility Rules
 ==================================================
 
 The legacy fields must remain logically consistent
@@ -929,7 +1107,7 @@ that should not consume title space.
 
 
 ==================================================
-21. Field Meaning
+24. Field Meaning
 ==================================================
 
 priority_order:
@@ -956,6 +1134,30 @@ It must preserve the same factual meaning as text.
 
 Use an empty string when no safe and natural shorter expression exists.
 
+title_candidates.scores:
+
+Five independent 0-100 evaluations of the candidate's title value.
+
+search_value:
+Customer search and product-selection relevance.
+
+purchase_impact:
+Influence on customer purchase decisions and purchase confidence.
+
+identity_value:
+Importance for correctly identifying the sold product.
+
+differentiation_value:
+Ability to distinguish the product from alternatives.
+
+character_efficiency:
+Useful title value delivered relative to character cost.
+
+Do not provide a final weighted score.
+
+The downstream Strategy normalizer calculates final_score
+using a fixed deterministic formula.
+
 title_candidates.reason:
 
 Briefly explain why this specific candidate
@@ -965,7 +1167,7 @@ Keep candidate reasons concise.
 
 
 ==================================================
-22. Final Decision Principle
+25. Final Decision Principle
 ==================================================
 
 Your job is to make the semantic and operational decisions.
@@ -975,6 +1177,11 @@ not re-understand the product.
 Product Knowledge owns factual representation.
 
 Title Strategy owns prioritization.
+Title Strategy also owns the five semantic scoring dimensions.
+
+The Strategy normalizer owns deterministic final_score calculation.
+
+Title Generator must not reinterpret or rescore candidates.
 
 Title Generator owns character-budget execution.
 When short_text is provided,
