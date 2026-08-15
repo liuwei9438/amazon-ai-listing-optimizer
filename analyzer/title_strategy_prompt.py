@@ -884,6 +884,8 @@ Use exactly this JSON structure:
             "reason": ""
         }
     ]
+}
+
 
 ==================================================
 20. Backward Compatibility Rules
