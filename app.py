@@ -742,34 +742,81 @@ with st.expander(
     "Title Strategy 测试"
 ):
 
-    if profiles:
+    # =============================================
+    # 必须先确认已经有优化结果
+    # =============================================
+
+    if not profiles:
+
+        st.info(
+            "暂无可测试的产品，请先完成至少 1 个产品的 AI 商品理解。"
+        )
+
+    else:
+
+        # =============================================
+        # 测试产品选择
+        #
+        # 默认：
+        # 有 3 个及以上产品 → 使用第 3 个产品
+        # 不足 3 个产品 → 使用当前最后一个已完成产品
+        #
+        # 这样不会再出现 profiles[2] IndexError。
+        # =============================================
+
+        if len(profiles) >= 3:
+
+            test_index = 2
+
+        else:
+
+            test_index = len(profiles) - 1
+
+
+        test_profile = profiles[
+            test_index
+        ]
+
+
+        st.caption(
+            f"当前测试产品：产品 {test_index + 1}"
+        )
+
 
         if st.button(
             "生成 Title Strategy",
             key="title_strategy_test",
         ):
 
-            test_profile = profiles[2]
-
-
             try:
 
-                strategy_result = (
-                    TitleStrategyGenerator.generate(
-                        test_profile,
-                        get_openai_api_key(),
+                api_key = get_openai_api_key()
+
+
+                if not api_key:
+
+                    st.error(
+                        "未找到 OpenAI API Key"
                     )
-                )
+
+                else:
+
+                    strategy_result = (
+                        TitleStrategyGenerator.generate(
+                            test_profile,
+                            api_key,
+                        )
+                    )
 
 
-                st.subheader(
-                    "Title Strategy 输出"
-                )
+                    st.subheader(
+                        "Title Strategy 输出"
+                    )
 
 
-                st.json(
-                    strategy_result
-                )
+                    st.json(
+                        strategy_result
+                    )
 
 
             except Exception as exc:
