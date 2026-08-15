@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from generator.candidate_budget import CandidateBudgetEngine
+
 
 class TitleGenerator:
 
@@ -551,104 +553,76 @@ class TitleGenerator:
                 required = False
 
 
-            # ---------------------------------------------
-            # 空Candidate
-            # ---------------------------------------------
+            # =================================================
+            # V3.1 Candidate Budget Engine
+            #
+            # Strategy 已经负责：
+            # - text
+            # - short_text
+            # - priority
+            # - required
+            # - candidate ordering
+            #
+            # Generator 这里只负责：
+            #
+            # 1. 尝试完整 text
+            # 2. 完整 text 放不下时尝试 short_text
+            # 3. 两者都放不下时 STOP
+            #
+            # Generator 不创建 short_text，
+            # 也不重新理解产品。
+            # =================================================
 
-            if not text:
-
-                rejected_candidates.append(
-                    {
-                        "index":
-                            index,
-
-                        "text":
-                            "",
-
-                        "type":
-                            candidate_type,
-
-                        "priority":
-                            priority,
-
-                        "required":
-                            required,
-
-                        "reason":
-                            "empty_text",
-                    }
-                )
-
-                continue
-
-
-            # ---------------------------------------------
-            # 完全重复
-            # ---------------------------------------------
-
-            if already_exists(
-                text
-            ):
-
-                rejected_candidates.append(
-                    {
-                        "index":
-                            index,
-
-                        "text":
-                            text,
-
-                        "type":
-                            candidate_type,
-
-                        "priority":
-                            priority,
-
-                        "required":
-                            required,
-
-                        "reason":
-                            "exact_duplicate",
-                    }
-                )
-
-                continue
-
-
-            # ---------------------------------------------
-            # 尝试加入后的标题
-            # ---------------------------------------------
-
-            candidate_parts = (
-                list(title_parts)
-                +
-                [
-                    text
-                ]
-            )
-
-
-            candidate_title = " ".join(
-                normalize_text(
-                    part
-                )
-                for part in candidate_parts
-                if normalize_text(
-                    part
+            budget_result = (
+                CandidateBudgetEngine
+                .choose_candidate_text(
+                    parts=title_parts,
+                    candidate=candidate,
+                    max_length=75,
                 )
             )
 
 
-            # ---------------------------------------------
-            # 75字符预算
-            # ---------------------------------------------
+            accepted = bool(
+                budget_result.get(
+                    "accepted",
+                    False,
+                )
+            )
 
-            if len(
-                candidate_title
-            ) <= 75:
+
+            selected_text = normalize_text(
+                budget_result.get(
+                    "selected_text",
+                    "",
+                )
+            )
+
+
+            selected_source = normalize_text(
+                budget_result.get(
+                    "source",
+                    "",
+                )
+            )
+
+
+            budget_reason = normalize_text(
+                budget_result.get(
+                    "reason",
+                    "",
+                )
+            )
+
+
+            # =================================================
+            # Candidate 被接受
+            # =================================================
+
+            if accepted and selected_text:
 
                 title_parts.append(
-                    text
+                    selected_text
                 )
 
 
@@ -657,8 +631,26 @@ class TitleGenerator:
                         "index":
                             index,
 
+                        # Strategy 原始完整文本
                         "text":
                             text,
+
+                        # Strategy 提供的短文本
+                        "short_text":
+                            normalize_text(
+                                candidate.get(
+                                    "short_text",
+                                    "",
+                                )
+                            ),
+
+                        # 实际进入标题的文本
+                        "selected_text":
+                            selected_text,
+
+                        # text / short_text
+                        "selected_source":
+                            selected_source,
 
                         "type":
                             candidate_type,
@@ -669,20 +661,25 @@ class TitleGenerator:
                         "required":
                             required,
 
+                        "reason":
+                            budget_reason,
+
                         "character_count_after":
-                            len(
-                                candidate_title
+                            budget_result.get(
+                                "character_count_after",
+                                len(
+                                    current_title()
+                                ),
                             ),
                     }
                 )
 
 
                 # -----------------------------------------
-                # 保留旧返回Schema兼容
+                # 保留旧返回 Schema
                 #
-                # 这里不是猜型号。
-                #
-                # 只使用Strategy已经提供的type。
+                # 不猜型号，
+                # 只使用 Strategy 已经给出的 type。
                 # -----------------------------------------
 
                 if candidate_type in {
@@ -691,7 +688,7 @@ class TitleGenerator:
                 }:
 
                     selected_models.append(
-                        text
+                        selected_text
                     )
 
 
@@ -699,45 +696,80 @@ class TitleGenerator:
 
 
             # =================================================
-            # 8. 当前高优先级Candidate放不下
-            #
-            # STOP，而不是跳过去找更短的低价值Candidate。
-            #
-            # 这是V3最核心的预算规则。
+            # Candidate 未接受
             # =================================================
 
-            rejected_candidates.append(
-                {
-                    "index":
-                        index,
+            rejected_item = {
 
-                    "text":
-                        text,
+                "index":
+                    index,
 
-                    "type":
-                        candidate_type,
+                "text":
+                    text,
 
-                    "priority":
-                        priority,
+                "short_text":
+                    normalize_text(
+                        candidate.get(
+                            "short_text",
+                            "",
+                        )
+                    ),
 
-                    "required":
-                        required,
+                "type":
+                    candidate_type,
 
-                    "reason":
-                        "character_budget",
+                "priority":
+                    priority,
 
-                    "current_length":
+                "required":
+                    required,
+
+                "reason":
+                    (
+                        budget_reason
+                        or
+                        "candidate_rejected"
+                    ),
+
+                "current_length":
+                    budget_result.get(
+                        "current_length",
                         len(
                             current_title()
                         ),
+                    ),
 
-                    "candidate_length":
+                "text_length":
+                    budget_result.get(
+                        "text_length",
                         len(
                             text
                         ),
-                }
+                    ),
+
+                "short_text_length":
+                    budget_result.get(
+                        "short_text_length",
+                        len(
+                            normalize_text(
+                                candidate.get(
+                                    "short_text",
+                                    "",
+                                )
+                            )
+                        ),
+                    ),
+            }
+
+
+            rejected_candidates.append(
+                rejected_item
             )
 
+
+            # =================================================
+            # MODEL / PART_NUMBER 未进入标题
+            # =================================================
 
             if candidate_type in {
                 "MODEL",
@@ -749,13 +781,42 @@ class TitleGenerator:
                 )
 
 
-            # ---------------------------------------------
-            # 严格执行Strategy排序。
+            # =================================================
+            # 非预算原因：
             #
-            # 当前candidate放不下以后，
-            # 不允许更低价值的短信息抢占空间。
-            # ---------------------------------------------
+            # empty_text
+            # exact_duplicate
+            #
+            # 不应该阻止后续 Candidate。
+            # =================================================
 
+            if budget_reason in {
+                "empty_text",
+                "exact_duplicate",
+                "invalid_candidate",
+            }:
+
+                continue
+
+
+            # =================================================
+            # character_budget
+            #
+            # 完整 text 放不下，
+            # short_text 也放不下。
+            #
+            # 必须 STOP。
+            #
+            # 不允许跳到后面的低价值 Candidate。
+            # =================================================
+
+            if budget_reason == "character_budget":
+
+                break
+
+
+            # 未知拒绝原因采用保守策略：
+            # 不让低优先级 Candidate 越过当前 Candidate。
             break
 
 
@@ -876,7 +937,7 @@ class TitleGenerator:
             # =============================================
 
             "generator_version":
-                "V3-title-candidates",
+                "V3.1-short-text-budget",
 
             "budget_parts":
                 title_parts,
