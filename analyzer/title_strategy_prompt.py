@@ -923,7 +923,33 @@ Long information is not automatically inefficient.
 Judge whether the candidate communicates meaningful search,
 identity, compatibility, purchase, or differentiation value
 for the title space it consumes.
+==================================================
+Incremental Title Value
+==================================================
 
+Score each candidate by the NEW value it contributes
+after higher-ranked candidates are already considered.
+
+Do not score repeated information as if it were new information.
+
+If a fact, phrase, usage context, product identity element,
+or semantic meaning is already substantially communicated
+by an earlier higher-value candidate, reduce the scores of
+the later candidate accordingly.
+
+A candidate may still retain value when it adds a genuinely
+new differentiating fact to partially overlapping wording.
+
+Evaluate marginal contribution, not standalone attractiveness.
+
+The question is not only:
+
+"Is this information valuable?"
+
+Also ask:
+
+"How much additional title value does this candidate add
+after the information already selected above it?"
 
 ==================================================
 20. Scoring Rules
@@ -1143,6 +1169,11 @@ Customer search and product-selection relevance.
 
 purchase_impact:
 Influence on customer purchase decisions and purchase confidence.
+Character efficiency must consider incremental information value.
+
+A short phrase that mostly repeats information already present
+should not receive a high character-efficiency score merely
+because it is short.
 
 identity_value:
 Importance for correctly identifying the sold product.
