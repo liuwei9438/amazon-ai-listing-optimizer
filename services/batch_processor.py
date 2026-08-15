@@ -17,6 +17,11 @@ from analyzer.model_protection import ModelProtection
 from analyzer.seo_intent_engine import generate_primary_search
 from analyzer.seo_keyword_engine import SEOKeywordEngine
 
+from analyzer.title_strategy_generator import (
+    TitleStrategyGenerator,
+    TitleStrategyError,
+)
+
 from compliance.brand_protection import protect_text
 
 from core.product_knowledge import ProductKnowledgeBuilder
@@ -279,24 +284,126 @@ def process_batch(
                     profile
                 )
             )
-
-
+            
+            
             timing["knowledge"] = round(
                 time.time() - start,
                 2
             )
-
-
+            
+            
             profile[
                 "product_knowledge"
             ] = product_knowledge
-
-
+            
+            
+            # =====================
+            # AI Title Strategy
+            # =====================
+            
+            title_strategy = {}
+            
+            
+            if enable_title:
+            
+                strategy_start = time.time()
+            
+                save_status(
+                    task_id,
+                    {
+                        "status": "processing",
+                        "message":
+                            f"第 {index+1}/{total} 个产品：AI标题策略分析中",
+                        "completed": index,
+                        "total": total,
+                    }
+                )
+            
+            
+                try:
+            
+                    title_strategy = (
+                        TitleStrategyGenerator.generate(
+                            profile=profile,
+                            api_key=api_key,
+                            model=model,
+                        )
+                    )
+            
+            
+                    if not isinstance(
+                        title_strategy,
+                        dict,
+                    ):
+            
+                        title_strategy = {}
+            
+            
+                    profile[
+                        "title_strategy"
+                    ] = title_strategy
+            
+            
+                    profile[
+                        "title_strategy_error"
+                    ] = ""
+            
+            
+                except Exception as strategy_exc:
+            
+                    # Title Strategy失败时不要让整个产品失败。
+                    # 保留旧TitlePlanner作为fallback。
+                    title_strategy = {}
+            
+            
+                    profile[
+                        "title_strategy"
+                    ] = {}
+            
+            
+                    profile[
+                        "title_strategy_error"
+                    ] = str(
+                        strategy_exc
+                    )
+            
+            
+                    print(
+                        "TITLE STRATEGY FAILED:",
+                        strategy_exc,
+                    )
+            
+            
+                timing[
+                    "title_strategy"
+                ] = round(
+                    time.time() - strategy_start,
+                    2
+                )
+            
+            
+            else:
+            
+                profile[
+                    "title_strategy"
+                ] = {}
+            
+            
+                profile[
+                    "title_strategy_error"
+                ] = ""
+            
+            
+            # =====================
+            # Legacy Title Plan
+            # fallback only
+            # =====================
+            
             title_plan = TitlePlanner.plan(
                 product_knowledge
             )
-
-
+            
+            
             profile[
                 "title_plan"
             ] = title_plan
