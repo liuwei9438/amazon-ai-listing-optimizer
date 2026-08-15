@@ -332,15 +332,6 @@ class TitleStrategyGenerator:
 
                 if not text:
                     continue
-                short_text = str(
-                    candidate.get(
-                        "short_text",
-                        ""
-                    )
-                    or
-                    ""
-                ).strip()
-
 
                 if text not in cleaned:
 
@@ -451,6 +442,16 @@ class TitleStrategyGenerator:
             if not text:
 
                 continue
+
+
+            short_text = str(
+                candidate.get(
+                    "short_text",
+                    ""
+                )
+                or
+                ""
+            ).strip()
 
 
             candidate_type = str(
