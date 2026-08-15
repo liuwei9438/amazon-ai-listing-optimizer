@@ -786,8 +786,66 @@ when each feature can independently be included or omitted.
 
 If a candidate cannot be independently removed without also removing
 another valuable verified fact, it is probably not atomic enough.
+
 ==================================================
-18. Output Structure
+18. Candidate Short Form
+==================================================
+
+Each title candidate may optionally provide:
+
+"short_text"
+
+short_text is a shorter title-ready expression of the SAME candidate.
+
+The purpose of short_text is to help the downstream title generator
+use limited title characters without changing candidate priority.
+
+short_text must preserve the same essential meaning and verified facts
+as text.
+
+short_text must NOT:
+
+- invent information
+- remove a fact that changes product meaning
+- change quantity
+- change model numbers
+- change part numbers
+- change compatibility relationships
+- change technical values
+- change measurements
+- change product identity
+- weaken required compliance wording
+- introduce marketing language
+- introduce unsupported abbreviations
+
+short_text is NOT a lower-value alternative candidate.
+
+It is only a more character-efficient representation
+of the SAME candidate.
+
+If no clearly equivalent shorter expression exists:
+
+"short_text": ""
+
+Do not force a short_text for every candidate.
+
+Do not shorten a candidate merely to make it fit.
+
+Only provide short_text when the shorter wording remains
+factually equivalent, natural for an Amazon title,
+and clearly understandable to customers.
+
+The downstream generator must be able to safely choose:
+
+text
+
+or
+
+short_text
+
+without reinterpreting the product.
+==================================================
+19. Output Structure
 ==================================================
 
 Use exactly this JSON structure:
@@ -819,17 +877,16 @@ Use exactly this JSON structure:
     "title_candidates": [
         {
             "text": "",
+            "short_text": "",
             "type": "",
             "priority": "",
             "required": false,
             "reason": ""
         }
     ]
-}
-
 
 ==================================================
-19. Backward Compatibility Rules
+20. Backward Compatibility Rules
 ==================================================
 
 The legacy fields must remain logically consistent
@@ -870,7 +927,7 @@ that should not consume title space.
 
 
 ==================================================
-20. Field Meaning
+21. Field Meaning
 ==================================================
 
 priority_order:
@@ -889,6 +946,13 @@ reasoning:
 
 Briefly explain the overall title strategy.
 
+title_candidates.short_text:
+
+An optional shorter title-ready expression of the same candidate.
+
+It must preserve the same factual meaning as text.
+
+Use an empty string when no safe and natural shorter expression exists.
 
 title_candidates.reason:
 
@@ -899,7 +963,7 @@ Keep candidate reasons concise.
 
 
 ==================================================
-21. Final Decision Principle
+22. Final Decision Principle
 ==================================================
 
 Your job is to make the semantic and operational decisions.
@@ -911,6 +975,11 @@ Product Knowledge owns factual representation.
 Title Strategy owns prioritization.
 
 Title Generator owns character-budget execution.
+When short_text is provided,
+Title Strategy also owns the factual equivalence
+between text and short_text.
+
+The downstream generator must never create its own shortened wording.
 
 Do not cross these responsibilities.
 
