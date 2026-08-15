@@ -340,13 +340,284 @@ Adjust the structure according to:
 
 
 ==================================================
-10. Output Requirements
+10. Structured Title Decision Output
 ==================================================
 
 Return JSON only.
 
+The output must preserve the existing strategy fields
+for backward compatibility.
 
-Use exactly this structure:
+In addition, create a structured list called:
+
+"title_candidates"
+
+title_candidates is the canonical structured decision list
+that future title generators will use.
+
+Each candidate represents one meaningful piece of title information.
+
+Do NOT create candidates by copying every available product attribute.
+
+Only create candidates that were actually evaluated for title value.
+
+
+==================================================
+11. Candidate Semantic Types
+==================================================
+
+Every title candidate must have exactly one semantic type.
+
+Allowed types:
+
+IDENTITY
+MODEL
+PART_NUMBER
+COMPATIBILITY
+FEATURE
+SPECIFICATION
+QUANTITY
+MATERIAL
+USAGE
+SEARCH_TERM
+OTHER
+
+
+Type meaning:
+
+
+IDENTITY
+
+The actual product identity or product-defining phrase.
+
+It should answer:
+
+"What is this product?"
+
+
+MODEL
+
+A verified product model identifier used for product selection,
+replacement matching, or customer search.
+
+
+PART_NUMBER
+
+A verified part number or replacement part identifier.
+
+
+COMPATIBILITY
+
+Compatibility information involving another brand,
+product family, model, device, machine, or platform.
+
+Compatibility wording must preserve any required
+"Compatible with" relationship.
+
+
+FEATURE
+
+A meaningful functional or design feature
+that helps differentiate the product.
+
+
+SPECIFICATION
+
+A factual technical specification that influences
+customer understanding or purchase decisions.
+
+
+QUANTITY
+
+Meaningful quantity, pack count, set count,
+or package quantity information.
+
+
+MATERIAL
+
+Verified material information.
+
+Material should normally receive lower title priority
+unless material is an important customer purchase factor.
+
+
+USAGE
+
+Target usage, environment, customer group,
+or application context.
+
+Usage information should normally be supporting information
+unless it is necessary to define the actual product.
+
+
+SEARCH_TERM
+
+A useful customer search expression
+that does not belong to a stronger semantic type.
+
+
+OTHER
+
+Use only when the information cannot reasonably
+be classified into another allowed type.
+
+
+==================================================
+12. Candidate Priority
+==================================================
+
+Every candidate must receive one priority tier.
+
+Allowed priority values:
+
+S
+A
+B
+C
+D
+
+
+Priority meaning:
+
+
+S
+
+Essential product identity.
+
+Removing this information would make the product unclear
+or substantially reduce correct product recognition.
+
+
+A
+
+Major search, compatibility, purchase,
+or differentiation driver.
+
+Strong candidate for the final title.
+
+
+B
+
+Useful secondary information.
+
+Include when title space allows after S and A information.
+
+
+C
+
+Supporting information with limited title value.
+
+Normally omit when stronger information is available.
+
+
+D
+
+Low-value title information.
+
+Normally should not consume title space.
+
+
+Important:
+
+Priority must be decided based on the current product.
+
+Do NOT assign priority because a word,
+feature name, model pattern, specification format,
+brand, or category matches a memorized example.
+
+Judge the role and customer value of the information
+within the current product.
+
+
+==================================================
+13. Required Flag
+==================================================
+
+Every title candidate must contain:
+
+"required": true or false
+
+
+required = true
+
+Use only when omitting the candidate would materially reduce:
+
+- product identification
+- compatibility clarity
+- purchase confidence
+- critical search relevance
+
+
+required = false
+
+Use when the information is valuable,
+but may be removed if title character space is insufficient.
+
+
+Do NOT mark every A priority candidate as required automatically.
+
+Required status and priority are related,
+but they are not the same concept.
+
+
+==================================================
+14. Candidate Ordering
+==================================================
+
+title_candidates must already be ordered
+from highest title value to lowest title value.
+
+The title generator should not need
+to reinterpret product importance.
+
+When two candidates have similar value,
+prefer the candidate with:
+
+1. stronger product identification value
+2. stronger compatibility or selection value
+3. stronger purchase impact
+4. stronger differentiation
+5. better character efficiency
+
+
+Do NOT intentionally use shorter low-value information
+only to fill remaining title characters.
+
+A lower-priority short candidate must not replace
+a higher-priority candidate simply because it is shorter.
+
+
+==================================================
+15. Candidate Text Rules
+==================================================
+
+Each candidate must contain the exact phrase
+that should be considered for the title.
+
+Candidate text must:
+
+- preserve verified model numbers
+- preserve verified part numbers
+- preserve factual quantities
+- preserve factual specifications
+- preserve required compatibility wording
+- avoid seller-created names unless they have verified search value
+- avoid unsupported claims
+- avoid marketing language
+- avoid unnecessary repetition
+
+Do not change product facts.
+
+Do not invent facts.
+
+Do not guess missing values.
+
+
+==================================================
+16. Output Structure
+==================================================
+
+Use exactly this JSON structure:
 
 
 {
@@ -370,25 +641,110 @@ Use exactly this structure:
 
     "title_length_strategy": "",
 
-    "reasoning": ""
+    "reasoning": "",
+
+    "title_candidates": [
+        {
+            "text": "",
+            "type": "",
+            "priority": "",
+            "required": false,
+            "reason": ""
+        }
+    ]
 }
 
 
-Field meaning:
+==================================================
+17. Backward Compatibility Rules
+==================================================
 
+The legacy fields must remain logically consistent
+with title_candidates.
+
+core_product:
+
+Should correspond to the highest-priority
+IDENTITY candidate.
+
+
+must_include:
+
+Should contain the strongest title information
+that the current legacy generator would consider essential.
+
+
+optional_include:
+
+Should contain useful secondary information
+that can be removed when character space is insufficient.
+
+
+model_priority:
+
+Should remain ordered by model importance.
+
+
+compatibility_priority:
+
+Should remain ordered by compatibility importance.
+
+
+exclude:
+
+Should continue to contain information
+that should not consume title space.
+
+
+==================================================
+18. Field Meaning
+==================================================
 
 priority_order:
 
-The ranking order of information that should be considered for the title.
+The high-level ranking logic
+for information that should be considered for the title.
 
 
 title_length_strategy:
 
-Explain how to maximize valuable information within the title character limit.
+Explain how to maximize valuable information
+within the title character limit.
 
 
 reasoning:
 
-Briefly explain why the selected information has higher title value.
+Briefly explain the overall title strategy.
+
+
+title_candidates.reason:
+
+Briefly explain why this specific candidate
+received its semantic type and priority.
+
+Keep candidate reasons concise.
+
+
+==================================================
+19. Final Decision Principle
+==================================================
+
+Your job is to make the semantic and operational decisions.
+
+The downstream title generator should execute your decisions,
+not re-understand the product.
+
+Therefore:
+
+- identify what each candidate means
+- classify its semantic role
+- rank its title value
+- decide whether it is required
+
+Do not rely on product-specific hardcoded examples,
+keyword lists, memorized model formats,
+or fixed category rules.
+
+Reason from the current product information.
 
 """
