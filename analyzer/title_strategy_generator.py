@@ -584,7 +584,7 @@ class TitleStrategyGenerator:
                         )
                     ),
             }
-                        final_score = round(
+            final_score = round(
 
                 (
                     scores[
