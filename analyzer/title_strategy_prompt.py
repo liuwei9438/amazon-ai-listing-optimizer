@@ -486,6 +486,13 @@ Essential product identity.
 
 Removing this information would make the product unclear
 or substantially reduce correct product recognition.
+Normally, only the primary product identity should receive S priority.
+
+Do not use S simply because an information item is highly valuable.
+
+Important features, specifications, models, part numbers,
+or compatibility information should normally receive A priority
+unless they are inseparable from correct product identification.
 
 
 A
