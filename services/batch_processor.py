@@ -21,7 +21,10 @@ from analyzer.title_strategy_generator import (
     TitleStrategyGenerator,
     TitleStrategyError,
 )
-
+from understanding.identity_decision import (
+    IdentityDecisionEngine,
+    IdentityDecisionError,
+)
 from compliance.brand_protection import protect_text
 
 from core.product_knowledge import ProductKnowledgeBuilder
@@ -296,7 +299,91 @@ def process_batch(
                 "product_knowledge"
             ] = product_knowledge
             
-            
+            # =====================
+            # Identity Decision
+            # =====================
+
+            identity_start = time.time()
+
+
+            save_status(
+                task_id,
+                {
+                    "status": "processing",
+                    "message":
+                        f"第 {index+1}/{total} 个产品：统一产品身份中",
+                    "completed": index,
+                    "total": total,
+                }
+            )
+
+
+            try:
+
+                identity_decision = (
+                    IdentityDecisionEngine.generate(
+                        profile=profile,
+                        api_key=api_key,
+                        model=model,
+                    )
+                )
+
+
+                if not isinstance(
+                    identity_decision,
+                    dict,
+                ):
+
+                    identity_decision = {}
+
+
+                profile[
+                    "identity_decision"
+                ] = identity_decision
+
+
+                profile[
+                    "identity_decision_error"
+                ] = ""
+
+
+            except Exception as identity_exc:
+
+                # 当前阶段 Identity Decision
+                # 只是新增验证模块。
+                #
+                # 即使失败，
+                # 也不能让整个产品优化失败。
+                #
+                # Title Strategy 暂时继续使用旧流程。
+
+                identity_decision = {}
+
+
+                profile[
+                    "identity_decision"
+                ] = {}
+
+
+                profile[
+                    "identity_decision_error"
+                ] = str(
+                    identity_exc
+                )
+
+
+                print(
+                    "IDENTITY DECISION FAILED:",
+                    identity_exc,
+                )
+
+
+            timing[
+                "identity_decision"
+            ] = round(
+                time.time() - identity_start,
+                2
+            )
             # =====================
             # AI Title Strategy
             # =====================
