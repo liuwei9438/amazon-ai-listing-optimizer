@@ -25,6 +25,7 @@ class TitleStrategyGenerator:
         client = OpenAI(
             api_key=api_key
         )
+
         # =================================================
         # Title Strategy Input
         #
@@ -45,53 +46,44 @@ class TitleStrategyGenerator:
             {},
         )
 
-
         if not isinstance(
             strategy_input,
             dict,
         ):
-
             raise TitleStrategyError(
                 "title_strategy_input must be a dictionary"
             )
 
-
         if not strategy_input:
-
             raise TitleStrategyError(
                 "title_strategy_input is missing"
             )
+
         locked = strategy_input.get(
             "locked",
             {},
         )
 
-
         if not isinstance(
             locked,
             dict,
         ):
-
             raise TitleStrategyError(
                 "title_strategy_input.locked must be a dictionary"
             )
-
 
         locked_identity = locked.get(
             "identity",
             {},
         )
 
-
         if not isinstance(
             locked_identity,
             dict,
         ):
-
             raise TitleStrategyError(
                 "title_strategy_input.locked.identity must be a dictionary"
             )
-
 
         locked_identity_text = str(
             locked_identity.get(
@@ -102,16 +94,21 @@ class TitleStrategyGenerator:
             ""
         ).strip()
 
-
         if not locked_identity_text:
-
             raise TitleStrategyError(
                 "title_strategy_input.locked.identity.text is missing"
             )
+
+        # =================================================
+        # Strategy Payload
+        #
+        # 不直接修改 profile["title_strategy_input"]。
+        # 创建发送给 AI 的独立副本，并添加标题策略约束。
+        # =================================================
+
         strategy_payload = dict(
             strategy_input
         )
-
 
         strategy_payload[
             "title_constraints"
@@ -125,95 +122,11 @@ class TitleStrategyGenerator:
             "objective":
                 "maximize purchase-relevant information within the title limit",
         }
-        # =================================================
-        # 产品身份整理
-        #
-        # 目标：
-        # 给AI提供干净的产品身份信息
-        # 避免卖家名称、系列名称污染标题判断
-        # =================================================
-
-        raw_identity = (
-            profile.get(
-                "product_identity",
-                {}
-            )
-        )
-
-
-        product_knowledge = (
-            profile.get(
-                "product_knowledge",
-                {}
-            )
-        )
-
-
-        knowledge_identity = (
-            product_knowledge.get(
-                "identity",
-                {}
-            )
-            if isinstance(
-                product_knowledge,
-                dict
-            )
-            else {}
-        )
-
-
-        # 不直接发送：
-        # product_name
-        # object_name
-        #
-        # 因为这些字段可能包含：
-        # 卖家命名、系列名称、营销名称
-
-        identity_candidates = {
-
-            # AI需要判断的真实产品身份
-            "title_product_identity":
-                raw_identity.get(
-                    "title_product_identity",
-                    ""
-                ),
-
-
-            # 买家搜索表达
-            # 可能包含场景，需要AI过滤
-            "buyer_search_identity":
-                raw_identity.get(
-                    "buyer_search_identity",
-                    ""
-                ),
-
-
-            # 产品类型
-            "product_type":
-                knowledge_identity.get(
-                    "product_type",
-                    ""
-                ),
-
-
-            # 类目
-            "category":
-                raw_identity.get(
-                    "category",
-                    ""
-                ),
-
-        }
-
-
 
         response = client.chat.completions.create(
-
             model=model,
 
-
             messages=[
-
                 {
                     "role":
                         "system",
@@ -221,7 +134,6 @@ class TitleStrategyGenerator:
                     "content":
                         TITLE_STRATEGY_SYSTEM_PROMPT,
                 },
-
 
                 {
                     "role":
@@ -234,26 +146,20 @@ class TitleStrategyGenerator:
                             indent=2,
                         ),
                 },
-
             ],
-
 
             response_format={
                 "type":
                     "json_object"
             },
-
         )
 
-
         try:
-
             result = json.loads(
                 response.choices[0]
                 .message
                 .content
             )
-
 
             result = (
                 TitleStrategyGenerator
@@ -262,15 +168,13 @@ class TitleStrategyGenerator:
                 )
             )
 
-
             return result
 
-
         except Exception as exc:
-
             raise TitleStrategyError(
                 f"Title strategy parse failed: {exc}"
             )
+
     @staticmethod
     def normalize_strategy_result(
         result: dict,
@@ -295,11 +199,9 @@ class TitleStrategyGenerator:
             result,
             dict,
         ):
-
             raise TitleStrategyError(
                 "Title strategy result must be a dictionary"
             )
-
 
         # =============================================
         # Legacy Fields
@@ -315,47 +217,36 @@ class TitleStrategyGenerator:
             "priority_order",
         ]
 
-
         for field in legacy_list_fields:
-
             value = result.get(
                 field,
                 []
             )
 
-
             if not isinstance(
                 value,
                 list,
             ):
-
                 value = []
-
 
             cleaned = []
 
-
             for item in value:
-
                 text = str(
                     item
                 ).strip()
-
 
                 if not text:
                     continue
 
                 if text not in cleaned:
-
                     cleaned.append(
                         text
                     )
 
-
             result[
                 field
             ] = cleaned
-
 
         legacy_text_fields = [
             "core_product",
@@ -364,26 +255,20 @@ class TitleStrategyGenerator:
             "reasoning",
         ]
 
-
         for field in legacy_text_fields:
-
             value = result.get(
                 field,
                 ""
             )
 
-
             if value is None:
-
                 value = ""
-
 
             result[
                 field
             ] = str(
                 value
             ).strip()
-
 
         # =============================================
         # Title Candidates
@@ -394,14 +279,11 @@ class TitleStrategyGenerator:
             []
         )
 
-
         if not isinstance(
             candidates,
             list,
         ):
-
             candidates = []
-
 
         allowed_types = {
             "IDENTITY",
@@ -417,7 +299,6 @@ class TitleStrategyGenerator:
             "OTHER",
         }
 
-
         allowed_priorities = {
             "S",
             "A",
@@ -426,12 +307,8 @@ class TitleStrategyGenerator:
             "D",
         }
 
-
         normalized_candidates = []
-
-
         seen = set()
-
 
         for candidate in candidates:
 
@@ -439,9 +316,7 @@ class TitleStrategyGenerator:
                 candidate,
                 dict,
             ):
-
                 continue
-
 
             text = str(
                 candidate.get(
@@ -450,11 +325,8 @@ class TitleStrategyGenerator:
                 )
             ).strip()
 
-
             if not text:
-
                 continue
-
 
             short_text = str(
                 candidate.get(
@@ -465,7 +337,6 @@ class TitleStrategyGenerator:
                 ""
             ).strip()
 
-
             candidate_type = str(
                 candidate.get(
                     "type",
@@ -473,14 +344,11 @@ class TitleStrategyGenerator:
                 )
             ).strip().upper()
 
-
             if (
                 candidate_type
                 not in allowed_types
             ):
-
                 candidate_type = "OTHER"
-
 
             priority = str(
                 candidate.get(
@@ -489,12 +357,10 @@ class TitleStrategyGenerator:
                 )
             ).strip().upper()
 
-
             if (
                 priority
                 not in allowed_priorities
             ):
-
                 priority = "C"
 
             raw_scores = candidate.get(
@@ -502,14 +368,11 @@ class TitleStrategyGenerator:
                 {}
             )
 
-
             if not isinstance(
                 raw_scores,
                 dict,
             ):
-
                 raw_scores = {}
-
 
             def normalize_score(
                 value,
@@ -525,7 +388,6 @@ class TitleStrategyGenerator:
                 """
 
                 try:
-
                     score_value = float(
                         value
                     )
@@ -534,9 +396,7 @@ class TitleStrategyGenerator:
                     TypeError,
                     ValueError,
                 ):
-
                     score_value = 0.0
-
 
                 score_value = max(
                     0.0,
@@ -546,16 +406,13 @@ class TitleStrategyGenerator:
                     ),
                 )
 
-
                 return int(
                     round(
                         score_value
                     )
                 )
 
-
             scores = {
-
                 "search_value":
                     normalize_score(
                         raw_scores.get(
@@ -596,8 +453,8 @@ class TitleStrategyGenerator:
                         )
                     ),
             }
-            final_score = round(
 
+            final_score = round(
                 (
                     scores[
                         "search_value"
@@ -632,28 +489,23 @@ class TitleStrategyGenerator:
                     ]
                     * 0.10
                 ),
-
                 1,
             )
+
             raw_incremental = candidate.get(
                 "incremental_value",
                 None,
             )
-
 
             has_incremental = isinstance(
                 raw_incremental,
                 dict,
             )
 
-
             if not has_incremental:
-
                 raw_incremental = {}
 
-
             incremental_value = {
-
                 "new_information":
                     normalize_score(
                         raw_incremental.get(
@@ -678,24 +530,20 @@ class TitleStrategyGenerator:
                         )
                     ),
             }
+
             if has_incremental:
-    
+
                 incremental_modifier = (
-    
                     incremental_value[
                         "new_information"
                     ]
                     * 0.50
-    
                     +
-    
                     incremental_value[
                         "selection_value"
                     ]
                     * 0.30
-    
                     +
-    
                     (
                         100
                         -
@@ -705,10 +553,8 @@ class TitleStrategyGenerator:
                     )
                     * 0.20
                 )
-    
-    
+
                 adjusted_score = round(
-    
                     final_score
                     *
                     (
@@ -719,29 +565,23 @@ class TitleStrategyGenerator:
                             / 200.0
                         )
                     ),
-    
                     1,
                 )
-    
-    
+
             else:
-    
                 incremental_modifier = 100.0
-    
                 adjusted_score = final_score
+
             required = candidate.get(
                 "required",
                 False
             )
 
-
             if not isinstance(
                 required,
                 bool,
             ):
-
                 required = False
-
 
             reason = str(
                 candidate.get(
@@ -752,21 +592,16 @@ class TitleStrategyGenerator:
                 ""
             ).strip()
 
-
             duplicate_key = (
                 text.casefold()
             )
 
-
             if duplicate_key in seen:
-
                 continue
-
 
             seen.add(
                 duplicate_key
             )
-
 
             normalized_candidates.append(
                 {
@@ -808,11 +643,9 @@ class TitleStrategyGenerator:
                 }
             )
 
-
         result[
             "title_candidates"
         ] = normalized_candidates
-
 
         # =============================================
         # Schema Version
@@ -821,6 +654,5 @@ class TitleStrategyGenerator:
         result[
             "schema_version"
         ] = "2.8-title-strategy-incremental-value"
-
 
         return result
