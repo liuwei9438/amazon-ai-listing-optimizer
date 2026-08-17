@@ -616,40 +616,32 @@ Your role is NOT to recreate verified factual text.
 
 For compatibility information:
 
-Use Product Knowledge relationship fields as the authoritative source.
+Use the locked compatibility and model information
+provided in the strategy input as the authoritative source.
 
 When available:
 
-relationship.compatibility_phrase
+locked.compatibility.phrase
 
 must be reused as the COMPATIBILITY candidate.
 
 Verified model identifiers from:
 
-relationship.models
+locked.models.all
 
 must be evaluated individually as MODEL candidates.
 
-Verified part numbers from:
-
-relationship.part_numbers
-
+Verified part numbers from confirmed product facts
 must be evaluated individually as PART_NUMBER candidates.
 
-Do not combine compatibility_phrase with multiple models
-or multiple part numbers into one candidate.
+Do not combine the compatibility phrase
+with multiple models or part numbers into one candidate.
 
-Do not generate a new compatibility sentence when
-relationship.compatibility_phrase already exists.
-
-Do not repeat product category, parent product,
-device type, explanatory wording, or the word "models"
-inside the COMPATIBILITY candidate unless that text is already
-part of the verified compatibility_phrase.
+Do not generate a new compatibility sentence
+when locked.compatibility.phrase already exists.
 
 Each model or part number must remain independently selectable
 by the downstream title generator.
-
 
 More generally:
 
