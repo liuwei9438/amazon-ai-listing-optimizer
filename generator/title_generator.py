@@ -482,37 +482,7 @@ class TitleGenerator:
             只使用 Strategy 已经提供的数据。
             """
 
-            # =========================================
-            # Candidate Selection Gate
-            # =========================================
-
-            if candidate_should_skip(
-                candidate
-            ):
-
-                rejected_candidates.append(
-                    {
-                        "index":
-                            index,
-
-                        "text":
-                            candidate.get(
-                                "text",
-                                "",
-                            ),
-
-                        "type":
-                            candidate.get(
-                                "type",
-                                "",
-                            ),
-
-                        "reason":
-                            "selection_gate_low_incremental_value",
-                    }
-                )
-
-                continue
+         
             if not isinstance(
                 candidate,
                 dict,
