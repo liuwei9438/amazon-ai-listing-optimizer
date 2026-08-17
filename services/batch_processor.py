@@ -12,6 +12,10 @@ from analyzer.product_understanding import (
     ProductUnderstandingEngine,
     UnderstandingError,
 )
+from core.strategy_input_builder import (
+    StrategyInputBuilder,
+    StrategyInputBuilderError,
+)
 
 from analyzer.model_protection import ModelProtection
 from analyzer.seo_intent_engine import generate_primary_search
@@ -453,6 +457,59 @@ def process_batch(
                 "knowledge_normalization"
             ] = round(
                 time.time() - normalize_start,
+                2
+            )
+            # =====================
+            # Title Strategy Input
+            # =====================
+
+            strategy_input_start = time.time()
+
+
+            try:
+
+                strategy_input = (
+                    StrategyInputBuilder.build(
+                        profile
+                    )
+                )
+
+
+                profile[
+                    "title_strategy_input"
+                ] = strategy_input
+
+
+                profile[
+                    "title_strategy_input_error"
+                ] = ""
+
+
+            except Exception as input_exc:
+
+                profile[
+                    "title_strategy_input"
+                ] = {}
+
+
+                profile[
+                    "title_strategy_input_error"
+                ] = str(
+                    input_exc
+                )
+
+
+                print(
+                    "TITLE STRATEGY INPUT BUILD FAILED:",
+                    input_exc,
+                )
+
+
+            timing[
+                "title_strategy_input"
+            ] = round(
+                time.time()
+                - strategy_input_start,
                 2
             )
             # =====================
