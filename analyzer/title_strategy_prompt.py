@@ -1096,7 +1096,9 @@ Do not calculate the final weighted score yourself.
 The downstream Strategy normalizer will calculate final_score
 deterministically from the five dimension scores.
 
-Your responsibility is to evaluate the five dimensions accurately.
+Your responsibility is to evaluate
+the five base dimensions
+and the three incremental dimensions accurately.
 
 
 ==================================================
