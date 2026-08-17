@@ -924,6 +924,127 @@ Judge whether the candidate communicates meaningful search,
 identity, compatibility, purchase, or differentiation value
 for the title space it consumes.
 ==================================================
+Incremental Candidate Value
+==================================================
+
+After evaluating the candidate's standalone title value,
+also evaluate the additional value the candidate contributes
+relative to information already represented by higher-value candidates.
+
+This is called incremental value.
+
+The purpose is to prevent the title from spending characters
+on information that is individually valuable but substantially
+duplicates information already communicated earlier.
+
+
+Evaluate three dimensions from 0 to 100:
+
+
+1. new_information
+
+How much genuinely new customer-useful information
+this candidate adds beyond higher-value candidates.
+
+100 means the candidate contributes almost entirely new
+and useful information.
+
+0 means the candidate adds essentially no new information.
+
+
+Evaluate semantic meaning, not only exact wording.
+
+If an earlier candidate already communicates most of the same
+product meaning, new_information must be reduced.
+
+A candidate may partially overlap with earlier information
+while still introducing one meaningful new fact.
+
+In that case, score only the genuinely new contribution highly.
+
+
+2. redundancy_penalty
+
+How strongly this candidate repeats information already represented
+by higher-value candidates.
+
+100 means the candidate is almost completely redundant.
+
+0 means the candidate has essentially no meaningful redundancy.
+
+Evaluate semantic redundancy, not only exact text duplication.
+
+Shared words alone do not automatically mean redundancy.
+
+The question is whether the customer learns substantially
+the same product information from both candidates.
+
+
+3. selection_value
+
+How strongly this candidate helps a customer select the correct
+product, version, configuration, fitment, compatibility,
+size, model, part number, or other purchase-critical option.
+
+100 means omission creates a high risk of selecting
+the wrong product or configuration.
+
+0 means the candidate has little or no product-selection role.
+
+Do not automatically give model numbers or identifiers high scores.
+
+Selection value depends on the current product and buyer decision.
+
+For compatibility-driven or fitment-sensitive products,
+verified compatibility and identifiers may have very high selection value.
+
+For general consumer products without fitment risk,
+selection value may be low even when the candidate is useful.
+
+
+==================================================
+Incremental Evaluation Order
+==================================================
+
+Evaluate incremental value in candidate title order.
+
+The first essential IDENTITY candidate establishes
+the initial semantic context.
+
+For each later candidate, compare it against higher-value candidates
+that would reasonably appear before it.
+
+Do not compare a candidate only against its own wording.
+
+Consider the meaning already communicated by:
+
+- product identity
+- compatibility
+- models or part numbers
+- higher-priority features
+- higher-priority specifications
+
+
+Important:
+
+A candidate can have a high standalone score
+but a low incremental value.
+
+That is expected.
+
+Example logic:
+
+If product identity already communicates a product feature,
+a later candidate repeating that same feature should receive
+a lower new_information score and higher redundancy_penalty.
+
+If the later candidate introduces an additional verified detail
+that is not already communicated, preserve value for that new detail.
+
+Do not remove or alter verified facts merely to avoid overlap.
+
+Score the candidate as supplied.
+==================================================
 Incremental Title Value
 ==================================================
 
@@ -1073,11 +1194,12 @@ Use exactly this JSON structure:
 
     "reasoning": "",
     "title_candidates": [
-        {
+       {
             "text": "",
             "short_text": "",
             "type": "",
             "priority": "",
+        
             "scores": {
                 "search_value": 0,
                 "purchase_impact": 0,
@@ -1085,6 +1207,13 @@ Use exactly this JSON structure:
                 "differentiation_value": 0,
                 "character_efficiency": 0
             },
+        
+            "incremental_value": {
+                "new_information": 0,
+                "redundancy_penalty": 0,
+                "selection_value": 0
+            },
+        
             "required": false,
             "reason": ""
         }
@@ -1163,7 +1292,28 @@ Use an empty string when no safe and natural shorter expression exists.
 title_candidates.scores:
 
 Five independent 0-100 evaluations of the candidate's title value.
+title_candidates.incremental_value:
 
+A second-stage evaluation describing how much additional title value
+the candidate contributes after higher-value information
+has already been considered.
+
+new_information:
+Amount of genuinely new useful information introduced.
+
+redundancy_penalty:
+Degree to which the candidate repeats meaning already represented.
+
+selection_value:
+Importance for helping the customer select the correct product,
+fitment, model, version, configuration, or compatible option.
+
+These values must each be between 0 and 100.
+
+Do not calculate adjusted_score.
+
+The downstream Strategy normalizer calculates adjusted_score
+deterministically.
 search_value:
 Customer search and product-selection relevance.
 
