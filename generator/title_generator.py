@@ -469,7 +469,160 @@ class TitleGenerator:
                 )
             )
 
+        def candidate_should_skip(
+            candidate,
+        ):
+            """
+            Candidate Selection Gate
 
+            目的：
+            过滤低增量、高重复信息。
+
+            不重新理解产品。
+            只使用 Strategy 已经提供的数据。
+            """
+
+            # =========================================
+            # Candidate Selection Gate
+            # =========================================
+
+            if candidate_should_skip(
+                candidate
+            ):
+
+                rejected_candidates.append(
+                    {
+                        "index":
+                            index,
+
+                        "text":
+                            candidate.get(
+                                "text",
+                                "",
+                            ),
+
+                        "type":
+                            candidate.get(
+                                "type",
+                                "",
+                            ),
+
+                        "reason":
+                            "selection_gate_low_incremental_value",
+                    }
+                )
+
+                continue
+            if not isinstance(
+                candidate,
+                dict,
+            ):
+                return True
+
+
+            candidate_type = str(
+                candidate.get(
+                    "type",
+                    "",
+                )
+                or
+                ""
+            ).upper()
+
+
+            required = candidate.get(
+                "required",
+                False,
+            )
+
+
+            # Identity 永远保留
+            if candidate_type == "IDENTITY":
+                return False
+
+
+            # required 信息暂不自动过滤
+            # 避免误删型号、兼容信息
+            if required:
+                return False
+
+
+            incremental = candidate.get(
+                "incremental_value",
+                {},
+            )
+
+
+            if not isinstance(
+                incremental,
+                dict,
+            ):
+                return False
+
+
+            new_information = incremental.get(
+                "new_information",
+                100,
+            )
+
+            redundancy_penalty = incremental.get(
+                "redundancy_penalty",
+                0,
+            )
+
+            selection_value = incremental.get(
+                "selection_value",
+                0,
+            )
+
+
+            try:
+                new_information = int(
+                    new_information
+                )
+
+            except:
+                new_information = 100
+
+
+            try:
+                redundancy_penalty = int(
+                    redundancy_penalty
+                )
+
+            except:
+                redundancy_penalty = 0
+
+
+            try:
+                selection_value = int(
+                    selection_value
+                )
+
+            except:
+                selection_value = 0
+
+
+            # ==========================================
+            # Gate Rule
+            #
+            # 高重复 + 低新增
+            # 且不是选择关键
+            #
+            # 直接跳过
+            # ==========================================
+
+            if (
+                new_information < 30
+                and
+                redundancy_penalty > 70
+                and
+                selection_value < 50
+            ):
+                return True
+
+
+            return False
         # =================================================
         # 7. 逐个执行 title_candidates
         #
