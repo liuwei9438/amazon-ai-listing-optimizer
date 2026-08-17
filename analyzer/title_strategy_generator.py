@@ -61,7 +61,7 @@ class TitleStrategyGenerator:
             raise TitleStrategyError(
                 "title_strategy_input is missing"
             )
-                    locked = strategy_input.get(
+        locked = strategy_input.get(
             "locked",
             {},
         )
