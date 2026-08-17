@@ -623,6 +623,88 @@ class TitleStrategyGenerator:
 
                 1,
             )
+            raw_incremental = candidate.get(
+                "incremental_value",
+                {},
+            )
+
+
+            if not isinstance(
+                raw_incremental,
+                dict,
+            ):
+
+                raw_incremental = {}
+
+
+            incremental_value = {
+
+                "new_information":
+                    normalize_score(
+                        raw_incremental.get(
+                            "new_information",
+                            0,
+                        )
+                    ),
+
+                "redundancy_penalty":
+                    normalize_score(
+                        raw_incremental.get(
+                            "redundancy_penalty",
+                            0,
+                        )
+                    ),
+
+                "selection_value":
+                    normalize_score(
+                        raw_incremental.get(
+                            "selection_value",
+                            0,
+                        )
+                    ),
+            }
+            incremental_modifier = (
+
+                incremental_value[
+                    "new_information"
+                ]
+                * 0.50
+
+                +
+
+                incremental_value[
+                    "selection_value"
+                ]
+                * 0.30
+
+                +
+
+                (
+                    100
+                    -
+                    incremental_value[
+                        "redundancy_penalty"
+                    ]
+                )
+                * 0.20
+            )
+
+
+            adjusted_score = round(
+
+                final_score
+                *
+                (
+                    0.50
+                    +
+                    (
+                        incremental_modifier
+                        / 200.0
+                    )
+                ),
+
+                1,
+            )
             required = candidate.get(
                 "required",
                 False
@@ -682,6 +764,18 @@ class TitleStrategyGenerator:
                     "final_score":
                         final_score,
 
+                    "incremental_value":
+                        incremental_value,
+
+                    "incremental_modifier":
+                        round(
+                            incremental_modifier,
+                            1,
+                        ),
+
+                    "adjusted_score":
+                        adjusted_score,
+
                     "required":
                         required,
 
@@ -702,7 +796,7 @@ class TitleStrategyGenerator:
 
         result[
             "schema_version"
-        ] = "2.7-title-strategy-scoring"
+        ] = "2.8-title-strategy-incremental-value"
 
 
         return result
