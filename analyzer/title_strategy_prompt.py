@@ -1044,33 +1044,6 @@ that is not already communicated, preserve value for that new detail.
 Do not remove or alter verified facts merely to avoid overlap.
 
 Score the candidate as supplied.
-==================================================
-Incremental Title Value
-==================================================
-
-Score each candidate by the NEW value it contributes
-after higher-ranked candidates are already considered.
-
-Do not score repeated information as if it were new information.
-
-If a fact, phrase, usage context, product identity element,
-or semantic meaning is already substantially communicated
-by an earlier higher-value candidate, reduce the scores of
-the later candidate accordingly.
-
-A candidate may still retain value when it adds a genuinely
-new differentiating fact to partially overlapping wording.
-
-Evaluate marginal contribution, not standalone attractiveness.
-
-The question is not only:
-
-"Is this information valuable?"
-
-Also ask:
-
-"How much additional title value does this candidate add
-after the information already selected above it?"
 
 ==================================================
 20. Scoring Rules
@@ -1219,7 +1192,7 @@ Use exactly this JSON structure:
         }
     ]
 
-
+}
 ==================================================
 23. Backward Compatibility Rules
 ==================================================
