@@ -565,6 +565,18 @@ Do NOT mark every A priority candidate as required automatically.
 
 Required status and priority are related,
 but they are not the same concept.
+Incremental redundancy must also be considered.
+
+A candidate that substantially repeats information
+already contained in the required IDENTITY candidate
+should normally NOT be required.
+
+Do not preserve a redundant candidate as required
+merely because the information has high standalone value.
+
+required = true should represent information
+whose omission would remove meaningful customer-useful information,
+not information whose meaning is already preserved elsewhere.
 ==================================================
 14. Verified Fact Source Policy
 ==================================================
@@ -744,7 +756,18 @@ Do not include explanatory wording inside candidate text.
 
 Do not repeat information already carried by another candidate
 unless repetition is semantically necessary.
+"Already carried" refers to semantic meaning,
+not exact wording.
 
+If the product identity already communicates
+the essential meaning of a later feature candidate,
+do not treat that later candidate as independent information
+merely because the wording is different.
+
+When overlap exists,
+keep the verified candidate available for evaluation,
+but reflect the overlap through incremental_value
+and required status.
 The text of one candidate must not contain another candidate merely
 to provide context.
 
@@ -927,123 +950,259 @@ for the title space it consumes.
 Incremental Candidate Value
 ==================================================
 
-After evaluating the candidate's standalone title value,
-also evaluate the additional value the candidate contributes
-relative to information already represented by higher-value candidates.
+After evaluating each candidate's standalone title value,
+evaluate how much ADDITIONAL customer-useful meaning it contributes
+after information already established earlier in the title strategy.
 
-This is called incremental value.
+This is incremental value.
 
-The purpose is to prevent the title from spending characters
-on information that is individually valuable but substantially
-duplicates information already communicated earlier.
+Incremental value must be evaluated semantically.
 
+Do NOT judge incremental value only by:
+- exact word matching
+- spelling differences
+- singular versus plural
+- word order
+- grammatical form
+- longer versus shorter wording
+
+The key question is:
+
+"What new customer-useful meaning does this candidate communicate
+that has NOT already been communicated?"
+
+
+==================================================
+Semantic Coverage Rule
+==================================================
+
+Before scoring ANY non-IDENTITY candidate,
+first compare its meaning against the locked/core product identity.
+
+The product identity is the primary semantic anchor.
+
+Determine whether the candidate is:
+
+1. NEW
+   The candidate communicates substantially new customer-useful meaning.
+
+2. PARTIALLY COVERED
+   Part of the candidate meaning is already communicated by the identity
+   or earlier candidates, but the candidate adds a distinct verified fact.
+
+3. SUBSTANTIALLY COVERED
+   Most of the customer meaning is already communicated by the identity
+   or earlier candidates.
+
+4. FULLY REDUNDANT
+   The candidate does not provide meaningful additional information.
+
+
+Semantic coverage is about meaning, not wording.
+
+Two phrases can use different wording
+and still communicate substantially the same information.
+
+A grammatical variation, plural form, rearranged phrase,
+or slightly expanded wording does NOT automatically create new information.
+
+
+==================================================
+Incremental Scoring Dimensions
+==================================================
 
 Evaluate three dimensions from 0 to 100:
 
 
 1. new_information
 
-How much genuinely new customer-useful information
-this candidate adds beyond higher-value candidates.
+How much genuinely NEW customer-useful meaning
+the candidate adds beyond the product identity
+and higher-priority information already established.
 
-100 means the candidate contributes almost entirely new
-and useful information.
+Guidance:
 
-0 means the candidate adds essentially no new information.
+90-100:
+Almost entirely new and useful information.
 
+70-89:
+Mostly new information with limited semantic overlap.
 
-Evaluate semantic meaning, not only exact wording.
+40-69:
+Mixed case; meaningful new information exists,
+but a substantial part is already communicated.
 
-If an earlier candidate already communicates most of the same
-product meaning, new_information must be reduced.
+10-39:
+Most of the meaning is already communicated;
+only a small incremental fact remains.
 
-A candidate may partially overlap with earlier information
-while still introducing one meaningful new fact.
-
-In that case, score only the genuinely new contribution highly.
-
-
-2. redundancy_penalty
-
-How strongly this candidate repeats information already represented
-by higher-value candidates.
-
-100 means the candidate is almost completely redundant.
-
-0 means the candidate has essentially no meaningful redundancy.
-
-Evaluate semantic redundancy, not only exact text duplication.
-
-Shared words alone do not automatically mean redundancy.
-
-The question is whether the customer learns substantially
-the same product information from both candidates.
-
-
-3. selection_value
-
-How strongly this candidate helps a customer select the correct
-product, version, configuration, fitment, compatibility,
-size, model, part number, or other purchase-critical option.
-
-100 means omission creates a high risk of selecting
-the wrong product or configuration.
-
-0 means the candidate has little or no product-selection role.
-
-Do not automatically give model numbers or identifiers high scores.
-
-Selection value depends on the current product and buyer decision.
-
-For compatibility-driven or fitment-sensitive products,
-verified compatibility and identifiers may have very high selection value.
-
-For general consumer products without fitment risk,
-selection value may be low even when the candidate is useful.
-
-
-==================================================
-Incremental Evaluation Order
-==================================================
-
-Evaluate incremental value in candidate title order.
-
-The first essential IDENTITY candidate establishes
-the initial semantic context.
-
-For each later candidate, compare it against higher-value candidates
-that would reasonably appear before it.
-
-Do not compare a candidate only against its own wording.
-
-Consider the meaning already communicated by:
-
-- product identity
-- compatibility
-- models or part numbers
-- higher-priority features
-- higher-priority specifications
+0-9:
+Essentially no new customer-useful meaning.
 
 
 Important:
 
-A candidate can have a high standalone score
-but a low incremental value.
+If the candidate repeats the main descriptive concept
+already contained in the product identity,
+do NOT score the repeated portion as new information.
 
-That is expected.
+Only score the genuinely additional fact.
 
-Example logic:
+A candidate must not receive a high new_information score
+merely because it contains extra words.
 
-If product identity already communicates a product feature,
-a later candidate repeating that same feature should receive
-a lower new_information score and higher redundancy_penalty.
 
-If the later candidate introduces an additional verified detail
-that is not already communicated, preserve value for that new detail.
+2. redundancy_penalty
 
-Do not remove or alter verified facts merely to avoid overlap.
+How strongly the candidate repeats meaning
+already communicated by the product identity
+or higher-priority candidates.
 
-Score the candidate as supplied.
+Guidance:
+
+0-10:
+Almost no semantic overlap.
+
+11-30:
+Minor overlap.
+
+31-60:
+Meaningful partial overlap.
+
+61-85:
+Most of the customer meaning is already communicated.
+
+86-100:
+Almost completely or completely redundant.
+
+
+Important:
+
+Evaluate semantic redundancy,
+not literal text duplication.
+
+If the customer would learn essentially the same thing
+from the product identity and the candidate,
+redundancy_penalty must be high.
+
+Different capitalization, plurality, grammar,
+word order, or phrasing does not reduce semantic redundancy.
+
+
+3. selection_value
+
+How strongly this candidate helps the customer select
+the correct product, version, configuration, fitment,
+compatibility, size, model, part number,
+or other purchase-critical option.
+
+100 means omission creates a very high risk
+of selecting the wrong product or configuration.
+
+0 means the information has little or no role
+in selecting the correct product.
+
+Do not automatically give identifiers high scores.
+
+Selection value must depend on the current product
+and actual buyer decision.
+
+
+==================================================
+Mandatory Incremental Evaluation Order
+==================================================
+
+The following evaluation order is mandatory.
+
+STEP 1:
+Treat the primary IDENTITY candidate
+as already communicated.
+
+STEP 2:
+For every later candidate,
+compare its semantic meaning against the IDENTITY first.
+
+STEP 3:
+Then compare it against earlier higher-priority candidates
+that are likely to appear before it.
+
+STEP 4:
+Identify exactly what meaning remains genuinely new.
+
+STEP 5:
+Score new_information and redundancy_penalty
+based only on that remaining incremental meaning.
+
+
+Do not evaluate a later candidate
+as if it exists independently from the title identity.
+
+
+==================================================
+Partial Overlap Rule
+==================================================
+
+When a candidate contains both:
+
+- information already communicated
+and
+- one genuinely new verified fact
+
+do NOT treat the entire candidate as new.
+
+The repeated portion contributes no incremental information.
+
+Only the additional verified meaning contributes
+to new_information.
+
+The candidate may still have title value,
+but its incremental score must reflect
+only what the customer learns beyond existing information.
+
+
+==================================================
+Required Candidate Rule
+==================================================
+
+Incremental redundancy must also influence required status.
+
+A candidate must NOT be marked required
+only because its standalone search value,
+purchase value, or differentiation value is high.
+
+If most of its meaning is already communicated
+by the required product identity,
+the candidate should normally be:
+
+required = false
+
+unless it contains a separate purchase-critical
+or selection-critical verified fact
+that would be lost if the candidate were omitted.
+
+
+==================================================
+Important Separation of Responsibilities
+==================================================
+
+Standalone scores evaluate:
+
+"How valuable is this information by itself?"
+
+Incremental value evaluates:
+
+"How much additional value does this information contribute
+after stronger information is already present?"
+
+Do NOT lower standalone scores merely because of overlap.
+
+Represent overlap through:
+
+- lower new_information
+- higher redundancy_penalty
+
+The downstream Strategy normalizer will apply
+the incremental adjustment deterministically.
 
 ==================================================
 20. Scoring Rules
@@ -1139,6 +1298,35 @@ should generally appear before lower-value candidates.
 
 When candidates have similar strategic importance,
 the five scoring dimensions should determine their relative order.
+==================================================
+Incremental Consistency Check
+==================================================
+
+Before returning the final JSON,
+review every non-IDENTITY candidate.
+
+Check:
+
+1. Does its meaning substantially overlap
+   with the IDENTITY candidate?
+
+2. If yes, is new_information appropriately reduced?
+
+3. If yes, is redundancy_penalty appropriately increased?
+
+4. If most of the meaning is already preserved elsewhere,
+   is required correctly set to false unless a separate
+   selection-critical fact would otherwise be lost?
+
+Do not return a candidate with:
+
+- very high new_information
+- near-zero redundancy_penalty
+
+when most of its meaning is already communicated
+by the required product identity.
+
+Correct inconsistent scores before returning JSON.
 ==================================================
 22. Output Structure
 ==================================================
