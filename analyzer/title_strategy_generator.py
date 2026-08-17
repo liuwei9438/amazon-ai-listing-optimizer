@@ -25,8 +25,106 @@ class TitleStrategyGenerator:
         client = OpenAI(
             api_key=api_key
         )
+        # =================================================
+        # Title Strategy Input
+        #
+        # Title Strategy 只读取已经标准化后的统一输入。
+        #
+        # 不再直接读取：
+        # - product_identity
+        # - product_knowledge
+        # - compatibility
+        # - fact_lock
+        # - basic_info
+        #
+        # 避免多个事实来源重新产生歧义。
+        # =================================================
+
+        strategy_input = profile.get(
+            "title_strategy_input",
+            {},
+        )
 
 
+        if not isinstance(
+            strategy_input,
+            dict,
+        ):
+
+            raise TitleStrategyError(
+                "title_strategy_input must be a dictionary"
+            )
+
+
+        if not strategy_input:
+
+            raise TitleStrategyError(
+                "title_strategy_input is missing"
+            )
+                    locked = strategy_input.get(
+            "locked",
+            {},
+        )
+
+
+        if not isinstance(
+            locked,
+            dict,
+        ):
+
+            raise TitleStrategyError(
+                "title_strategy_input.locked must be a dictionary"
+            )
+
+
+        locked_identity = locked.get(
+            "identity",
+            {},
+        )
+
+
+        if not isinstance(
+            locked_identity,
+            dict,
+        ):
+
+            raise TitleStrategyError(
+                "title_strategy_input.locked.identity must be a dictionary"
+            )
+
+
+        locked_identity_text = str(
+            locked_identity.get(
+                "text",
+                "",
+            )
+            or
+            ""
+        ).strip()
+
+
+        if not locked_identity_text:
+
+            raise TitleStrategyError(
+                "title_strategy_input.locked.identity.text is missing"
+            )
+        strategy_payload = dict(
+            strategy_input
+        )
+
+
+        strategy_payload[
+            "title_constraints"
+        ] = {
+            "marketplace":
+                "Amazon",
+
+            "max_title_length":
+                75,
+
+            "objective":
+                "maximize purchase-relevant information within the title limit",
+        }
         # =================================================
         # 产品身份整理
         #
@@ -108,92 +206,6 @@ class TitleStrategyGenerator:
         }
 
 
-        product_context = {
-
-
-            # 产品身份候选
-            "product_identity_candidates":
-                identity_candidates,
-
-
-            # 产品知识
-            # 保留用于理解功能和特征
-            "product_knowledge":
-                product_knowledge,
-
-
-            # 基础信息
-            "basic_info":
-                profile.get(
-                    "basic_info",
-                    {}
-                ),
-
-
-            # 标题信息
-            # 包含高价值卖点
-            "title_information":
-                profile.get(
-                    "title_information",
-                    {}
-                ),
-
-
-            # 兼容信息
-            "compatibility":
-                profile.get(
-                    "compatibility",
-                    {}
-                ),
-
-
-            # 规格
-            "specifications":
-                profile.get(
-                    "specifications",
-                    {}
-                ),
-
-
-            # 属性
-            "attributes":
-                profile.get(
-                    "attributes",
-                    {}
-                ),
-
-
-            # 事实锁定
-            "fact_lock":
-                profile.get(
-                    "fact_lock",
-                    {}
-                ),
-
-
-            # SEO
-            "seo":
-                profile.get(
-                    "seo",
-                    {}
-                ),
-
-
-            # 标题限制
-            "title_constraints":
-                {
-                    "marketplace":
-                        "Amazon",
-
-                    "max_title_length":
-                        75,
-
-                    "objective":
-                        "maximize purchase-relevant information within the title limit",
-                },
-
-        }
-
 
         response = client.chat.completions.create(
 
@@ -217,7 +229,7 @@ class TitleStrategyGenerator:
 
                     "content":
                         json.dumps(
-                            product_context,
+                            strategy_payload,
                             ensure_ascii=False,
                             indent=2,
                         ),
