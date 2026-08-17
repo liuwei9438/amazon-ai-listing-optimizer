@@ -642,7 +642,152 @@ class TitleStrategyGenerator:
                         reason,
                 }
             )
+        # =============================================
+        # Candidate Final Ordering
+        #
+        # Title Strategy AI 负责：
+        # - 语义判断
+        # - priority
+        # - required
+        # - incremental value
+        #
+        # Normalizer 负责：
+        # - final_score
+        # - adjusted_score
+        # - 将这些确定性结果转化为最终候选顺序
+        #
+        # TitleGenerator 不再重新排序。
+        # =============================================
 
+        priority_rank = {
+            "S": 0,
+            "A": 1,
+            "B": 2,
+            "C": 3,
+            "D": 4,
+        }
+
+
+        def candidate_sort_key(
+            item,
+        ):
+
+            candidate_type = str(
+                item.get(
+                    "type",
+                    "OTHER",
+                )
+                or
+                "OTHER"
+            ).upper()
+
+
+            required = item.get(
+                "required",
+                False,
+            )
+
+
+            if not isinstance(
+                required,
+                bool,
+            ):
+                required = False
+
+
+            try:
+
+                adjusted_score = float(
+                    item.get(
+                        "adjusted_score",
+                        0,
+                    )
+                    or
+                    0
+                )
+
+            except (
+                TypeError,
+                ValueError,
+            ):
+
+                adjusted_score = 0.0
+
+
+            priority = str(
+                item.get(
+                    "priority",
+                    "D",
+                )
+                or
+                "D"
+            ).upper()
+
+
+            # =========================================
+            # Group 0
+            #
+            # Primary required identity
+            #
+            # 必须永远位于标题最前面。
+            # =========================================
+
+            if (
+                candidate_type
+                ==
+                "IDENTITY"
+                and
+                required
+            ):
+
+                group = 0
+
+
+            # =========================================
+            # Group 1
+            #
+            # 其他 required 候选
+            #
+            # 例如：
+            # compatibility
+            # model
+            # part number
+            # 关键规格
+            # =========================================
+
+            elif required:
+
+                group = 1
+
+
+            # =========================================
+            # Group 2
+            #
+            # 可选候选
+            # =========================================
+
+            else:
+
+                group = 2
+
+
+            return (
+                group,
+
+                # adjusted_score 是组内核心排序依据
+                -adjusted_score,
+
+                # priority 只作为辅助排序
+                priority_rank.get(
+                    priority,
+                    99,
+                ),
+            )
+
+
+        normalized_candidates.sort(
+            key=candidate_sort_key
+        )
         result[
             "title_candidates"
         ] = normalized_candidates
