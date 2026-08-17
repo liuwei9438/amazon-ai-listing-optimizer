@@ -28,6 +28,10 @@ from understanding.identity_decision import (
 from compliance.brand_protection import protect_text
 
 from core.product_knowledge import ProductKnowledgeBuilder
+from core.knowledge_normalizer import (
+    KnowledgeNormalizer,
+    KnowledgeNormalizerError,
+)
 from core.title_planner import TitlePlanner
 
 from generator.highlight_generator import HighlightGenerator
@@ -382,6 +386,73 @@ def process_batch(
                 "identity_decision"
             ] = round(
                 time.time() - identity_start,
+                2
+            )
+            # =====================
+            # Knowledge Normalization
+            # =====================
+
+            normalize_start = time.time()
+
+
+            try:
+
+                normalized_knowledge = (
+                    KnowledgeNormalizer.normalize(
+                        profile
+                    )
+                )
+
+
+                if not isinstance(
+                    normalized_knowledge,
+                    dict,
+                ):
+
+                    normalized_knowledge = {}
+
+
+                profile[
+                    "normalized_knowledge"
+                ] = normalized_knowledge
+
+
+                profile[
+                    "knowledge_normalization_error"
+                ] = ""
+
+
+            except Exception as normalize_exc:
+
+                # Normalization失败不能影响整个产品。
+                #
+                # Raw Knowledge和Identity Decision仍然保留。
+
+                normalized_knowledge = {}
+
+
+                profile[
+                    "normalized_knowledge"
+                ] = {}
+
+
+                profile[
+                    "knowledge_normalization_error"
+                ] = str(
+                    normalize_exc
+                )
+
+
+                print(
+                    "KNOWLEDGE NORMALIZATION FAILED:",
+                    normalize_exc,
+                )
+
+
+            timing[
+                "knowledge_normalization"
+            ] = round(
+                time.time() - normalize_start,
                 2
             )
             # =====================
