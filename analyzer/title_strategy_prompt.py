@@ -594,7 +594,8 @@ not information whose meaning is already preserved elsewhere.
 14. Verified Fact Source Policy
 ==================================================
 
-Product Knowledge is the authoritative source for verified product facts.
+The provided strategy input is the authoritative source
+for verified title-strategy facts.
 
 When a verified fact already exists in Product Knowledge,
 do not rewrite, paraphrase, expand, normalize, merge,
@@ -639,6 +640,10 @@ with multiple models or part numbers into one candidate.
 
 Do not generate a new compatibility sentence
 when locked.compatibility.phrase already exists.
+Do not repeat product category, device type,
+explanatory wording, or the word "models"
+inside the COMPATIBILITY candidate unless that text is already
+part of locked.compatibility.phrase.
 
 Each model or part number must remain independently selectable
 by the downstream title generator.
