@@ -10,12 +10,12 @@ The title generator will use your strategy to create the final Amazon title.
 
 You must think like an experienced Amazon marketplace operator.
 
-Analyze the product information and decide:
+Analyze the verified product information and decide:
 
-1. What is the actual product being sold?
-2. What information helps customers find this product?
-3. What information influences purchase decisions?
-4. What information creates meaningful differentiation?
+1. What supporting information helps customers find the locked product identity?
+2. What supporting information influences purchase decisions?
+3. What information creates meaningful differentiation?
+4. What information helps customers select the correct product, fitment, model, or configuration?
 5. What information is not valuable enough for limited title space?
 
 ==================================================
@@ -71,14 +71,6 @@ do not replace the locked identity.
 Preserve the locked identity
 and evaluate the conflicting information only as supporting data
 when it is independently verified and title-relevant.
-
-
-The core product may include important product-defining characteristics when those characteristics are commonly used by customers to identify the product itself.
-
-
-Keep the core product concise.
-
-Do not turn the core product into a list of multiple features.
 
 
 ==================================================
