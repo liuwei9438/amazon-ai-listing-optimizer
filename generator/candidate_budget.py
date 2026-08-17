@@ -54,7 +54,71 @@ class CandidateBudgetEngine:
             .strip()
             .split()
         )
+    @staticmethod
+    def compress_identity(
+        text,
+        max_length=75,
+    ) -> str:
+        """
+        Identity 最终安全兜底。
 
+        只用于：
+        required=True 的 IDENTITY。
+
+        不改变事实，
+        不重新生成文本。
+
+        只按完整单词截断。
+        """
+
+        text = (
+            CandidateBudgetEngine
+            .normalize_text(
+                text
+            )
+        )
+
+
+        if not text:
+            return ""
+
+
+        if len(text) <= max_length:
+            return text
+
+
+        words = text.split()
+
+        result = []
+
+        length = 0
+
+
+        for word in words:
+
+            next_length = (
+                length
+                +
+                len(word)
+                +
+                1
+            )
+
+
+            if next_length > max_length:
+                break
+
+
+            result.append(
+                word
+            )
+
+            length = next_length
+
+
+        return " ".join(
+            result
+        ).strip()
 
     @staticmethod
     def build_title(
@@ -446,7 +510,94 @@ class CandidateBudgetEngine:
                                     short_text,
                                 ),
                         }
+        # =============================================
+        # 第三选择：
+        #
+        # Required Identity 安全兜底
+        #
+        # 防止：
+        #
+        # IDENTITY text >75
+        # short_text为空
+        #
+        # 导致整个标题为空。
+        #
+        # 这里只允许 Identity 使用。
+        # =============================================
 
+
+        candidate_type = str(
+            candidate.get(
+                "type",
+                "",
+            )
+            or
+            ""
+        ).upper()
+
+
+        required = candidate.get(
+            "required",
+            False,
+        )
+
+
+        if (
+            candidate_type
+            ==
+            "IDENTITY"
+
+            and
+
+            required
+            is True
+        ):
+
+            fallback_text = (
+                CandidateBudgetEngine
+                .compress_identity(
+                    text,
+                    max_length,
+                )
+            )
+
+
+            if fallback_text:
+
+                if (
+                    CandidateBudgetEngine
+                    .fits(
+                        parts,
+                        fallback_text,
+                        max_length=max_length,
+                    )
+                ):
+
+                    return {
+
+                        "accepted":
+                            True,
+
+
+                        "selected_text":
+                            fallback_text,
+
+
+                        "source":
+                            "identity_fallback",
+
+
+                        "reason":
+                            "accepted_identity_fallback",
+
+
+                        "character_count_after":
+                            CandidateBudgetEngine
+                            .calculate_length(
+                                parts,
+                                fallback_text,
+                            ),
+                    }
 
         # =============================================
         # 两个版本都放不下
