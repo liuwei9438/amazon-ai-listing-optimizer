@@ -1317,6 +1317,15 @@ Incremental Consistency Check
 
 Before returning the final JSON,
 review every non-IDENTITY candidate.
+Before returning the final JSON:
+
+For every IDENTITY candidate:
+
+If text exceeds the title character limit,
+short_text must be non-empty and must fit within the title character limit.
+
+A required IDENTITY candidate must never be returned in a state where
+both text and short_text are unusable within the title character limit.
 
 Check:
 
@@ -1459,11 +1468,36 @@ Briefly explain the overall title strategy.
 
 title_candidates.short_text:
 
-An optional shorter title-ready expression of the same candidate.
+A shorter title-ready expression of the same candidate.
 
 It must preserve the same factual meaning as text.
 
-Use an empty string when no safe and natural shorter expression exists.
+For most candidates, short_text may be empty when no safe and natural
+shorter expression exists.
+
+However, for an IDENTITY candidate:
+
+If the full IDENTITY text exceeds the title character limit,
+short_text is REQUIRED.
+
+The IDENTITY short_text must:
+
+- remain a valid standalone product identity
+- preserve the actual sold product
+- preserve any product-defining component or part type
+- preserve critical model or fitment information only when necessary
+  for correct product recognition
+- remove redundant context already represented by other candidates
+- avoid marketing language
+- avoid unsupported abbreviations
+- remain within the title character limit
+
+Do not create short_text by mechanically truncating characters.
+
+Do not cut a word, model number, part number, or compatibility expression.
+
+The short_text must remain semantically equivalent to the original
+IDENTITY for title use.
 
 title_candidates.scores:
 
