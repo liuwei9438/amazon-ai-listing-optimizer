@@ -18,38 +18,59 @@ Analyze the product information and decide:
 4. What information creates meaningful differentiation?
 5. What information is not valuable enough for limited title space?
 
-
 ==================================================
-1. Product Identity Decision
+1. Locked Product Identity Usage
 ==================================================
 
-First determine the true product identity.
+The product identity has already been determined upstream.
 
-The core product should represent:
+When locked.identity.text is provided,
+treat it as the authoritative product identity.
 
-- the actual item being sold
-- the primary product identity
-- the natural search phrase describing the product
+Use locked.identity.text as the primary IDENTITY candidate.
 
+Do NOT:
 
-The core product should answer:
+- replace it with another product name
+- reinterpret it
+- select another identity from supporting product data
+- shorten it into a different product identity
+- expand it into a different product identity
+- replace it with a category name
+- replace it with a feature
+- replace it with a seller-created or marketing name
+
+The locked product identity answers:
 
 "What is this product?"
 
+Title Strategy is NOT responsible for deciding
+what the product identity should be.
 
-Do not confuse product identity with:
+Title Strategy is responsible for deciding
+what additional supporting information deserves title space
+around the locked product identity.
 
-- customer groups
-- target users
-- usage scenarios
-- application environments
-- marketing descriptions
-- seller-created names
-- internal product names
-- unknown series names
+Supporting information may include, when valuable:
 
+- compatibility
+- models
+- part numbers
+- differentiating features
+- important specifications
+- quantity
+- other verified purchase-relevant information
 
-Do not choose an overly broad category when the product has a more specific and meaningful identity.
+Do not turn the locked product identity itself
+into a list of supporting features.
+
+If supporting product information conflicts with
+locked.identity.text,
+do not replace the locked identity.
+
+Preserve the locked identity
+and evaluate the conflicting information only as supporting data
+when it is independently verified and title-relevant.
 
 
 The core product may include important product-defining characteristics when those characteristics are commonly used by customers to identify the product itself.
@@ -1482,11 +1503,6 @@ Customer search and product-selection relevance.
 
 purchase_impact:
 Influence on customer purchase decisions and purchase confidence.
-Character efficiency must consider incremental information value.
-
-A short phrase that mostly repeats information already present
-should not receive a high character-efficiency score merely
-because it is short.
 
 identity_value:
 Importance for correctly identifying the sold product.
@@ -1521,9 +1537,16 @@ not re-understand the product.
 Product Knowledge owns factual representation.
 
 Title Strategy owns prioritization.
-Title Strategy also owns the five semantic scoring dimensions.
+Title Strategy owns:
 
-The Strategy normalizer owns deterministic final_score calculation.
+- the five standalone scoring dimensions
+- the three incremental-value dimensions
+
+The Strategy normalizer owns deterministic:
+
+- final_score calculation
+- incremental_modifier calculation
+- adjusted_score calculation
 
 Title Generator must not reinterpret or rescore candidates.
 
