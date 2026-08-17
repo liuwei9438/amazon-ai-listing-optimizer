@@ -625,14 +625,17 @@ class TitleStrategyGenerator:
             )
             raw_incremental = candidate.get(
                 "incremental_value",
-                {},
+                None,
             )
 
 
-            if not isinstance(
+            has_incremental = isinstance(
                 raw_incremental,
                 dict,
-            ):
+            )
+
+
+            if not has_incremental:
 
                 raw_incremental = {}
 
@@ -663,48 +666,57 @@ class TitleStrategyGenerator:
                         )
                     ),
             }
-            incremental_modifier = (
-
-                incremental_value[
-                    "new_information"
-                ]
-                * 0.50
-
-                +
-
-                incremental_value[
-                    "selection_value"
-                ]
-                * 0.30
-
-                +
-
-                (
-                    100
-                    -
+            if has_incremental:
+    
+                incremental_modifier = (
+    
                     incremental_value[
-                        "redundancy_penalty"
+                        "new_information"
                     ]
-                )
-                * 0.20
-            )
-
-
-            adjusted_score = round(
-
-                final_score
-                *
-                (
-                    0.50
+                    * 0.50
+    
                     +
+    
+                    incremental_value[
+                        "selection_value"
+                    ]
+                    * 0.30
+    
+                    +
+    
                     (
-                        incremental_modifier
-                        / 200.0
+                        100
+                        -
+                        incremental_value[
+                            "redundancy_penalty"
+                        ]
                     )
-                ),
-
-                1,
-            )
+                    * 0.20
+                )
+    
+    
+                adjusted_score = round(
+    
+                    final_score
+                    *
+                    (
+                        0.50
+                        +
+                        (
+                            incremental_modifier
+                            / 200.0
+                        )
+                    ),
+    
+                    1,
+                )
+    
+    
+            else:
+    
+                incremental_modifier = 100.0
+    
+                adjusted_score = final_score
             required = candidate.get(
                 "required",
                 False
