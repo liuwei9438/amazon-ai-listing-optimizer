@@ -512,7 +512,7 @@ class TitleGenerator:
                     }
                 )
 
-            continue
+                continue
             if not isinstance(
                 candidate,
                 dict,
