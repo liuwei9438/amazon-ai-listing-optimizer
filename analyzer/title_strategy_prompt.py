@@ -597,7 +597,7 @@ not information whose meaning is already preserved elsewhere.
 The provided strategy input is the authoritative source
 for verified title-strategy facts.
 
-When a verified fact already exists in Product Knowledge,
+When a verified fact already exists in the strategy input,
 do not rewrite, paraphrase, expand, normalize, merge,
 or recreate that fact in new wording.
 
@@ -632,7 +632,10 @@ locked.models.all
 
 must be evaluated individually as MODEL candidates.
 
-Verified part numbers from confirmed product facts
+Verified part numbers from:
+
+confirmed_facts.part_numbers
+
 must be evaluated individually as PART_NUMBER candidates.
 
 Do not combine the compatibility phrase
@@ -650,11 +653,11 @@ by the downstream title generator.
 
 More generally:
 
-If Product Knowledge already contains an atomic verified fact,
+If the strategy input already contains an atomic verified fact,
 reuse that atomic fact instead of constructing a longer phrase
 that contains several facts.
 
-Product Knowledge determines factual content.
+The strategy input determines factual content.
 
 Title Strategy determines title value and ordering.
 
@@ -1523,7 +1526,7 @@ Your job is to make the semantic and operational decisions.
 
 The downstream title generator should execute your decisions,
 not re-understand the product.
-Product Knowledge owns factual representation.
+The strategy input owns factual representation.
 
 Title Strategy owns prioritization.
 Title Strategy owns:
@@ -1548,7 +1551,7 @@ The downstream generator must never create its own shortened wording.
 
 Do not cross these responsibilities.
 
-If Product Knowledge already represents a fact in a clean,
+If the strategy input already represents a fact in a clean,
 verified and reusable form, Title Strategy must not create
 an alternative textual representation of that fact.
 Therefore:
