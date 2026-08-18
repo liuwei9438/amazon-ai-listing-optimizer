@@ -182,28 +182,73 @@ Prefer an identity that fully describes the sold item
 over one that communicates only a partial product concept.
 
 
-3. Necessary device or application context
+3. Identity boundary correctness
+
+Prefer an identity that keeps
+independent product attributes separate.
+
+A longer expression is NOT more complete
+if its extra words actually belong to:
+
+- quantity
+- compatibility
+- model
+- part number
+- specification
+- material
+- color
+- feature
+
+Completeness means complete product identity,
+not complete product information.
+
+
+4. Necessary device or application context
 
 Determine whether the product name alone is sufficient.
 
 If customers need device, machine, equipment,
 or application context to understand what the product is,
 include that context in title_product_identity.
+CONTEXT NECESSITY TEST:
 
+Generic device or application context may remain
+inside title_product_identity only when removing it
+would make the product identity materially ambiguous
+or incomplete.
+
+Use the minimum context necessary.
+
+Do not include:
+
+- a specific compatible brand
+- a specific compatible model
+- a compatibility phrase
+
+merely to make the identity appear more complete.
+
+Necessary generic context describes
+what kind of product this is.
+
+Compatibility describes
+what specific brand, model, machine,
+or platform the product fits.
+
+Do not confuse these two roles.
 Include only context that materially improves
 product identification.
 
 Do not include context merely because it appears in SOURCE.
 
 
-4. Customer search relevance
+5. Customer search relevance
 
 Among identities that are equally accurate and complete,
 prefer the expression that most naturally matches
 how customers would identify or search for the product.
 
 
-5. Character efficiency
+6. Character efficiency
 
 Only after accuracy, completeness, necessary context,
 and search relevance are satisfied,
@@ -247,7 +292,38 @@ title_product_identity may contain:
 - the actual core product type
 - necessary product-defining component type
 - necessary device/application context
+IDENTITY SEPARABILITY TEST:
 
+Before finalizing title_product_identity,
+check whether each piece of information belongs
+to the physical product identity itself
+or to an independent downstream attribute.
+
+Ask:
+
+"Can this information be represented independently
+without changing what the physical product fundamentally is?"
+
+If YES,
+do not absorb it into title_product_identity.
+
+Independent downstream information includes:
+
+- quantity
+- compatibility brand
+- compatible model
+- part number
+- series number
+- dimensions
+- color
+- material
+- voltage
+- power
+- technical specifications
+- functional features
+
+These facts must remain separate
+so downstream title strategy can evaluate them independently.
 title_product_identity must not contain:
 
 - package quantity
@@ -294,8 +370,12 @@ Before returning title_product_identity, verify:
 3. Does it contain necessary product context?
 4. Is it neither too broad nor too narrow?
 5. Is it natural for customer search?
-6. Does it exclude compatibility, quantity,
-   identifiers, and secondary attributes?
+6. Does it exclude package quantity?
+7. Does it exclude compatibility brands and wording?
+8. Does it exclude compatible models and part numbers?
+9. Does it exclude independent specifications and features?
+10. Does every remaining context word help identify
+    what the physical product actually is?
 
 If a shorter identity fails any of these checks,
 use the more complete identity.
