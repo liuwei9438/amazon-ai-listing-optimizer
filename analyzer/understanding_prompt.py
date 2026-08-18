@@ -136,69 +136,169 @@ Do not include:
 - compatibility claims
 - application descriptions
 
-
 title_product_identity:
 
-Generate the concise product identity used for Amazon title generation.
+Select exactly ONE authoritative product identity
+for downstream Amazon title generation.
 
-This field represents only what the product is.
+This field must contain the single best expression of:
 
-Include:
-- core product type
-- necessary application object
+"What exactly is the customer buying?"
 
-Do not include:
-- compatible brands
-- compatibility wording
-- replacement wording
-- marketing words
-- seller categories
+Do not return alternative product identities.
 
-Examples:
+Do not return a list.
 
-Source:
-"Vacuum cleaner filter compatible with Kar-cher vacuum cleaners"
+Do not combine several synonymous product names.
 
-title_product_identity:
-"Vacuum Cleaner Filter"
+The selected title_product_identity becomes the authoritative
+product identity for all downstream title decisions.
 
 
-Source:
-"Projector lamp compatible with Epson projectors"
+IDENTITY SELECTION PRINCIPLE:
 
-title_product_identity:
-"Projector Lamp"
+When multiple valid ways of describing the product exist,
+evaluate them and select the ONE expression that provides
+the strongest overall product identification.
 
-This field should combine:
+Evaluate possible identity expressions in this order:
 
-- the core product type
-- necessary device/application context
+1. Product identification accuracy
 
-The purpose is to answer:
+Does the expression correctly identify
+the actual physical product being sold?
 
-"What is this product for?"
+An expression that identifies the wrong object,
+a broader category, or only part of the sold product
+must not be selected.
 
 
-Important:
+2. Product identity completeness
 
-Do not make it a category label.
+Does the expression communicate enough information
+for a customer to understand what the product actually is?
 
-Do not use broad seller categories.
+Prefer an identity that fully describes the sold item
+over one that communicates only a partial product concept.
 
-Do not use:
+
+3. Necessary device or application context
+
+Determine whether the product name alone is sufficient.
+
+If customers need device, machine, equipment,
+or application context to understand what the product is,
+include that context in title_product_identity.
+
+Include only context that materially improves
+product identification.
+
+Do not include context merely because it appears in SOURCE.
+
+
+4. Customer search relevance
+
+Among identities that are equally accurate and complete,
+prefer the expression that most naturally matches
+how customers would identify or search for the product.
+
+
+5. Character efficiency
+
+Only after accuracy, completeness, necessary context,
+and search relevance are satisfied,
+prefer the more character-efficient expression.
+
+Never choose a shorter identity if shortening it
+reduces product identification accuracy or completeness.
+
+
+OVER-BROAD IDENTITY RULE:
+
+Do not select an expression that only describes
+a broad category or generic product group.
+
+Examples of overly broad identity concepts include
+generic ideas such as:
 
 - parts
 - accessories
+- components
 - replacement parts
 
+when the actual sold product can be identified more precisely.
 
-Only include context that helps customers identify the product.
+
+OVER-NARROW IDENTITY RULE:
+
+Do not select an identity that describes only
+a partial product concept when necessary context is missing.
+
+If the core product type could reasonably refer
+to products used with many different devices or applications,
+include enough verified device/application context
+to make the sold product clear.
 
 
-Examples of logic:
+IDENTITY BOUNDARY:
 
-A product name alone may describe the component,
-but buyer_search_identity should describe the searchable product identity.
+title_product_identity may contain:
+
+- the actual core product type
+- necessary product-defining component type
+- necessary device/application context
+
+title_product_identity must not contain:
+
+- package quantity
+- compatible brand names
+- compatibility wording
+- compatible model numbers
+- part numbers unless inseparable from product identity
+- material unless inseparable from product identity
+- color
+- dimensions
+- voltage
+- power
+- secondary features
+- marketing wording
+- seller-created categories
+- promotional wording
+
+
+SINGLE IDENTITY RULE:
+
+There must be exactly ONE title_product_identity.
+
+Other valid synonymous, broader, narrower,
+or alternative search expressions must not be merged
+into title_product_identity.
+
+They may remain available elsewhere in the Product Profile
+for:
+
+- bullet points
+- SEO keywords
+- backend search terms
+- supporting product information
+
+but they must not become additional title identities.
+
+
+FINAL CHECK:
+
+Before returning title_product_identity, verify:
+
+1. Does it accurately identify the sold product?
+2. Is it sufficiently complete?
+3. Does it contain necessary product context?
+4. Is it neither too broad nor too narrow?
+5. Is it natural for customer search?
+6. Does it exclude compatibility, quantity,
+   identifiers, and secondary attributes?
+
+If a shorter identity fails any of these checks,
+use the more complete identity.
 
 
 
