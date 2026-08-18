@@ -583,6 +583,11 @@ Incremental redundancy must also be considered.
 A candidate that substantially repeats information
 already contained in the required IDENTITY candidate
 should normally NOT be required.
+A candidate cannot be required only because it contains a popular,
+specific, or attractive feature.
+
+Required status depends on whether the customer loses essential
+understanding or selection ability when the candidate is removed.
 
 Do not preserve a redundant candidate as required
 merely because the information has high standalone value.
@@ -1018,7 +1023,33 @@ The key question is:
 
 "What new customer-useful meaning does this candidate communicate
 that has NOT already been communicated?"
+Semantic Decomposition Rule:
 
+Before scoring incremental value:
+
+First decompose every candidate into:
+
+1. Meaning already communicated by the locked identity
+2. Meaning newly introduced by the candidate
+
+Only the newly introduced meaning can contribute to:
+
+- new_information
+- selection_value
+- differentiation_value
+
+
+The repeated semantic portion must not contribute to incremental value.
+
+Evaluation order is mandatory:
+
+Candidate meaning
+↓
+Remove covered meaning
+↓
+Identify remaining new meaning
+↓
+Score remaining meaning
 
 ==================================================
 Semantic Coverage Rule
@@ -1154,7 +1185,20 @@ Do not automatically give identifiers high scores.
 
 Selection value must depend on the current product
 and actual buyer decision.
+Important:
 
+Do not calculate incremental value by evaluating the whole candidate first
+and then subtracting redundancy.
+
+Do not think:
+
+"this candidate is valuable, but partly repeated."
+
+Instead:
+
+First remove the repeated meaning.
+
+Then evaluate only the remaining uncovered meaning.
 
 ==================================================
 Mandatory Incremental Evaluation Order
