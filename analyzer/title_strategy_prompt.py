@@ -155,7 +155,23 @@ Only select information with strong overall value.
 ==================================================
 4. Title Information Priority
 ==================================================
+Package Quantity Placement Rule:
 
+Verified package quantity is a fixed title structure element,
+not a competitive title candidate.
+
+When package quantity is clearly supported by Product Knowledge:
+
+- create exactly one QUANTITY candidate
+- preserve the verified quantity fact
+- do not omit it because of search-value scoring
+- do not rank it against FEATURE, MODEL, SPECIFICATION, or MATERIAL
+- the downstream Title Generator will place it before IDENTITY
+
+QUANTITY represents package count or set count only.
+
+Do not treat technical numeric specifications such as voltage,
+power, size, capacity, dimensions, or performance levels as QUANTITY.
 When selecting title information, prioritize:
 
 
@@ -171,10 +187,7 @@ When selecting title information, prioritize:
 4. Specifications that influence purchase decisions
 
 
-5. Quantity or package information when meaningful
-
-
-6. Model numbers, part numbers, or compatibility information when valuable
+5. Model numbers, part numbers, or compatibility information when valuable
 
 
 For replacement parts and compatible products:
@@ -334,15 +347,22 @@ Do not prioritize or recommend customer groups, target users, or usage scenarios
 Customer groups and usage scenarios should normally be considered supporting information, not core title elements.
 
 
-Normally consider:
+Plan the title structure in two stages.
 
-1. Product identity
+Fixed prefix:
 
-2. Highest-value differentiating information
+1. Verified package quantity, when available
 
-3. Important specifications
+Then ranked title information:
 
-4. Quantity, model, or compatibility information when relevant
+2. Product identity
+3. Highest-value supporting information
+4. Important compatibility or identifiers
+5. Important specifications or differentiating features
+
+Package quantity does not compete with the ranked candidates.
+
+When present, it is reserved for the beginning of the final title.
 
 
 Adjust the structure according to:
@@ -442,9 +462,19 @@ customer understanding or purchase decisions.
 
 QUANTITY
 
-Meaningful quantity, pack count, set count,
-or package quantity information.
+Verified package count, item count, pack count, or set count.
 
+QUANTITY is a fixed title-prefix semantic type.
+
+When a verified package quantity exists:
+
+- create one QUANTITY candidate
+- preserve the quantity fact
+- do not use QUANTITY for technical numeric specifications
+- do not combine quantity with IDENTITY
+- do not combine quantity with another candidate
+
+The Title Generator will place QUANTITY before IDENTITY.
 
 MATERIAL
 
@@ -567,7 +597,16 @@ Use only when omitting the candidate would materially reduce:
 - purchase confidence
 - critical search relevance
 
+Special rule for QUANTITY:
 
+A verified package quantity candidate must use:
+
+required = true
+
+This does not mean QUANTITY has the highest semantic priority.
+
+It means package quantity is a fixed title structure element
+and must be preserved when clearly supported by Product Knowledge.
 required = false
 
 Use when the information is valuable,
