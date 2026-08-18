@@ -729,7 +729,7 @@ class TitleGenerator:
             candidates
         ):
 
-            # ---------------------------------------------
+                        # ---------------------------------------------
             # Candidate必须是dict
             # ---------------------------------------------
 
@@ -737,9 +737,6 @@ class TitleGenerator:
                 candidate,
                 dict,
             ):
-            # QUANTITY 已经作为固定前缀处理
-            if index == quantity_index:
-                continue
 
                 rejected_candidates.append(
                     {
@@ -757,6 +754,23 @@ class TitleGenerator:
                 continue
 
 
+            # ---------------------------------------------
+            # QUANTITY 已经作为固定前缀处理
+            #
+            # 所有 QUANTITY Candidate 都不能再次进入
+            # 普通标题候选流程，否则数量会重复。
+            # ---------------------------------------------
+
+            candidate_type_for_skip = normalize_text(
+                candidate.get(
+                    "type",
+                    "",
+                )
+            ).upper()
+
+
+            if candidate_type_for_skip == "QUANTITY":
+                continue
             # ---------------------------------------------
             # 读取Schema字段
             # ---------------------------------------------
