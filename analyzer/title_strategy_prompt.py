@@ -1472,11 +1472,23 @@ Use exactly this JSON structure:
                 "character_efficiency": 0
             },
         
-            "incremental_value": {
-                "new_information": 0,
-                "redundancy_penalty": 0,
-                "selection_value": 0
+            "incremental_analysis": {
+
+                "covered_meaning": "",
+                
+                "new_meaning": "",
+                
+                "coverage_status": ""
             },
+                
+            "incremental_value": {
+                
+                "new_information":0,
+                
+                "redundancy_penalty":0,
+                
+                "selection_value":0
+            }
         
             "required": false,
             "reason": ""
