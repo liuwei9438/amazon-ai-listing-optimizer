@@ -1473,22 +1473,16 @@ Use exactly this JSON structure:
             },
         
             "incremental_analysis": {
-
+                "coverage_status": "",
                 "covered_meaning": "",
-                
-                "new_meaning": "",
-                
-                "coverage_status": ""
+                "new_meaning": ""
             },
-                
+        
             "incremental_value": {
-                
-                "new_information":0,
-                
-                "redundancy_penalty":0,
-                
-                "selection_value":0
-            }
+                "new_information": 0,
+                "redundancy_penalty": 0,
+                "selection_value": 0
+            },
         
             "required": false,
             "reason": ""
@@ -1593,6 +1587,34 @@ IDENTITY for title use.
 title_candidates.scores:
 
 Five independent 0-100 evaluations of the candidate's title value.
+title_candidates.incremental_analysis:
+
+A structured semantic decomposition performed before incremental scoring.
+
+coverage_status:
+
+The degree to which the candidate's meaning is already represented.
+
+Allowed values:
+
+NEW
+PARTIALLY_COVERED
+SUBSTANTIALLY_COVERED
+FULLY_REDUNDANT
+
+
+covered_meaning:
+
+The meaning already communicated by the locked identity or earlier stronger candidates.
+
+Use an empty string when no meaningful semantic overlap exists.
+
+
+new_meaning:
+
+Only the genuinely new meaning introduced by the candidate after semantic overlap is removed.
+
+Use an empty string when no meaningful new information remains.
 title_candidates.incremental_value:
 
 A second-stage evaluation describing how much additional title value
