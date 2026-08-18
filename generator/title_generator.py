@@ -594,6 +594,126 @@ class TitleGenerator:
 
             return False
         # =================================================
+        # 7. Package Quantity Fixed Prefix
+        #
+        # QUANTITY 是固定标题前缀，
+        # 不参与 Strategy Candidate 的预算竞争顺序。
+        #
+        # 规则：
+        #
+        # QUANTITY + IDENTITY + ...
+        #
+        # Strategy 仍负责判断什么是真实数量。
+        # Generator 不重新识别数量。
+        # =================================================
+
+        quantity_candidate = None
+        quantity_index = None
+
+
+        for index, candidate in enumerate(
+            candidates
+        ):
+
+            if not isinstance(
+                candidate,
+                dict,
+            ):
+                continue
+
+
+            candidate_type = normalize_text(
+                candidate.get(
+                    "type",
+                    "",
+                )
+            ).upper()
+
+
+            if candidate_type != "QUANTITY":
+                continue
+
+
+            quantity_text = normalize_text(
+                candidate.get(
+                    "text",
+                    "",
+                )
+            )
+
+
+            if not quantity_text:
+                continue
+
+
+            quantity_candidate = candidate
+            quantity_index = index
+
+            # 正常情况下只允许一个 QUANTITY Candidate
+            break
+                    if quantity_candidate is not None:
+
+            quantity_text = normalize_text(
+                quantity_candidate.get(
+                    "text",
+                    "",
+                )
+            )
+
+
+            if quantity_text:
+
+                title_parts.append(
+                    quantity_text
+                )
+
+
+                accepted_candidates.append(
+                    {
+                        "index":
+                            quantity_index,
+
+                        "text":
+                            quantity_text,
+
+                        "short_text":
+                            normalize_text(
+                                quantity_candidate.get(
+                                    "short_text",
+                                    "",
+                                )
+                            ),
+
+                        "selected_text":
+                            quantity_text,
+
+                        "selected_source":
+                            "fixed_quantity_prefix",
+
+                        "type":
+                            "QUANTITY",
+
+                        "priority":
+                            normalize_text(
+                                quantity_candidate.get(
+                                    "priority",
+                                    "",
+                                )
+                            ).upper(),
+
+                        "required":
+                            True,
+
+                        "reason":
+                            "fixed_quantity_prefix",
+
+                        "character_count_after":
+                            len(
+                                current_title()
+                            ),
+                    }
+                )
+        # =================================================
         # 7. 逐个执行 title_candidates
         #
         # 极其重要：
@@ -617,6 +737,9 @@ class TitleGenerator:
                 candidate,
                 dict,
             ):
+            # QUANTITY 已经作为固定前缀处理
+            if index == quantity_index:
+                continue
 
                 rejected_candidates.append(
                     {
