@@ -967,38 +967,6 @@ for the title space it consumes.
 ==================================================
 Incremental Candidate Value
 ==================================================
-Semantic Decomposition Rule:
-
-Before assigning incremental_value to any candidate:
-
-First decompose the candidate into:
-
-1. semantic information already provided by the locked identity
-2. genuinely additional information introduced by the candidate
-
-Only the second part can contribute to:
-
-- new_information
-- selection_value
-- differentiation_value
-
-
-The repeated semantic portion must not contribute to incremental value.
-
-Do not evaluate a candidate as a complete phrase.
-
-Evaluate only the remaining incremental meaning after removing covered concepts.
-
-The evaluation order is mandatory:
-
-Candidate meaning
-        ↓
-Remove meaning already represented
-        ↓
-Identify remaining new meaning
-        ↓
-Score remaining meaning
-
 After evaluating each candidate's standalone title value,
 evaluate how much ADDITIONAL customer-useful meaning it contributes
 after information already established earlier in the title strategy.
@@ -1185,20 +1153,6 @@ Do not automatically give identifiers high scores.
 
 Selection value must depend on the current product
 and actual buyer decision.
-Important:
-
-Do not calculate incremental value by evaluating the whole candidate first
-and then subtracting redundancy.
-
-Do not think:
-
-"this candidate is valuable, but partly repeated."
-
-Instead:
-
-First remove the repeated meaning.
-
-Then evaluate only the remaining uncovered meaning.
 
 ==================================================
 Mandatory Incremental Evaluation Order
@@ -1426,7 +1380,19 @@ Do not return a candidate with:
 
 when most of its meaning is already communicated
 by the required product identity.
+For every non-IDENTITY candidate:
 
+The coverage status and semantic explanation written in reason
+must be consistent with incremental_value and required.
+
+If reason identifies most of the candidate meaning as already covered,
+do not return high new_information with low redundancy_penalty.
+
+If reason identifies no meaningful new information,
+the candidate should normally be optional and low priority unless
+it preserves separate selection-critical information.
+
+Correct any inconsistency before returning the final JSON.
 Correct inconsistent scores before returning JSON.
 ==================================================
 22. Output Structure
@@ -1659,10 +1625,37 @@ using a fixed deterministic formula.
 
 title_candidates.reason:
 
-Briefly explain why this specific candidate
-received its semantic type and priority.
+Provide a concise and auditable explanation of the candidate decision.
 
-Keep candidate reasons concise.
+For IDENTITY candidates:
+
+Briefly explain why the candidate represents the locked product identity.
+
+For every non-IDENTITY candidate, reason must state:
+
+1. semantic coverage status
+2. what meaning is already covered
+3. what genuinely new meaning remains
+4. why the candidate is required or optional
+
+Use one of these coverage labels:
+
+NEW
+PARTIALLY_COVERED
+SUBSTANTIALLY_COVERED
+FULLY_REDUNDANT
+
+Keep the explanation concise.
+
+Do not provide hidden reasoning or a long analysis.
+
+The purpose of reason is only to make the final semantic decision
+verifiable and consistent with:
+
+- incremental_value.new_information
+- incremental_value.redundancy_penalty
+- incremental_value.selection_value
+- required
 
 
 ==================================================
