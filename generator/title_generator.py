@@ -651,7 +651,7 @@ class TitleGenerator:
 
             # 正常情况下只允许一个 QUANTITY Candidate
             break
-                    if quantity_candidate is not None:
+            if quantity_candidate is not None:
 
             quantity_text = normalize_text(
                 quantity_candidate.get(
