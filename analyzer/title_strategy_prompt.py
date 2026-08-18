@@ -962,6 +962,37 @@ for the title space it consumes.
 ==================================================
 Incremental Candidate Value
 ==================================================
+Semantic Decomposition Rule:
+
+Before assigning incremental_value to any candidate:
+
+First decompose the candidate into:
+
+1. semantic information already provided by the locked identity
+2. genuinely additional information introduced by the candidate
+
+Only the second part can contribute to:
+
+- new_information
+- selection_value
+- differentiation_value
+
+
+The repeated semantic portion must not contribute to incremental value.
+
+Do not evaluate a candidate as a complete phrase.
+
+Evaluate only the remaining incremental meaning after removing covered concepts.
+
+The evaluation order is mandatory:
+
+Candidate meaning
+        ↓
+Remove meaning already represented
+        ↓
+Identify remaining new meaning
+        ↓
+Score remaining meaning
 
 After evaluating each candidate's standalone title value,
 evaluate how much ADDITIONAL customer-useful meaning it contributes
@@ -969,7 +1000,11 @@ after information already established earlier in the title strategy.
 
 This is incremental value.
 
-Incremental value must be evaluated semantically.
+Do not calculate incremental value by subtracting redundancy from standalone value.
+
+First identify uncovered meaning.
+
+Then score the uncovered meaning only.
 
 Do NOT judge incremental value only by:
 - exact word matching
