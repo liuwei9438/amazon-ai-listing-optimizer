@@ -27,7 +27,25 @@ The product identity has already been determined upstream.
 When locked.identity.text is provided,
 treat it as the authoritative product identity.
 
-Use locked.identity.text as the primary IDENTITY candidate.
+Use locked.identity.text as the ONE AND ONLY IDENTITY candidate.
+
+Exactly one candidate may use:
+
+"type": "IDENTITY"
+
+When locked.identity.text is available:
+
+- create exactly one IDENTITY candidate
+- candidate.text must equal locked.identity.text
+- candidate.priority must be "S"
+- candidate.required must be true
+
+Do not create any second IDENTITY candidate.
+
+Do not allow another product-name expression,
+synonym, category phrase, search term,
+feature phrase, or supporting product description
+to compete with the locked identity as another IDENTITY.
 
 Do NOT:
 
@@ -63,6 +81,31 @@ Supporting information may include, when valuable:
 
 Do not turn the locked product identity itself
 into a list of supporting features.
+Identity-like Supporting Term Rule:
+
+After the locked IDENTITY has been established,
+do not use title space to add alternative expressions
+whose main purpose is to describe again what the product is.
+
+Alternative product-name expressions may still have
+search value, but title identity space is already occupied
+by the locked title_product_identity.
+
+Such expressions should normally be reserved for:
+
+- bullet points
+- SEO keywords
+- backend search terms
+- supporting listing content
+
+They must not become additional IDENTITY candidates.
+
+They also should not be promoted to SEARCH_TERM,
+FEATURE, OTHER, or another semantic type
+merely to bypass the single-identity rule.
+
+Classify information by its real semantic purpose,
+not by the desired title placement.
 
 If supporting product information conflicts with
 locked.identity.text,
@@ -355,16 +398,48 @@ Fixed prefix:
 
 Then ranked title information:
 
-2. Product identity
-3. Highest-value supporting information
-4. Important compatibility or identifiers
-5. Important specifications or differentiating features
+2. The single locked product identity
 
-Package quantity does not compete with the ranked candidates.
+3. Important compatibility information
+
+4. Important model, part number,
+or identifier information
+
+5. Purchase-critical specifications
+
+6. High-value differentiating features
+
+7. Other supporting information
 
 When present, it is reserved for the beginning of the final title.
 
+Identity Protection Rule:
 
+The title has only one product identity position.
+
+That position is permanently occupied by the locked
+title_product_identity.
+
+Do not use later title positions to introduce
+another phrase whose primary purpose is to answer:
+
+"What is this product?"
+
+Supporting information should support the identity,
+not replace or repeat it.
+
+If another phrase mainly represents an alternative
+product identity, product synonym,
+broader product name,
+or narrower product name,
+
+do not treat it as additional title information.
+
+Instead, preserve it for:
+
+- bullet points
+- backend keywords
+- search keyword coverage
 Adjust the structure according to:
 
 - product category
@@ -421,11 +496,26 @@ Type meaning:
 
 IDENTITY
 
-The actual product identity or product-defining phrase.
+The single authoritative product identity
+already provided by:
 
-It should answer:
+locked.identity.text
 
-"What is this product?"
+Exactly ONE IDENTITY candidate is allowed.
+
+The IDENTITY candidate must:
+
+- use locked.identity.text exactly
+- use priority "S"
+- use required true
+- remain the semantic anchor of the title
+
+Title Strategy must not create,
+rewrite, infer, expand, shorten,
+or select an alternative product identity.
+
+Other product-name expressions must not be reclassified
+as another semantic type merely to place them in the title.
 
 
 MODEL
@@ -529,7 +619,12 @@ Essential product identity.
 
 Removing this information would make the product unclear
 or substantially reduce correct product recognition.
-Normally, only the primary product identity should receive S priority.
+The single locked IDENTITY candidate must receive S priority.
+
+No alternative product-identity expression may receive S priority.
+
+QUANTITY may use its special fixed-prefix handling,
+but S identity priority belongs to the one locked product identity.
 
 Do not use S simply because an information item is highly valuable.
 
@@ -589,7 +684,14 @@ Every title candidate must contain:
 
 
 required = true
+Special rule for IDENTITY:
 
+The single locked IDENTITY candidate must always use:
+
+required = true
+
+No second identity-like expression may be marked required
+for the purpose of repeating or expanding the product identity.
 Use only when omitting the candidate would materially reduce:
 
 - product identification
@@ -708,7 +810,14 @@ Title Strategy determines title value and ordering.
 ==================================================
 15. Candidate Ordering
 ==================================================
+Fixed semantic ordering anchor:
 
+1. QUANTITY is reserved as the fixed prefix when available.
+2. The single locked IDENTITY is the first semantic title element.
+3. No additional identity-like candidate may follow it.
+
+After QUANTITY and IDENTITY are secured,
+rank only genuinely additional supporting information.
 title_candidates must already be ordered
 from highest title value to lowest title value.
 
@@ -1504,8 +1613,12 @@ with title_candidates.
 
 core_product:
 
-Should correspond to the highest-priority
-IDENTITY candidate.
+Must equal the single locked product identity.
+
+It must correspond exactly to the one IDENTITY candidate.
+
+Do not independently rewrite,
+shorten, expand, or select another core product expression.
 
 
 must_include:
